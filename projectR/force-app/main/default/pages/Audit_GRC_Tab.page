@@ -1,0 +1,4 @@
+<apex:page standardController="GRC__c" recordSetVar="Elements" sidebar="true" lightningStylesheets="true">
+  <h2 style="font-size:22px;">{!$ObjectType.GRC__c.labelPlural}</h2>
+  <apex:enhancedList type="GRC__c" height="600" rowsPerPage="50"/>
+</apex:page>

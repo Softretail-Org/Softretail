@@ -1,0 +1,160 @@
+<apex:page standardStylesheets="false" standardController="Commercial_Plan__c" extensions="CommercialPlanSimulatorController" cache="true" 
+           contenttype="application/vnd.ms-excel#SimulatorExport_{!NOW()}.xls" lightningStylesheets="true">-->
+    <apex:outputText value="{!xmlheader}" escape="false"/>
+    <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+              xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:x="urn:schemas-microsoft-com:office:excel"
+              xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+              xmlns:html="http://www.w3.org/TR/REC-html40">
+        <Styles>
+            <Style ss:ID="s1" ss:Name="Normal">
+                <Alignment/>
+                <Borders/>
+                <Font ss:Bold="1"/>
+                <Interior/>
+                <NumberFormat/>
+                <Protection/>
+            </Style>
+            <Style ss:ID="header">
+                <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1" />
+            </Style>
+            <Style ss:ID="redTitle">
+                <Font ss:FontName="Calibri" ss:Size="11" ss:Color="#CC0000" ss:bgcolor="##D0ECE7" />
+            </Style>
+            <Style ss:ID="greenTitle">
+                <Font ss:FontName="Calibri" ss:Size="12" ss:Color="#008000" ss:bgcolor="##D0ECE7" />
+            </Style>
+            <Style ss:ID="bgcolor1">
+                <Font ss:FontName="Calibri" ss:Size="11" bgcolor="#fff2cc"/>
+                <Interior ss:Color="#fff2cc" ss:Pattern="Solid"/>
+            </Style>
+            <Style ss:ID="bgcolor2">
+                <Font ss:FontName="Calibri" ss:Size="11" bgcolor="#FBFBA0"/>
+                <Interior ss:Color="#FBFBA0" ss:Pattern="Solid"/>
+            </Style>
+            <Style ss:ID="s2">
+                <Font ss:FontName="Calibri" ss:Size="11" ss:Color="#000000" ss:Arial="1" bgcolor="#FFFF33"/>                
+            </Style>            
+            <Style ss:ID="s3">
+                <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000" ss:Arial="1" bgcolor="#FFFF33"/>
+                <Interior ss:Color="#FFFF33" ss:Pattern="Solid"/>
+                <NumberFormat ss:Format="Percent"/>
+            </Style>
+        </Styles>
+        <Worksheet ss:Name="{!IF(selectedSellIn == true,'% Sell In','% Sell Out')}">
+            <Table x:FullColumns="1" x:FullRows="1">
+                <Column ss:Width="80"/>
+                <Column ss:Width="200"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Row ss:StyleID="header">
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Commercial_Plan__c.fields.Name.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Commercial_Plan__c.fields.Event_Code__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Supplier_PG_Mapping__c.fields.Supplier__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Sup_Supplier__c.fields.Code__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Orga_HE__c.fields.Name.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Supplier_PG_Mapping__c.fields.Brand__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Supplier_PG_Mapping__c.fields.Nego_Scope__c.Label}</Data></Cell>
+                </Row>
+                <Row>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!commercialPlan.Name}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!commercialPlan.Event_Code__c}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!commercialPlan.Supplier__r.Name}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!commercialPlan.Supplier__r.Code__c}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!structureLevelName}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!brandName}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!negoScopeName}</Data></Cell>
+                </Row>                
+                <Row>
+                </Row>
+                <Row>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$Label.LBL_Simulator_Details_Excel}</Data></Cell>
+                </Row>
+                <Row>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$ObjectType.Product2.fields.ProductCode.Label}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$ObjectType.Product2.fields.Name.Label}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_COGS_unit}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_Sell_In_Price_unit}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_Gross_Margin}</Data></Cell>
+                    <Cell ss:StyleID="redTitle"><Data ss:Type="String">{!$Label.LBL_Sell_in_Units}</Data></Cell>
+                    <Cell ss:StyleID="redTitle"><Data ss:Type="String">{!$Label.LBL_Sell_In_Value}</Data></Cell>
+                    <Cell ss:StyleID="redTitle"><Data ss:Type="String">{!$Label.LBL_Market_Share}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_PVP_unit}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_Sell_Out_Units}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_Sell_Out_Value}</Data></Cell>
+                    <Cell ss:StyleID="greenTitle"><Data ss:Type="String">{!$Label.LBL_Unit}</Data></Cell>
+                    <Cell ss:StyleID="greenTitle"><Data ss:Type="String">{!$Label.LBL_Value}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_in_Value}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_Disc_Sell_Out}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_Cor_Sell_In}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_Cor_COGS}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_Regular_GM}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_GM_after_Disc}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_Diff_in_pt}</Data></Cell>                    
+                </Row>
+                <apex:repeat value="{!simulatorRecords}" var="item">
+                    <Row>
+                        <Cell><Data ss:Type="String">{!item.product.ProductCode}</Data></Cell>
+                        <Cell><Data ss:Type="String">{!item.product.Name}</Data></Cell>
+                        <Cell><Data ss:Type="String">{!item.COGS.decimalLabel}</Data></Cell>
+                        <Cell><Data ss:Type="String">{!item.sellinPrice.decimalLabel}</Data></Cell>
+                        <Cell><Data ss:Type="String">{!item.grossMargin.percentageLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.sellinUnit.decimalLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.sellinValue.decimalLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.marketShare.percentageLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor2"><Data ss:Type="String">{!item.PVP.value}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor2"><Data ss:Type="String">{!item.sellOutUnit.value}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor2"><Data ss:Type="String">{!item.sellOutValue.decimalLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.units.decimalLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.value.decimalLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.discountedValue.decimalLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.discSellOut.decimalLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.corSellIn.decimalLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.corCOGS.decimalLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.regularGM.percentageLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.GMAfterDisc.percentageLabel}</Data></Cell>
+                        <Cell ss:StyleID="bgcolor1"><Data ss:Type="String">{!item.Diff.decimalLabel}</Data></Cell>
+                    </Row>
+                </apex:repeat>
+                <Row>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!$Label.LBL_Total}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalSellinPrice.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalSellinUnit.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalSellinValue.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalMarketShare.percentageLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalSellOutUnit.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalSellOutValue.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalUnits.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalValue.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="redTitle"><Data ss:Type="String">{!totalDiscountedValue.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalDiscSellOut.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalCorSellIn.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalCorCOGS.decimalLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalRegularGM.percentageLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalGMAfterDisc.percentageLabel}</Data></Cell>
+                    <Cell ss:StyleID="s1"><Data ss:Type="String">{!totalDiff.decimalLabel}</Data></Cell>                    
+                </Row>
+            </Table>
+        </Worksheet>
+    </Workbook>
+</apex:page>

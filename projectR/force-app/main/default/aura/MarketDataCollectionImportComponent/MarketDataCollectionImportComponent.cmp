@@ -1,0 +1,131 @@
+<aura:component controller="MarketDataCollectionImportController"
+    implements="force:hasSObjectName,force:appHostable,flexipage:availableForAllPageTypes,lightning:actionOverride,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+    access="global">
+    <aura:attribute name="instance" type="MarketDataCollectionImportController" />
+    <aura:attribute name="ObjectType" type="Object" />
+    <!-- 'showLoadingSpinner' attribute for show/hide the uploading image and msg in aura:if-->
+    <aura:attribute name="showLoadingSpinner" type="boolean" default="false" />
+    <!-- 'fileName' attribute for display the selected file name -->
+    <aura:attribute name="fileName" type="String" default="{!$Label.c.LBL_No_File_Selected}" />
+    <aura:attribute name="fileIdMap" type="Map" default="{}" />
+    <aura:attribute name="showMessage" type="boolean" default="false" />
+    <aura:attribute name="message" type="String" />
+    <aura:attribute name="messageType" description="Message type, can be error/warning/info/success" type="String" default="info" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="url" type="String" />
+    <aura:attribute name="contentVersions" type="List" default="[]" />
+    <aura:attribute name="fileCount" type="Integer" default="0" />
+    <aura:attribute name="validFileName" type="boolean" default="true" />
+    <aura:attribute name="uploadInProgress" type="boolean" default="false" />    
+    <aura:attribute name="uploadPercentage" type="Double" default="0" />
+    <aura:attribute name="uploadComplete" type="boolean" default="false" />
+
+    <!--Use "slds-m-around_xx-large" class to add standard X-Large padding to the component-->
+    <div class="slds-m-around_xx-large" style="background-color: #fff;">
+        <aura:if isTrue="{!v.showMessage}">
+            <div class="{!'slds-box slds-theme–alert-texture slds-theme–' + v.messageType}">
+                <lightning:icon iconName="{! 'utility:'+ v.messageType }" size="medium"
+                    alternativeText="{!v.messageType}" Class="iconContainer" />&nbsp;
+                <span class="slds-text-body–regular">
+                    <aura:unescapedHtml value="{!v.message}" />
+                </span>
+            </div>
+        </aura:if>
+        <h3 class="slds-section-title--divider">{!$Label.c.LBL_Market_Data_Collection_Import}</h3>
+        <div class="slds-form--stacked slds-p-around--medium slds-m-bottom--x-small">
+            <lightning:layout>
+                <lightning:layoutItem size="4" flexibility="auto" padding="horizontal-medium">
+                    <div class="slds-form slds-form--inline">
+                        <div class="slds-form-element">
+                            <!--label class="slds-form-element__label" for="toggle">{!$Label.c.LBL_Import}</label-->
+                            <!-- Lightning Input with file type and on file change call the 'handleFilesChange' controller -->
+                            <lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" label="Upload"
+                                variant="label-hidden" type="file" name="file" accept=".csv" multiple="false"
+                                style="width:200;" disabled="{!v.uploadInProgress}" />
+                        </div>
+                    </div>
+                    <span style="margin-top:10px;" class="slds-text-body_middle slds-text-color_blue">{!v.fileName}</span>
+                    <!--use aura:if for show-hide the loading spinner image-->
+                    <aura:if isTrue="{!v.showLoadingSpinner}">
+                        <div class="slds-text-body_small slds-text-color_error"> {!$Label.c.LBL_Uploading}
+                            <img src="/auraFW/resources/aura/images/spinner.gif" class="spinner-img" alt="Loading" />
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!v.uploadInProgress}">
+                        <lightning:progressBar value="{!v.uploadPercentage}" id="uploadProgressBar" />
+                    </aura:if>
+                    <aura:if isTrue="{!v.uploadComplete}">
+                        <div class="slds-text-body_small" style="color: green">
+                            {!$Label.c.MSG_Upload_Successfully}
+                            <lightning:icon iconName="action:approval" alternativeText="Approved" />
+                        </div>
+                    </aura:if>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3" flexibility="auto" padding="horizontal-medium">
+                    <button class="slds-button slds-button_brand" onclick="{!c.doUpload}" disabled="{!v.uploadInProgress}">{!$Label.c.LBL_Upload}</button>
+                    <button class="slds-button slds-button_brand" onclick="{!c.doCancel}" disabled="{!v.uploadInProgress}">{!$Label.c.Cancel}</button>
+                </lightning:layoutItem>
+                <!--aura:if isTrue="{!v.Uploading}">
+                    <lightning:progressBar value="{!v.uploadPercentage}" size="large" />
+                </aura:if-->
+            </lightning:layout>
+        </div>
+        <lightning:accordion aura:id="accordion" allowMultipleSectionsOpen="true">
+            <lightning:accordionSection name="files" label="FILES">
+                <aura:set attribute="body">
+                    <div class="slds-card__body">
+                        <table class="slds-table slds-table--bordered slds-table--fixed-layout slds-table--cell-buffer">
+                            <thead>
+                                <tr class="slds-text-title--caps">
+                                    <th class="slds-is-sortable slds-is-resizable slds-is-sorted slds-is-sorted--asc"
+                                        scope="col">
+                                        <div class="slds-truncate">{!v.ObjectType.ContentVersion.Title.label}</div>
+                                    </th>
+                                    <th class="slds-is-sortable slds-is-resizable slds-is-sorted slds-is-sorted--asc"
+                                        scope="col">
+                                        <div class="slds-truncate">{!v.ObjectType.ContentVersion.FileType.label}</div>
+                                    </th>
+                                    <th class="slds-is-sortable slds-is-resizable slds-is-sorted slds-is-sorted--asc"
+                                        scope="col">
+                                        <div class="slds-truncate">{!v.ObjectType.ContentVersion.ContentSize.label}
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:if isTrue="{!v.fileCount == 0}">
+                                    <tr>
+                                        <td colspan="3">
+                                            <div class="slds-p-around--small slds-align--absolute-center">
+                                                {!$Label.c.LBL_No_Record_To_Display}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <aura:set attribute="else">
+                                        <aura:iteration items="{!v.contentVersions}" var="content">
+                                            <tr class="slds-line-height_reset">
+                                                <td>
+                                                    <div class="slds-truncate">
+                                                        <a href="{!'/'+ content.Id}"
+                                                            target="_blank">{!content.Title}</a>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate">{!content.FileType}</div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate">{!content.ContentSize}</div>
+                                                </td>
+                                            </tr>
+                                        </aura:iteration>
+                                    </aura:set>
+                                </aura:if>
+                            </tbody>
+                        </table>
+                    </div>
+                </aura:set>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </div>
+</aura:component>

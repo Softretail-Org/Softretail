@@ -1,0 +1,43 @@
+<apex:page standardController="Contract__c" extensions="ConditionManagerController" lightningStylesheets="true">
+    <apex:form id="formSlabs">
+        <apex:outputPanel id="popupSlabs">
+            <apex:outputPanel styleClass="overlay" layout="block" rendered="{!popupSlabs}">
+                <!-- $User.UITheme and $User.UIThemeDisplayed -link:-->
+                <!--https://developer.salesforce.com/docs/atlas.en-us.pages.meta/pages/pages_variables_global_useruitheme.htm -->
+                <apex:outputPanel styleClass="popup2" style="{!IF($User.UIThemeDisplayed == 'Theme2' || $User.UIThemeDisplayed == 'Theme3','width: 45%;', 'width: 80%;')}" layout="block" rendered="{!popupSlabs}">
+                    <apex:pageBlock title="{!wCurrentCondition.condition.Condition_type__r.Name}" >
+                        <apex:pageBlockSection columns="2">
+                            <apex:inputField value="{!wCurrentCondition.condition.slab_calc_method__c}" />
+                            <apex:inputField value="{!wCurrentCondition.condition.Slab_Calc_Method_TO_Origin__c}" />
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection columns="5" id="pageBlockSlab" >
+                            <apex:outputText style="font-weight:bold;width:50px" value="{!$Label.LBL_No}" />
+                            <apex:outputText style="font-weight:bold" value="{!$Label.LBL_Threshold}" />
+                            <apex:outputText style="font-weight:bold" value="{!$Label.LBL_Percentage}" />
+                            <apex:outputText style="font-weight:bold" value="{!$Label.LBL_Amount}" />
+                            <apex:outputText style="font-weight:bold" value="{!$Label.LBL_Target}" />
+                            
+                            <apex:repeat value="{!slabs}" var="ndx">
+                                <apex:outputText value="{!ndx}" />
+                                <apex:inputField value="{!wCurrentCondition.condition['Slab_' & TEXT(ndx) & '__c']}" label="" />
+                                <apex:inputField value="{!wCurrentCondition.condition['slab_per_' & TEXT(ndx) & '__c']}" label="" />
+                                <apex:inputField value="{!wCurrentCondition.condition['Slab_Val_' & TEXT(ndx) & '__c']}" label="" />
+                                <input type="radio" onclick="setTargetSlab(this.value);" name="slabTargetRadio" value="{!ndx}" />
+                            </apex:repeat>
+                        </apex:pageBlockSection>
+                        <apex:inputHidden id="slabTargetHidden" value="{!wCurrentCondition.condition.slab_target__c}"/>
+                        <apex:pageBlockButtons location="bottom">
+                            <apex:commandButton value="{!$Label.OK}"
+                                                action="{!hidePopup}" rerender="popupSlabs, conditionsPageBlockTable, toolbar" 
+                                                status="globalloading" oncomplete="afterRerender()" />
+                            <apex:commandButton value="{!$Label.Cancel}"
+                                                action="{!cancelPopup}" rerender="popupSlabs" 
+                                                status="globalloading" oncomplete="afterRerender()" />
+                        </apex:pageBlockButtons>
+                    </apex:pageBlock>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>
+    </apex:form>
+</apex:page>

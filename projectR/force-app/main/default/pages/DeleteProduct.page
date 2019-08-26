@@ -1,0 +1,18 @@
+<apex:page standardController="Product2" showHeader="true" sidebar="true" lightningStylesheets="true" tabStyle="Product2"
+           extensions="DeleteProductController">
+    <apex:pageMessages id="messages" />
+    <apex:sectionHeader title="{!Product2.Name}" subtitle="{!$ObjectType.Product2.Labelplural}" />
+    <apex:form id="form">
+        <apex:pageBlock >
+            <apex:outputText value="{!$Label.MSG_Confirm_Delete_Product}" />
+            <br />
+            <apex:commandButton value="{!$Label.OK}" action="{!deleteProduct}" reRender="messages" status="saveStatus" />
+            <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" status="saveStatus" />
+            <apex:actionStatus id="saveStatus">
+                <apex:facet name="start">
+                    <img src="/img/loading.gif" />
+                </apex:facet>
+            </apex:actionStatus>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

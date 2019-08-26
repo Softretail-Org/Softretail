@@ -1,0 +1,134 @@
+<apex:page controller="Main_App_launcher_Controller">
+    
+    <div class="apps-container">
+        <apex:repeat value="{!appMenuItems}" var="app">
+            
+            <div class="app-item">
+                
+                <a href="" onclick="window.top.location='{!app.StartUrl}'; return false">
+                    <apex:outputText styleClass="ribbon" rendered="{!app.Name == 'myProof'}" value="NEW" />
+                    <div class="app-item-img">
+                        <div class="img-cell">
+                            <apex:image value="{!app.LogoUrl}" styleClass="imgClass" />
+                        </div>
+                    </div>
+                    <div class="app-item-label">{!app.Label}</div>
+                </a>
+            </div>
+        </apex:repeat>
+    </div>
+
+	<style>
+	.apps-container {
+		display: block;
+		width: 100%;
+	}
+	
+	.app-item {
+		width: 20%;
+		display: inline-block;
+		text-align: center;
+		vertical-align: middle;
+		margin: 0 2%;
+		white-space: normal;
+	}
+	
+	.app-item a {
+		display: block;
+		border: solid 1px #E6E6E6;
+		background-color: #FFF;
+		width: 100%;
+		height: auto;
+		margin-right: 30px;
+		margin-bottom: 30px;
+		font-size: 16px;
+		cursor: pointer;
+		-webkit-border-radius: 3px;
+		-webkit-box-shadow: 0 1px 1px 1px #d7d6d5;
+		overflow: hidden;
+	}
+	
+	.app-item a:hover {
+		text-decoration: none;
+	}
+	
+	.app-item a:hover .app-item-label {
+		text-decoration: none;
+		background-color: #A9D0F5;
+		color: white;
+	}
+	
+	.app-item-img {
+		background-color: #FFF;
+		width: 200px;
+		height: 130px;
+		line-height: 130px;
+		margin-right: auto;
+		margin-left: auto;
+		display: table;
+		/*padding-top: 30px;*/
+	}
+	
+	.img-cell {
+		display: table-cell;
+		vertical-align: middle;
+	}
+	
+	.imgClass {
+		width: 100%;
+		height: auto;
+		max-height: 130px;
+	}
+	
+	.app-item-label {
+		height: 40px;
+		line-height: 40px;
+		color: #696e71;
+		background-color: #e8eaeb;
+	}
+	
+	.app-item:hover {
+		
+	}
+	
+	.app-item a .ribbon {
+        display: block;
+		font: bold 15px sans-serif;
+		text-align: center;
+		-webkit-transform: rotate(-45deg);
+		-moz-transform: rotate(-45deg);
+		-ms-transform: rotate(-45deg);
+		-o-transform: rotate(-45deg);
+		position: relative;
+		padding: 5px 0;
+		top: 15px;
+		left: -30px;
+		width: 120px;
+		background-color: red;
+		color: #fff;
+		margin-bottom: -30px;
+	}
+	
+	@media screen and (max-width: 480px) {
+		.app-item {
+			display: block;
+			width: 65%;
+			margin: 0 auto;
+		}
+		.app-item-img {
+			background-color: #FFF;
+			width: 120px;
+			height: 70px;
+			line-height: 130px;
+			margin-right: auto;
+			margin-left: auto;
+			display: table;
+		}
+		.imgClass {
+			width: 80%;
+			height: auto;
+		}
+	}
+	</style>
+
+</apex:page>

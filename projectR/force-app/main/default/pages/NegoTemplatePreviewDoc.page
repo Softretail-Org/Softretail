@@ -1,0 +1,5 @@
+<apex:page controller="NegoTemplatePreviewController" contentType="application/msWord#file.doc"
+           showHeader="false" sidebar="false" standardStylesheets="false" applyBodyTag="false" applyHtmlTag="false"
+           cache="true" action="{!pageAction}">
+       <apex:outputText value="{!content}" escape="false" />
+</apex:page>

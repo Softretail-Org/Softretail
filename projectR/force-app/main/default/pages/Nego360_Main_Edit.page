@@ -1,0 +1,809 @@
+<apex:page controller="Nego360_Main_Edit_Controller" lightningStylesheets="true" tabStyle="Negotiate__tab">
+    <apex:stylesheet value="{!URLFOR($Resource.fontawesome, 'css/font-awesome.min.css') }" />
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }" />
+    
+    <apex:pageMessages id="messages" />
+    <apex:form id="negoContractForm_ScreenCondition">
+        <apex:pageBlock title="{!$Label.Negotiate}">
+            <apex:outputLink rendered="{!errors.size != 0}" value="/apex/Nego360_Main_Selection" id="theLink">{!$Label.LBL_ChangeSupplier} ({!supplier.Name})</apex:outputLink>
+            <apex:pageBlockSection rendered="{!errors.size == 0}" title="{!$Label.NegoYear}: {!negoYear}" columns="1">
+                <apex:pageBlockSection title="{!supplier.Name}" columns="1" id="selectNegoSection">
+                    <apex:selectRadio styleClass="negoscopeRadio" style="display:none" value="{!selectedNegoScopeId}" layout="pageDirection">
+                        <apex:actionSupport event="onchange" oncomplete="afterReRender();"  rerender="messages,top-nego-buttons,conditionTablePanel, calculate-field-panel, indexManagementPanel, negoPlanPanel" status="selectNegoScopeStatus" action="{!init}" />
+                        <apex:selectOptions value="{!listNegoScopes}"/>
+                    </apex:selectRadio>
+                    <apex:actionStatus id="selectNegoScopeStatus" >
+                        <apex:facet name="start" >
+                            <img src="/img/loading.gif" />
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:pageBlockSection>
+                <!-- Index Management -->
+                <apex:outputPanel id="indexManagementPanel" >
+                    <apex:variable var="index" value="{!0}" />
+                    <apex:pageBlockSection id="indexManagementBlockSection" title="Index Management" columns="{!matrice.columns.size}" rendered="{!showConditionTable == true}">
+                        <!-- TO REMOVE
+<script>
+twistSection(document.getElementById('{!$Component.indexManagementBlockSection}').getElementsByTagName('img')[0]);
+</script>
+-->
+                        <apex:repeat value="{!matrice.columns}" var="header">
+                            <apex:outputPanel >
+                                <apex:pageBlockSection title="{!header.contract.Name}" columns="1" id="indexManagement">
+                                    <apex:pageBlockTable value="{!matrice.columns[index].indexes.listIndexes}" var="item">
+                                        <apex:column style="text-align: center" value="{!item.name}">
+                                            <apex:facet name="header">Base 100</apex:facet>
+                                        </apex:column>
+                                        <apex:column style="text-align: center" value="{!item.sRate}">
+                                            <apex:facet name="header">{!header.sIndex0}</apex:facet>
+                                        </apex:column>
+                                        <apex:column style="text-align: center" value="{!item.sPercentage}">
+                                            <apex:facet name="header">%</apex:facet>
+                                        </apex:column>
+                                        <apex:column style="text-align: right" value="{!item.sValue}">
+                                            <apex:facet name="header">val</apex:facet>
+                                        </apex:column>
+                                    </apex:pageBlockTable>
+                                    <apex:variable rendered="{!NOT(index == (matrice.columns.size - 1))}" var="index" value="{!index + 1}" />
+                                    <apex:pageBlockSection columns="1">
+                                        <apex:inputField value="{!header.contract.Rise_Rate__c}">
+                                        </apex:inputField>
+                                        <apex:inputField value="{!header.contract.Depreciation_Rate__c}">
+                                        </apex:inputField>
+                                        <apex:inputField value="{!header.contract.Markdown_Rate_Break__c}">
+                                        </apex:inputField>
+                                        <apex:inputField value="{!header.contract.Markdown_Rate_Promo__c}">
+                                        </apex:inputField>
+                                        <apex:inputField value="{!header.contract.Markdown_Rate_Theft__c}">
+                                        </apex:inputField>
+                                    </apex:pageBlockSection>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+                        </apex:repeat>
+                    </apex:pageBlockSection>
+                    
+                </apex:outputPanel>
+
+                <!-- Contracts + conditions grid -->
+                <apex:outputPanel id="conditionTablePanel">
+                    <apex:variable var="tabindex" value="{!1}"/>                    
+                    <apex:pageBlockSection title="{!supplier.Name} > {!negoScope.Name}" columns="1" id="conditionTableBlock" rendered="{!showConditionTable == true}">
+                        <apex:actionStatus id="conditionTableStatus" >
+                            <apex:facet name="start" >
+                                <img src="/img/loading.gif" />
+                            </apex:facet>
+                        </apex:actionStatus>
+                        
+                        <apex:outputPanel id="conditionTablePanel">
+                            <div id="condition-table-left-part">
+                                <table id="conditionTable">
+                                    <tr class="first-header">
+                                        <th>
+                                            <apex:actionStatus id="topLeftStatus" >
+                                                <apex:facet name="start" >
+                                                    <img src="/img/loading.gif" />
+                                                </apex:facet>
+                                            </apex:actionStatus>
+                                        </th>
+                                        <th></th>
+                                        <apex:repeat value="{!matrice.columns}" var="header">
+                                            <th colspan="4">
+                                                <span>
+                                                    <apex:outputText rendered="{!header.contract.Contract_Type__c == 'Simulation' && header.isLocked}" >
+                                                        <i class="fa fa-flag" aria-hidden="true"></i>
+                                                    </apex:outputText>
+                                                    <!--<apex:inputCheckbox id="contractCheckbox" rendered="{!header.contract.Contract_Type__c != 'Contract'}"
+                                                                        value="{!header.selected}" onclick="toggleCheckboxes(this, 'contractCheckbox')"/>-->
+                                                    <apex:inputCheckbox id="contractCheckbox" rendered="{!header.contract.Contract_Type__c != 'Contract'}"
+                                                                        value="{!header.contract.Selected_Simul_For_Approval__c}" onclick="toggleCheckboxes(this, 'contractCheckbox')"/>
+                                                </span>
+                                                <span>
+                                                    <apex:outputLink rendered="{!header.contract.Id != null}" value="/{!header.contract.Id}" target="_blank">
+                                                        <apex:outputText value="{!header.contract.Name}"/>
+                                                    </apex:outputLink>
+                                                    <apex:outputText rendered="{!header.contract.Id == null}" value="{!header.contract.Name}"/>
+                                                </span>
+                                                <span>
+                                                    <apex:inputField rendered="{!header.contract.Contract_Type__c == 'Simulation' && !header.isLocked}" value="{!header.contract.Secure_Multiyear__c}" >
+                                                        <apex:actionSupport event="onchange" rerender="conditionTablePanel,calculate-field-panel" status="topLeftStatus"
+                                                                            action="{!changeMultiYearSecure}"/>              
+                                                    </apex:inputField>
+                                                </span>
+                                            </th>
+                                        </apex:repeat>
+                                    </tr>
+                                    <tr class="scnd-header">
+                                        <th></th>
+                                        <th></th>
+                                        <apex:repeat value="{!listContractNego}" var="contractNego">
+                                            <th>{!$Label.Purchase}:</th>
+                                            <th colspan="3">
+                                                <apex:inputField rendered="{!contractNego.Contract_Type__c != 'Contract'}" styleClass="input-field-purchase calculate-field-purchase" value="{!contractNego.TO1__c}" 
+                                                                 html-tabindex="{!tabindex}">
+                                                    <!--apex:actionSupport event="onchange" action="{!recalculateAmount}" reRender="conditionTablePanel" status="conditionTableStatus" /-->
+                                                </apex:inputField>
+                                                <span>
+                                                    <apex:outputText rendered="{!contractNego.Contract_Type__c != 'Contract'}"></apex:outputText>
+                                                </span>
+                                                <apex:variable var="tabindex" value="{!tabindex+1}"/>
+                                                <apex:outputField rendered="{!contractNego.Contract_Type__c == 'Contract'}" styleClass="input-field-purchase" value="{!contractNego.Total_TO_Fact__c}"/>
+                                            </th>
+                                        </apex:repeat>
+                                    </tr>
+                                    <tr class="qty-header">
+                                        <th></th>
+                                        <th></th>
+                                        <apex:repeat value="{!listContractNego}" var="contractNego">
+                                            <th>{!$Label.LBL_Quantity}:</th>
+                                            <th colspan="3">
+                                                <apex:inputField rendered="{!contractNego.Contract_Type__c != 'Contract'}" styleClass="input-field-purchase" value="{!contractNego.Qty1__c}" 
+                                                                 html-tabindex="{!tabindex}">
+                                                </apex:inputField>
+                                                <apex:variable var="tabindex" value="{!tabindex+1}"/>
+                                                <apex:outputField rendered="{!contractNego.Contract_Type__c == 'Contract'}" styleClass="input-field-purchase" value="{!contractNego.Total_Qty_Fact__c}"/>
+                                            </th>
+                                        </apex:repeat>
+                                    </tr>
+                                    <tr class="third-header">
+                                        <th></th>
+                                        <th></th>
+                                        <apex:repeat value="{!matrice.columnsIds}" var="header">
+                                            <th>{!$ObjectType.Contract_Discount__c.fields.commercial_reference__c.Label}</th>
+                                            <th>%</th>
+                                            <th>{!$Label.Amount}</th>
+                                            <th>{!$Label.TotalComputed}</th>
+                                        </apex:repeat>
+                                        <th></th>
+                                    </tr>
+                                    
+                                    <apex:repeat value="{!matrice.linesTable}" var="line">
+                                        <tr>
+                                            <td>
+                                                <!-- Line Type: {!line.type} -->
+                                                <apex:commandButton value=" + " action="{!addCondition}" reRender="conditionTablePanel,calculate-field-panel" styleClass="btn-add-condition" rendered="{!line.ShowAddLineButton && !isReadApproval}" status="topLeftStatus">
+                                                    <apex:param name="selectedLineLabel" value="{!line.lineId}" assignTo="{!selectedLineLabel}" />
+                                                </apex:commandButton>
+                                            </td>
+                                            <td class="type-field {!IF(line.isSubTotal, 'subtotal-type-field', IF(line.isGlobalTotal, 'globaltotal-type-field', ''))}" style="font-weight:{!IF(line.isSubTotal || line.isGlobalTotal, 'bold', 'normal')}">
+                                                <apex:outputText value="{!line.lineLabel}" rendered="{!line.isNewLine == false}" />
+                                                <apex:selectList value="{!line.selectedCondDefId}" multiselect="false" size="1" rendered="{!line.isNewLine == true && line.isSelectListDisabled == false}" tabindex="{!tabindex}">
+                                                    <apex:actionSupport event="onchange" action="{!line.testAction}" reRender="conditionTablePanel,messages,calculate-field-panel" status="topLeftStatus">
+                                                        <apex:param name="chooseConditionLabel" value="{!line.lineId}" assignTo="{!selectedLineLabel}" />
+                                                    </apex:actionSupport>
+                                                    <!-- <apex:selectOptions value="{!listConditionDefinitionsOptions}"/> -->
+                                                    <apex:selectOptions value="{!line.ConditionsDefOptions}"/>
+                                                </apex:selectList>
+                                                <apex:variable var="tabindex" value="{!tabindex+1}"/>
+                                                <apex:outputText value="{!line.lineId}" rendered="{!line.isNewLine == true && line.isSelectListDisabled == true}" />
+                                                <!--<apex:inputText id="test" rendered="{!!line.isSubTotal}" value="{!line.negoScope}" />-->
+                                                &nbsp;&nbsp;
+                                                <apex:commandButton value="..." action="{!showPopup}" rerender="conditionDetailsPanel,messages"
+                                                                    rendered="{!!line.isSubTotal && !line.isGlobalTotal}"
+                                                                    status="globalloading" style="float: right;">
+                                                    <apex:param name="lineKey" value="{!line.lineId}"
+                                                                assignTo="{!lineKey}" />
+                                                    <apex:param name="popupName" value="conditionDetailsPopup"
+                                                                assignTo="{!popupName}" />
+                                                </apex:commandButton>
+                                            </td>
+                                            <apex:repeat value="{!line.cells}" var="cell">
+                                                <td class="label-field {!IF(cell.isSubTotal, 'subtotal-amount-field', IF(cell.isGlobalTotal, 'globaltotal-amount-field', ''))}" style="font-weight:{!IF(cell.isSubTotal || cell.isGlobalTotal, 'bold', 'normal')}">
+                                                    <apex:outputText rendered="{!cell.isReadOnly || cell.isSubTotal || cell.isGlobalTotal}" value="{!cell.conditionWrapper.condition.commercial_reference__c}"/>
+                                                    <apex:inputField styleClass="input-amount-field calculate-field-amount" rendered="{!!cell.isReadOnly && cell.isDisabled}" value="{!cell.conditionWrapper.condition.commercial_reference__c}" 
+                                                                     html-tabindex="{!tabindex}" html-disabled="disabled"/>
+                                                    <apex:inputField style="height: 14px;" rendered="{!!cell.isReadOnly && !cell.isDisabled}" value="{!cell.conditionWrapper.condition.commercial_reference__c}" 
+                                                                     html-tabindex="{!tabindex}"/>
+                                                    <apex:variable var="tabindex" value="{!tabindex+1}"/>
+                                                </td>
+                                                <td class="percent-field {!IF(cell.isSubTotal, 'subtotal-percent-field', IF(cell.isGlobalTotal, 'globaltotal-percent-field', ''))}" style="font-weight:{!IF(cell.isSubTotal || cell.isGlobalTotal, 'bold', 'normal')}">
+                                                    <apex:outputText styleClass="output-percent-field {!IF(!cell.isProgress, '', IF(cell.percent > 0, 'label-success', 'label-error'))}" rendered="{!cell.isReadOnly || cell.isSubTotal || cell.isGlobalTotal}" value="{!cell.sPercent}{!IF(cell.isProgress, '%', '')}"/>
+                                                    <apex:inputField styleClass="input-percent-field calculate-field-percent" rendered="{!!cell.isReadOnly && cell.isDisabled && line.enablePercentage}" value="{!cell.conditionWrapper.condition.Value_per__c}" 
+                                                                     html-tabindex="{!tabindex}" html-disabled="disabled"/>
+                                                    
+                                                    <apex:inputField styleClass="input-percent-field calculate-field-percent" rendered="{!!cell.isReadOnly && !cell.isDisabled && line.enablePercentage}" value="{!cell.conditionWrapper.condition.Value_per__c}" 
+                                                                     html-tabindex="{!tabindex}"/>
+                                                    <!--<apex:inputField styleClass="input-percent-field calculate-field-percent" rendered="{!!cell.isReadOnly && !cell.isDisabled}" value="{!cell.conditionWrapper.condition.Disc_BDate__c}" 
+                                                                     html-tabindex="{!tabindex}"/>
+                                                    -->
+                                                    <apex:actionRegion >
+                                                        <apex:commandLink value="{!$Label.LBL_Slabs}" action="{!showPopup}"
+                                                                          rerender="displayPopUpSlabs" rendered="{!line.isConditional && !line.isSubTotal && ((!cell.isEmpty && !cell.isReadOnly) || (!cell.isEmpty && cell.isReadOnly) || (cell.isEmpty && !cell.isReadOnly))}" status="globalloading">
+                                                            <apex:param name="popupName" value="slabsPopup" assignTo="{!popupName}" />
+                                                            <apex:param name="cellIndex" value="{!cell.index}" assignTo="{!cellIndex}"/>
+                                                            <apex:param name="lineKey" value="{!line.lineId}" assignTo="{!lineKey}" />
+                                                            <!--<apex:actionSupport event="onclick" action="{!showPopup}" oncomplete="triggerSlabRadio({!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition.slab_target__c})"
+                                                                                rerender="displayPopUpSlabs" status="globalloading">
+                                                                <apex:param name="popupName" value="slabsPopup" assignTo="{!popupName}" />
+                                                                <apex:param name="condIndex" value="{!cell.key}" assignTo="{!cellKey}"/>
+                                                                <apex:param name="cellIndex" value="{!cell.index}" assignTo="{!cellIndex}"/>
+                                                                <apex:param name="lineKey" value="{!line.lineId}" assignTo="{!lineKey}" />
+                                                            </apex:actionSupport>-->
+                                                        </apex:commandLink>
+                                                    </apex:actionRegion>
+                                                    <apex:variable var="tabindex" value="{!tabindex+1}"/>
+                                                </td>
+                                                <td class="amount-field {!IF(cell.isSubTotal, 'subtotal-amount-field', IF(cell.isGlobalTotal, 'globaltotal-amount-field', ''))}" style="font-weight:{!IF(cell.isSubTotal || cell.isGlobalTotal, 'bold', 'normal')}">
+                                                    <apex:outputText styleClass="output-amount-field {!IF(!cell.isProgress, '', IF(cell.amount > 0, 'label-success', 'label-error'))}" rendered="{!cell.isReadOnly || cell.isSubTotal || cell.isGlobalTotal}" value="{!cell.sAmount}{!IF(cell.isProgress, '%', '')}"/>
+                                                    <apex:inputField styleClass="input-amount-field calculate-field-amount" rendered="{!!cell.isReadOnly && cell.isDisabled && line.enableAmount}" value="{!cell.conditionWrapper.condition.Value_amt__c}" 
+                                                                     html-tabindex="{!tabindex}" html-disabled="disabled"/>
+                                                    <apex:inputField styleClass="input-amount-field calculate-field-amount" rendered="{!!cell.isReadOnly && !cell.isDisabled && line.enableAmount}" value="{!cell.conditionWrapper.condition.Value_amt__c}" 
+                                                                     html-tabindex="{!tabindex}"/>
+                                                    <br />
+                                                    <apex:outputText rendered="{!cell.conditionWrapper.condition.Product_Scope__c != selectedNegoScopeId && !cell.isSubTotal && !cell.isGlobalTotal && ((!cell.isReadOnly && !cell.isEmpty) || (!cell.isReadOnly && cell.isEmpty) || (cell.isReadOnly && !cell.isEmpty))}">
+                                                        <i class="fa fa-bookmark" aria-hidden="true"></i>
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!cell.conditionWrapper.condition.BU_Scope__c != supplier.Country_origin__c && !cell.isSubTotal && !cell.isGlobalTotal && ((!cell.isReadOnly && !cell.isEmpty) || (!cell.isReadOnly && cell.isEmpty) || (cell.isReadOnly && !cell.isEmpty))}">
+                                                        <i class="fa fa-home" aria-hidden="true"></i>
+                                                    </apex:outputText>
+                                                    <apex:variable var="tabindex" value="{!tabindex+1}"/>
+                                                </td>                        
+                                                <td class="compute-amount-field {!IF(cell.isSubTotal, 'subtotal-amount-field', IF(cell.isGlobalTotal, 'globaltotal-amount-field', ''))}" style="font-weight:{!IF(cell.isSubTotal || cell.isGlobalTotal, 'bold', 'normal')}">
+                                                    <apex:outputText styleClass="output-compute-amount-field {!IF(!cell.isProgress, '', IF(cell.computedAmount > 0, 'label-success', 'label-error'))}" value="{!IF(cell.computedAmount != 0, cell.sComputedAmount, '')}{!IF(cell.isProgress, '%', '')}" />
+                                                    
+                                                    <apex:outputText rendered="{!cell.isGlobalTotal && cell.computedRate != null}" styleClass="output-compute-amount-field {!IF(!cell.isGlobalTotal, '', IF(cell.computedRate > 0, 'label-success', 'label-error'))}">
+                                                        <br/>
+                                                        {!cell.sComputedRate}
+                                                    </apex:outputText>
+                                                    <apex:actionRegion >
+                                                        <apex:commandLink value="multi year" action="{!showPopup}" rerender="multiYearSecurePanel"
+                                                                          rendered="{!!line.isSubTotal && !line.isGlobalTotal && cell.isForSimulation}"
+                                                                          status="globalloading">
+                                                            <apex:param name="popupName" value="multiYearSecurePopup" assignTo="{!popupName}" />
+                                                            <apex:param name="lineKey" value="{!line.lineId}" assignTo="{!lineKey}" />
+                                                            <apex:param name="condIndex" value="{!cell.key}" assignTo="{!cellKey}"/>
+                                                        </apex:commandLink>
+                                                        <!-- For popup multi year secure -->
+                                                        <apex:outputPanel id="multiYearSecurePanel">
+                                                            <apex:outputPanel styleClass="overlay" layout="block" rendered="{!displayPopUpMultiYearSecure}">
+                                                                <apex:outputPanel styleClass="popup2" style="width: 50%;" layout="block" rendered="{!displayPopUpMultiYearSecure}">
+                                                                    <apex:pageBlock title="{!line.lineId}">
+                                                                        <apex:pageBlockSection collapsible="false" columns="2">
+                                                                            <apex:inputField value="{!cell.conditionWrapper.condition.Value_per_Y1__c}" rendered="{!(cell.secureYearValue == '2 years' || cell.secureYearValue == '3 years') && line.enablePercentage && !isReadApproval}"/>
+                                                                            <apex:inputField value="{!cell.conditionWrapper.condition.Value_amt_Y1__c}" rendered="{!(cell.secureYearValue == '2 years' || cell.secureYearValue == '3 years') && line.enableAmount && !isReadApproval}"/>
+                                                                            <apex:inputField value="{!cell.conditionWrapper.condition.Value_per_Y2__c}" rendered="{!cell.secureYearValue == '3 years' && line.enablePercentage && !isReadApproval}"/>
+                                                                            <apex:inputField value="{!cell.conditionWrapper.condition.Value_amt_Y2__c}" rendered="{!cell.secureYearValue == '3 years' && line.enableAmount && !isReadApproval}"/>
+                                                                            
+                                                                            <apex:outputField value="{!cell.conditionWrapper.condition.Value_per_Y1__c}" rendered="{!isReadApproval}"/>
+                                                                            <apex:outputField value="{!cell.conditionWrapper.condition.Value_amt_Y1__c}" rendered="{!isReadApproval}"/>
+                                                                            <apex:outputField value="{!cell.conditionWrapper.condition.Value_per_Y2__c}" rendered="{!isReadApproval}"/>
+                                                                            <apex:outputField value="{!cell.conditionWrapper.condition.Value_amt_Y2__c}" rendered="{!isReadApproval}"/>
+                                                                        </apex:pageBlockSection>
+                                                                        <apex:pageBlockButtons location="bottom">
+                                                                            <apex:commandButton value="{!$Label.OK}" action="{!closePopup}" rerender="conditionTablePanel,calculate-field-panel,multiYearSecurePanel" status="globalloading">
+                                                                                <apex:param name="popupName" value="multiYearSecurePopup" assignTo="{!popupName}"/>
+                                                                            </apex:commandButton>
+                                                                        </apex:pageBlockButtons>
+                                                                    </apex:pageBlock>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </apex:actionRegion>
+                                                </td>
+                                                <apex:variable var="tabindex" value="{!tabindex + 3}"/>
+                                            </apex:repeat>
+                                            <td>
+                                                <apex:commandButton styleClass="btn-del" value=" x " rendered="{!line.isSubTotal == false && line.isGlobalTotal == false && isReadApproval == false}" action="{!deleteCondition}" reRender="conditionTablePanel, messages, indexManagementPanel, calculate-field-panel" status="topLeftStatus">
+                                                    <apex:param name="selectedLineNumber" value="{!line.numLine}" assignTo="{!selectedLineNumber}" />
+                                                </apex:commandButton>
+                                            </td>
+                                        </tr>
+                                    </apex:repeat>
+                                </table>
+                            </div>
+
+                            <div id="btn-add-contract">
+                                <apex:commandButton action="{!addContract}" disabled="{!isReadApproval}" value="{!$Label.AddContract}" id="btnAddContract" reRender="conditionTablePanel,messages,calculate-field-panel, indexManagementPanel" status="addContractStatus" />
+                                &nbsp;
+                                <apex:actionStatus id="addContractStatus" >
+                                    <apex:facet name="start" >
+                                        <img src="/img/loading.gif" />
+                                    </apex:facet>
+                                </apex:actionStatus>
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel ><i class="fa fa-bookmark"></i> {!$Label.LBL_Conditions_not_default_negoscope}</apex:outputPanel>
+                        <apex:outputPanel ><i class="fa fa-home"></i> Conditions not diffused at Country level.</apex:outputPanel>
+                        <!-- For popup slabs -->
+                        <apex:outputPanel id="displayPopUpSlabs">
+                            <apex:outputPanel styleClass="overlay" layout="block" rendered="{!displayPopUpSlabs}">
+                                <apex:outputPanel styleClass="popup2 slab-popup" style="width: 30%;" layout="block" rendered="{!displayPopUpSlabs}">
+                                    <apex:pageBlock title="{!lineKey}">
+
+                                        <apex:pageBlockSection columns="2">
+                                            <apex:inputField rendered="{!!matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly}" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition.slab_calc_method__c}" />
+                                            <apex:inputField rendered="{!!matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly}" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition.Slab_Calc_Method_TO_Origin__c}" />
+                                        </apex:pageBlockSection>
+
+                                        <apex:pageBlockSection columns="5" id="pageBlockSlab">
+                                            <apex:outputText styleClass="slab-header" style="width:10px" value="{!$Label.LBL_No}" />
+                                            <apex:outputText styleClass="slab-header" value="{!$Label.LBL_Threshold}" />
+                                            <apex:outputText styleClass="slab-header" value="{!$Label.LBL_Percentage}" />
+                                            <apex:outputText styleClass="slab-header" value="{!$Label.LBL_Amount}" />
+                                            <apex:outputText styleClass="slab-header" value="{!$Label.LBL_Target}" />
+                                            <apex:repeat value="{!slabs}" var="ndx">
+                                                <apex:outputText value="{!ndx}" />
+                                                <apex:outputField label="" rendered="{!matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly}" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition['Slab_' & TEXT(ndx) & '__c']}" style="width:100px" />
+                                                <apex:inputField label="" rendered="{!!matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly}" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition['Slab_' & TEXT(ndx) & '__c']}" style="width:100px" />
+                                                <apex:outputField label="" rendered="{!matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly}" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition['slab_per_' & TEXT(ndx) & '__c']}" style="width:100px" />
+                                                <apex:inputField label="" rendered="{!!matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly}" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition['slab_per_' & TEXT(ndx) & '__c']}" style="width:100px" />
+                                                <apex:outputField label="" rendered="{!matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly}" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition['Slab_Val_' & TEXT(ndx) & '__c']}" style="width:100px" />
+                                                <apex:inputField label="" rendered="{!!matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly}" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition['Slab_Val_' & TEXT(ndx) & '__c']}" style="width:100px" />
+                                                <input style="{!IF(matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly, 'display: none', '')}" type="radio" onclick="setTargetSlab(this.value);" name="slabTargetRadio" value="{!ndx}" />
+                                                <i style="{!IF(matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly && matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition.slab_target__c == ndx, 'display: inline', 'display: none')}" class="fa fa-check" />
+                                            </apex:repeat>
+                                        </apex:pageBlockSection>
+                                        <apex:inputHidden id="slabTargetHidden" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition.slab_target__c}"/>
+                                        <apex:pageBlockButtons location="bottom">
+                                            <apex:commandButton rendered="{!!matrice.linesTable[lineIndex].cells[cellIndex].isReadOnly}" value="{!$Label.OK}" action="{!closePopup}" rerender="conditionTablePanel,displayPopUpSlabs,calculate-field-panel" status="globalloading">
+                                                <apex:param name="popupName" value="slabsPopup" assignTo="{!popupName}"/>
+                                            </apex:commandButton>
+                                            <apex:commandButton value="{!$Label.Cancel}" action="{!closePopup}" rerender="displayPopUpSlabs" status="globalloading">
+                                                <apex:param name="popupName" value="cancelSlabsPopup" assignTo="{!popupName}"/>
+                                            </apex:commandButton> 
+                                        </apex:pageBlockButtons>
+                                        <apex:variable var="conditionTarget" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition.slab_target__c}" />
+                                        <script type="text/javascript">
+                                        	triggerSlabRadio({!conditionTarget})
+                                        </script>
+                                    </apex:pageBlock>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                        <!-- For popup condition details -->
+                        <apex:outputPanel id="conditionDetailsPanel">
+                            <apex:outputPanel styleClass="overlay" layout="block" rendered="{!displayPopUpConditionDetails}">
+                                <apex:outputPanel styleClass="popup2" style="width: 50%;" layout="block" rendered="{!displayPopUpConditionDetails}">
+                                    <apex:pageBlock title="{!matrice.linesTable[lineIndex].lineLabel}">
+                                        <apex:pageBlockSection collapsible="false" columns="2">
+                                            <apex:pageBlockSection title="{!matrice.columns[0].contract.Name}" collapsible="false" columns="1">
+                                                <apex:outputField value="{!matrice.linesTable[lineIndex].cells[0].conditionWrapper.condition.Product_Scope__c}" />
+                                                <apex:outputField value="{!matrice.linesTable[lineIndex].cells[0].conditionWrapper.condition.BU_Scope__c}" />
+                                                <apex:outputField value="{!matrice.linesTable[lineIndex].cells[0].conditionWrapper.condition.Base_TO_Nego__c}" />
+                                                <apex:outputField value="{!matrice.linesTable[lineIndex].cells[0].conditionWrapper.condition.Disc_BDate__c}" />
+                                                <apex:outputField value="{!matrice.linesTable[lineIndex].cells[0].conditionWrapper.condition.Disc_EDate__c}" />
+                                            </apex:pageBlockSection>
+                                            <apex:pageBlockSection title="{!matrice.columns[cellIndex].contract.Name}" collapsible="false" columns="1">
+                                                <apex:variable var="condition" value="{!matrice.linesTable[lineIndex].cells[cellIndex].conditionWrapper.condition}"/>
+                                                <apex:inputField label="" id="NS" value="{!condition.Product_Scope__c}" rendered="{!condition.Reference_condition__c == null && !isReadApproval}"/>
+                                                <apex:outputField value="{!condition.Product_Scope__c}" rendered="{!condition.Reference_condition__c != null || isReadApproval}"/>
+                                                <apex:inputField label="" value="{!condition.BU_Scope__c}" rendered="{!condition.Reference_condition__c == null && !isReadApproval}"/>
+                                                <apex:outputField value="{!condition.BU_Scope__c}" rendered="{!condition.Reference_condition__c != null || isReadApproval}"/>
+                                                <apex:inputField label="" value="{!condition.Base_TO_Nego__c}" rendered="{!!isReadApproval}"/>
+                                                <apex:inputField label="" value="{!condition.Disc_BDate__c}" rendered="{!!isReadApproval}"/>
+                                                <apex:inputField label="" value="{!condition.Disc_EDate__c}" rendered="{!!isReadApproval}"/>
+                                                
+                                                <apex:outputField value="{!condition.BU_Scope__c}" rendered="{!isReadApproval}"/>
+                                                <apex:outputField value="{!condition.Base_TO_Nego__c}" rendered="{!isReadApproval}"/>
+                                                <apex:outputField value="{!condition.Disc_BDate__c}" rendered="{!isReadApproval}"/>
+                                                <apex:outputField value="{!condition.Disc_EDate__c}" rendered="{!isReadApproval}"/>
+                                            </apex:pageBlockSection>
+                                        </apex:pageBlockSection>
+                                        <apex:pageBlockButtons location="bottom">
+                                            <apex:commandButton value="{!$Label.OK}" action="{!closePopup}" rerender="conditionTablePanel,calculate-field-panel,conditionDetailsPanel" status="globalloading">
+                                                <apex:param name="popupName" value="conditionDetailsPopup" assignTo="{!popupName}"/>
+                                            </apex:commandButton>
+                                        </apex:pageBlockButtons>
+                                    </apex:pageBlock>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                <!-- Nego Plan -->
+                <apex:outputPanel id="negoPlanPanel" >
+                    <apex:actionRegion id="negoPlanRegion">
+                        <apex:pageBlockSection id="brief" title="Brief" columns="2" rendered="{!showConditionTable == true}">
+                            <apex:inputField value="{!negoPlan.NEGO_MOM_RDV1__c}" style="width:90%;height: 90px;"/>
+                            <apex:inputField value="{!negoPlan.NEGO_MOM_RDV2__c}" style="width:90%;height: 90px;"/>
+                            <apex:inputField value="{!negoPlan.NEGO_MOM_RDV3__c}" style="width:90%;height: 90px;"/>
+                            <apex:inputField value="{!negoPlan.NEGO_Keynote_Marketing_Plan__c}" style="width:90%;height: 90px;"/>
+                        </apex:pageBlockSection>
+                    </apex:actionRegion>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockButtons rendered="{!errors.size == 0}" location="top">
+                <apex:outputPanel id="top-nego-buttons">
+                    <!-- <apex:commandButton action="{!saveContracts}" value="Save contracts" id="btnSaveContracts" status="saveContractsStatus" reRender="negoContractForm_ScreenCondition" /> -->
+                    <apex:commandButton action="{!computeAmount}" value="{!$Label.Calculate}" disabled="{!isReadApproval}" reRender="indexManagementPanel,conditionTablePanel,calculate-field-panel" status="globalloading" style="display:none"/>
+                    <apex:commandButton action="{!saveContracts}" value="{!$Label.SaveContracts}" disabled="{!isReadApproval}" id="btnSaveContracts" status="saveContractsStatus"  style="display:none" />
+                    <!--apex:commandButton action="{!showPopup}" value="{!$Label.LBL_Executive_Summary}" rerender="executiveSummaryPanel,messages" oncomplete="calculateDispatching()" status="globalloading"  style="display:none">
+                        <apex:param name="popupName" value="openPopUpExecutiveSummary" assignTo="{!popupName}"/>
+                    </apex:commandButton-->
+                    <apex:commandButton action="{!ExecutiveSummary}" value="{!$Label.LBL_Executive_Summary} (new)">
+                    </apex:commandButton>
+                    &nbsp;
+                    <apex:actionStatus id="saveContractsStatus" >
+                        <apex:facet name="start" >
+                            <img src="/img/loading.gif" />
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputPanel>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+        <apex:actionStatus id="globalloading">
+            <apex:facet name="start">
+                <div class="loading-overlay">
+                    <div class="loader-img"></div>
+                    <div class="loading-block">
+                        {!$Label.Loading}
+                    </div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        
+        <!-- Action Function -->
+        <apex:actionFunction name="computeAmount" action="{!computeAmount}" reRender="indexManagementPanel,conditionTablePanel,calculate-field-panel" status="globalloading"/>
+        
+        <!-- SCRIPT -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    	<script src="{!URLFOR($Resource.Assets, 'assets/js/app.js') }"></script>
+		<script src="{!URLFOR($Resource.Assets, 'assets/js/Nego360_Main_Edit.js') }"></script>
+        <script>
+            var elementFocus = null;
+            negoptimApp = new App('{!locale}', '{!localeDecimalSeparator}');
+        </script>
+        
+        <apex:outputPanel id="calculate-field-panel">
+            <script>
+            init({!IF(refTO != null, refTO, 0)})
+            /*$(document).ready(function() {
+                $("input").focus(function () {
+                    $(this).select();
+                });
+                
+                $("input").keypress(function(e){
+                    if(e.keyCode==13) {
+                        elementFocus = document.activeElement;
+                        computeAmount();
+                    }
+                    return e.keyCode!==13;
+                });
+                
+                if(elementFocus != null) {
+                    document.getElementById('' + elementFocus.id).focus();
+                }
+                
+            });
+            function toggleCheckboxes(cb, id) {
+                $("input:checkbox[id*="+id+"]").prop("checked", false); 
+                $(cb).prop("checked", true);
+            }
+            var refTO = {!IF(refTO != null, refTO, 0)};
+            $(document).on("change", ".input-field-purchase", function() {
+                var val = negoptimApp.stringToDecimal($(this).val());
+                if(refTO != 0) {
+                    var res = (((val - refTO) / refTO) * 100).toFixed(2);
+                    var html = '<span ';
+                    if(res < 0) {
+                        html += 'style="color:red;">';
+                    }
+                    else {
+                        html += 'style="color:green;">';
+                    }
+                    html += res + '%</span>';
+                	$(this).next().html(html);
+                }
+            });
+            $(".input-field-purchase").trigger('change');
+            function stringToDecimal(str) {
+                var d = str.toString().replace(/\s/g, "").replace(/,/g, "");
+                if (!isNaN(d) && d.length !== 0)
+                    return parseFloat(d);
+                return 0;
+            }*/
+            // function onEnter(e) {
+            //   alert(e.keyCode);
+            //   if (e.keyCode == 13) {
+            //     return true;
+            //   } 
+            // }
+            var e = document.getElementById($("[id$='indexManagementBlockSection']")[0].id).getElementsByTagName('img')[0];
+            if(e.className == 'hideListButton')
+               twistSection(e);
+            
+            function setTargetSlab(n) {
+                $("[id*='slabTargetHidden']").first().val(n);
+            }
+            function triggerSlabRadio(value) {
+                $('input:radio[name="slabTargetRadio"]').filter('[value="'+value+'"]').trigger('click')
+            }
+            </script>
+            <script type="text/javascript">
+            // override lookup for negoscope
+            // http://blog.jeffdouglas.com/2011/08/12/roll-your-own-salesforce-lookup-popup-window/
+            function openLookup(baseURL, width, modified, searchParam) {
+                var originalbaseURL = baseURL;
+                var originalwidth = width;
+                var originalmodified = modified;
+                var originalsearchParam = searchParam;
+                
+                var lookupType = baseURL.substr(baseURL.length - 3, 3);
+                if (modified == '1') baseURL = baseURL + searchParam;
+                
+                var isCustomLookup = false;
+                
+                var urlArr = baseURL.split("&");
+                var txtId = '';
+                
+                if (urlArr.length > 2) {
+                    urlArr = urlArr[1].split('=');
+                    txtId = urlArr[1];
+                }
+                
+                if (lookupType != '' && txtId.indexOf('NS') > -1) {
+                    
+                    // Following is the url of Custom Lookup page. You need to change that accordingly
+                    baseURL = "/apex/CustomNSLookup?txt=" + txtId + "&case=productscope";
+                    // Following is the id of apex:form control "myForm". You need to change that accordingly
+                    baseURL = baseURL + "&frm=" + escapeUTF("{!$Component.myForm}");
+                    if (modified == '1') {
+                        baseURL = baseURL + "&lksearch=" + searchParam + "&suppId={!supplier.Id}&negoId={!selectedNegoScopeId}";
+                    }
+                    isCustomLookup = true;
+                }
+                
+                if (isCustomLookup == true) {
+                    openPopup(baseURL, "lookup", 350, 480, "width=" + width + ",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+                } else {
+                    if (modified == '1') originalbaseURL = originalbaseURL + originalsearchParam;
+                    openPopup(originalbaseURL, "lookup", 350, 480, "width=" + originalwidth + ",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+                }
+            }
+        	</script>
+        </apex:outputPanel>
+		
+        
+        <!-- STYLES -->
+        <style>
+        .loading-overlay {
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 10000;
+        }
+        
+        .loading-block {
+            top: -50%;
+            left: 50%;
+            background: rgba(255, 255, 255, 1);
+            position: absolute;
+            width: 400px;
+            margin-left: -200px;
+            margin-right: auto;
+            z-index: 11000;
+        }
+        
+        #conditionTable {
+            border-spacing: 0px 5px;
+            background-color: rgba(255, 255, 255, 1);
+            border-radius: 10px;
+        }
+        
+        .input-field-purchase {
+            width: 60%;
+            float: left;
+        }
+        
+        td, th {
+            /*padding-top: 3px;*/
+            /*padding-bottom: 3px;*/
+        }
+        
+        th {
+            text-align: center;
+        }
+                
+        .type-field {
+            width: 180px;
+            background: #d5f7ec;
+            line-height: 22px;
+        }
+        
+        .amount-field {
+            /*border-left: 1px solid gray !important;*/
+            /*padding-left: 10px;*/
+        }
+        
+        .percent-field {
+            padding-left: 10px;
+        }
+        
+        .label-field {
+            border-left: 1px solid gray !important;
+         }
+         
+        .first-header th:nth-child(n+3) {
+            /*background-color: Gainsboro;*/
+            background-color: #d5f7ec;
+            padding: 5px;
+            border: 1px solid black;
+            vertical-align: middle;
+        }
+        
+        .third-header {
+            font-style: italic;
+        }
+        
+            /*      .subtotal-amount-field, .globaltotal-amount-field {
+            border-left: none !important;
+            }*/
+        .subtotal-percent-field, .globaltotal-percent-field {
+            border-left: none !important;
+        }
+        
+        .old-amount-field, .amount-field, .percent-field, .input-percent-field,
+            .input-amount-field {
+            width: 70px;
+        }
+        
+        .input-percent-field, .input-amount-field, .input-field-purchase {
+            text-align: right;
+        }
+        .output-percent-field, .output-compute-amount-field  {
+            display: block;
+            margin-right: 2px;
+    	}
+        .percent-field, .amount-field {
+            text-align: right;
+        }
+        
+        .compute-amount-field {
+            text-align: right;
+        }
+        
+        .subtotal-percent-field, .subtotal-amount-field, .subtotal-type-field {
+            /*background-color: Antiquewhite;*/
+            background-color: #e0ecf7;
+        }
+        
+        .globaltotal-percent-field, .globaltotal-amount-field, .globaltotal-type-field {
+            background-color: rgba(247, 246, 198, 0.81);
+        }
+        
+        .label-success {
+            color: green;
+        }
+        .label-error {
+            color: red;
+        }
+            
+        #condition-table-left-part, #btn-add-contract {
+            display: inline-block;
+        }
+        
+        #btn-add-contract {
+            vertical-align: top;
+        }
+        
+        .btn-add-condition {
+            margin-top: -5px !important;
+            border: solid 1px #638a00 !important;
+            border-radius: 3px !important;
+            moz-border-radius: 3px !important;
+            -webkit-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.4) !important;
+            -moz-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.4) !important;
+            box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.4) !important;
+            font-size: 14px !important;
+            color: #ffffff !important;
+            padding: 1px 4px !important;
+            background: #96c300 !important;
+            background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #96c300),
+                color-stop(100%, #648c00)) !important;
+            background: -moz-linear-gradient(top, #96c300 0%, #648c00 100%)
+                !important;
+            background: -webkit-linear-gradient(top, #96c300 0%, #648c00 100%)
+                !important;
+            background: -o-linear-gradient(top, #96c300 0%, #648c00 100%) !important;
+            background: -ms-linear-gradient(top, #96c300 0%, #648c00 100%)
+                !important;
+            background: linear-gradient(top, #96c300 0%, #648c00 100%) !important;
+            filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#96c300',
+                endColorstr='#648c00', GradientType=0) !important;
+        }
+        
+        .btn-del {
+            border: solid 0px #000000 !important;
+            border-radius: 5px !important;
+            moz-border-radius: 5px !important;
+            font-size: 14px !important;
+            color: #ffffff !important;
+            padding: 1px 4px !important;
+            background: #ff8c00 !important;
+            background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #ff8c00),
+                color-stop(100%, #ff3503)) !important;
+            background: -moz-linear-gradient(top, #ff8c00 0%, #ff3503 100%)
+                !important;
+            background: -webkit-linear-gradient(top, #ff8c00 0%, #ff3503 100%)
+                !important;
+            background: -o-linear-gradient(top, #ff8c00 0%, #ff3503 100%) !important;
+            background: -ms-linear-gradient(top, #ff8c00 0%, #ff3503 100%)
+                !important;
+            background: linear-gradient(top, #ff8c00 0%, #ff3503 100%) !important;
+            filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ff8c00',
+                endColorstr='#ff3503', GradientType=0) !important;
+        }
+        
+        .overlay {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            transition: opacity 500ms;
+            z-index: 1000;
+            visibility: visible;
+            opacity: 1;
+            overflow: auto;
+        }
+        
+        .popup2 {
+            margin: 15% auto;
+            padding: 5px;
+            background: #fff;
+            border: 2px solid black;
+            width: 30%;
+            position: relative;
+            transition: all 5s ease-in-out;
+        }
+        
+        .popup2 h2 {
+            margin-top: 0;
+            color: #333;
+            font-family: Tahoma, Arial, sans-serif;
+        }
+        
+        .popup2 .close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            transition: all 200ms;
+            font-size: 30px;
+            font-weight: bold;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .popup2 .close:hover {
+            color: #06D85F;
+        }
+        
+        .popup2 .content {
+            max-height: 30%;
+            overflow: auto;
+        }
+        .slab-popup .slab-header {
+            font-weight:bold;
+        }
+        .slab-popup .pbBottomButtons .pbTitle{
+        	display: none;
+        }
+        .slab-popup .pbBottomButtons .pbButtonb{
+        	text-align: center;
+        }
+            
+        .datePicker {
+            z-index: 100000;
+        }
+        @media screen and (max-width: 700px) {
+            .box {
+                width: 70%;
+            }
+            .popup {
+                width: 70%;
+            }
+        }
+        
+        .hidden-table-header {
+            display: none;
+        }
+        </style>
+
+        
+    </apex:form>
+    
+</apex:page>

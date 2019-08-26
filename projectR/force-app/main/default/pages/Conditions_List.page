@@ -1,0 +1,2192 @@
+<apex:page controller="ConditionsList" id="thePage"
+	tabStyle="Conditions__tab" lightningStylesheets="true">
+	<!-- Add static resources to page's <head> -->
+	<!--<apex:stylesheet value="{!URLFOR($Resource.fontawesome, 'css/font-awesome.min.css') }" />-->
+
+	<link rel="stylesheet"
+		href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css"></link>
+	<script
+		src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js">
+	</script>
+  	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/i18n/jquery-ui-i18n.min.js">
+	</script>
+
+	<script src="{!URLFOR($Resource.typeahead, 'typeahead.js')}" />
+	<apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }" />
+	<script src="{!URLFOR($Resource.Assets, 'assets/js/app.js') }"></script>
+
+	<script>
+        var locale = "{!locale}";
+        function getLocale(str) {
+	        var res = str.replace("_", "-");
+	        if(res.indexOf('_') != -1) {
+	        	res = res.split('_')[0];
+	        }
+	        return res;
+        }
+        function currencyFormat(number,decimalPlaces){
+             
+            var currLocale = getLocale(locale);
+            var num = parseFloat(number);
+            var formatedNumber = new Number(num.toFixed(decimalPlaces)).toLocaleString(currLocale, {
+                style: "decimal",
+                maximumFractionDigits:decimalPlaces
+            });
+            return formatedNumber;
+        }
+        
+        // variable used to check if there are a contract selected
+        var contract = false;
+        // Get the prefix/namespace 
+        var prefix = "{!prefix}";
+        //var ns = "{!$ObjectType.Sup_Supplier__c.Name}";
+        function chooseContract(cb) {
+            enableDisable(cb);
+            contract = true;
+        }
+        function enableDisable(cb) {
+            $("input:checkbox[id*=looped]").prop("checked", false); 
+            $(cb).prop("checked", true);
+        }
+        function setTargetSlab(n) {
+            $("[id*='slabTargetHidden']").first().val(n);
+        }
+        function triggerSlabRadio(value) {
+            $('input:radio[name="slabTargetRadio"]').filter('[value="'+value+'"]').trigger('click')
+        }
+    
+    </script>
+
+	<apex:outputPanel id="pageMessage">
+		<apex:pageMessages id="messagesSearch" />
+	</apex:outputPanel>
+
+	<apex:sectionHeader title="{!$ObjectType.Contract_Discount__c.Label}" subtitle="{!$Label.LBL_Manage}" />
+	<apex:form id="theForm">
+		<apex:actionRegion id="searchRegion">
+			<apex:pageBlock id="SearchPageBlock">
+				<apex:pageBlockSection title="Search Supplier NegoScope" columns="1">
+					<apex:pageBlockSectionItem >
+						<apex:outputLabel value="{!$Label.LBL_SelectYear}"
+							for="field__year" />
+						<apex:selectList value="{!selectedNegoYear}" id="field__year"
+							multiselect="false" size="1" label="{!$Label.LBL_SelectYear}"
+							required="true">
+							<apex:actionSupport event="onchange" action="{!showPopup2}"
+								rerender="tstpopup2,pageBL,conInfo,errors,SearchSection,conName, conBdate, conEdate, Status, NS" />
+							<apex:selectOptions value="{!listYears}" />
+						</apex:selectList>
+					</apex:pageBlockSectionItem>
+					<apex:pageBlockSectionItem >
+						<apex:outputLabel value="{!$Label.LBL_Supplier}"
+							for="field__supplier" />
+						<apex:inputText styleClass="supplier" id="field__supplier"
+							html-placeholder="{!$Label.LBL_EnterCodeOrName}"
+							label="{!$Label.SelectSupplier}" required="true" />
+					</apex:pageBlockSectionItem>
+
+					<!-- <apex:commandButton Id="btnSearch1" action="{!runSearchContract}" 
+                        rerender="renderBlock,errors,SearchSection" status="status" title="Search" 
+                        value="Search"> <apex:param name="test1" value="id"/> </apex:commandButton> -->
+
+					<!-- </apex:pageBlockSection> <apex:pageBlockButtons > -->
+					<!-- <apex:commandButton value="{!$Label.OK}" action="{!goToConditionScreen}" 
+                        /> -->
+
+					<apex:pageBlockSectionItem >
+
+						<apex:outputPanel id="conInfo">
+							<apex:outputText rendered="{!displayInfo}"
+								styleClass="contract-labels span-bold"
+								value="{!$Label.LBL_NegoScope}:" />
+							<span class="contract-labels"> <apex:outputLink rendered="{!displayInfo}" id="NS"
+									value="/{!contract.Supplier_Nego_Scope__r.Id}" target="_blank">
+									<apex:outputText value="{!contract.Supplier_Nego_Scope__r.Name}" />
+								</apex:outputLink> <!--<apex:outputField rendered="{!displayInfo}" id="NS"
+                                value="{!contract.Supplier_Nego_Scope__r.Name}" />-->
+							</span>
+                        &nbsp;&nbsp;
+                        <apex:outputText rendered="{!displayInfo}"
+								styleClass="contract-labels span-bold"
+								value="{!$Label.LBL_ContractName}:" />
+							<span class="contract-labels"> <apex:outputLink rendered="{!displayInfo}" id="conName" value="/{!contract.Id}"
+									target="_blank">
+									<apex:outputText value="{!contract.Name}" />
+								</apex:outputLink> <!--<apex:outputField rendered="{!displayInfo}" id="conName"
+                                              value="{!contract.Name}" />-->
+							</span>
+                        &nbsp;&nbsp;
+                        <apex:outputText rendered="{!displayInfo}"
+								styleClass="contract-labels span-bold"
+								value="{!$Label.LBL_BeginDate}:" />
+							<span class="contract-labels"> <apex:outputField rendered="{!displayInfo}" id="conBdate"
+									value="{!contract.Contract_BDate__c}" />
+							</span>
+                        &nbsp;&nbsp;
+                        <apex:outputText rendered="{!displayInfo}"
+								styleClass="contract-labels span-bold"
+								value="{!$Label.LBL_EndDate}:" />
+							<span class="contract-labels"> <apex:outputField rendered="{!displayInfo}" id="conEdate"
+									value="{!contract.Contract_EDate__c}" />
+							</span>
+                        &nbsp;&nbsp;
+                        <apex:outputText rendered="{!displayInfo}"
+								styleClass="contract-labels span-bold"
+								value="{!$Label.LBL_Status}:" />
+							<span class="contract-labels"> <apex:outputField rendered="{!displayInfo}" id="Status"
+									value="{!contract.Status__c}" />
+							</span>
+
+							<!-- <apex:outputText rendered="{!displayInfo}" style="position:relative; 
+                            display: inline-block; top:15px;" value="Nego Scope:"/> &nbsp; <span style="position:relative; 
+                            display: inline-block; top:15px;font-size:9px;"> <apex:outputField rendered="{!displayInfo}" 
+                            id="NS" value="{!contract.Supplier_Nego_Scope__r.Name}"/> </span> &nbsp;&nbsp;&nbsp; 
+                            <apex:outputText rendered="{!displayInfo}" style="position:relative; display: 
+                            block; top:0px;" value="Contract Name:"/> &nbsp; <span style="position:relative; 
+                            display: block; top:0px;"> <apex:outputField rendered="{!displayInfo}" id="conName" 
+                            value="{!contract.Name}"/> </span> &nbsp;&nbsp;&nbsp; <br/> <apex:outputText 
+                            rendered="{!displayInfo}" style="position:relative; display: inline-block; 
+                            top:10px;" value="Begin date:"/> &nbsp; <span style="position:relative; display: 
+                            inline-block; top:10px;"><apex:outputField rendered="{!displayInfo}" id="conBdate" 
+                            value="{!contract.Contract_BDate__c}" /> </span>&nbsp;&nbsp;&nbsp; <br/> 
+                            <apex:outputText rendered="{!displayInfo}" style="position:relative; display: 
+                            inline-block; top:20px;" value="End date:"/> &nbsp; <span style="position:relative; 
+                            display: inline-block; top:20px;"><apex:outputField rendered="{!displayInfo}" 
+                            id="conEdate" value="{!contract.Contract_EDate__c}" /> </span>&nbsp;&nbsp;&nbsp; 
+                            <br/> <apex:outputText rendered="{!displayInfo}" style="position:relative; 
+                            display: inline-block; top:15px;" value="Status:"/> &nbsp; <span style="position:relative; 
+                            display: inline-block; top:15px;"><apex:outputField rendered="{!displayInfo}" 
+                            id="Status" value="{!contract.Status__c}" /> </span> -->
+							<apex:commandButton id="btnSearch1" action="{!showPopup2}"
+								rerender="tstpopup2,pageBL,pageMessage,conInfo,errors,SearchSection,conName, conBdate, conEdate, Status, NS"
+								rendered="{!displayInfo}" title="{!$Label.Search}"
+								value="Change Nego Scope" status="globalloading" />
+							<!-- <apex:commandButton id="btnSearch1" action="{!showPopup2}" rerender="tstpopup2,pageBL,conInfo,errors,SearchSection,conName, 
+                            conBdate, conEdate, Status, NS" onclick="resetContract()" title="{!$Label.Search}" 
+                            value="{!$Label.Search}" style="position:relative; display: inline-block; 
+                            top:15px;" /> -->
+						</apex:outputPanel>
+					</apex:pageBlockSectionItem>
+				</apex:pageBlockSection>
+
+				<!-- Popup Contracts list -->
+                <apex:outputPanel id="tstpopup2">
+                    <apex:outputPanel styleClass="overlay" layout="block" rendered="{!displayPopUp2}">
+                        <apex:outputPanel styleClass="popup2" style="width: 70%;" layout="block" rendered="{!displayPopUp2}">
+                            <apex:pageBlock title="Contracts List">
+                                <apex:pageBlockTable value="{!wContractNLst}" var="con"
+                                                     id="contractTable2" rowClasses="odd,even" border="1"
+                                                     columnsWidth="0%,10%,25%,10%,25%,12%,0%,0%">
+                                    <apex:column >
+                                        <apex:inputCheckbox id="looped" selected="{!con.selContract}"
+                                                            required="true" onclick="chooseContract(this)" />
+                                    </apex:column>
+                                    <apex:column headervalue="{!$ObjectType.Sup_sup_NegoScope__c.fields.NS_Code__c.Label}">
+                                        <apex:outputText value="{!con.NS.NS_Code__c}" />
+                                    </apex:column>
+                                    <apex:column headervalue="{!$ObjectType.Sup_sup_NegoScope__c.fields.Name.Label}">
+                                        <apex:outputText value="{!con.NS_Name}" />
+                                    </apex:column>
+                                    <apex:column headervalue="{!$ObjectType.Contract__c.fields.Contract_Numbder__c.Label}">
+                                        <apex:outputText value="{!con.contract.Contract_Numbder__c}" />
+                                    </apex:column>
+                                    <apex:column headervalue="{!$ObjectType.Contract__c.fields.Name.Label}">
+                                        <apex:outputField value="{!con.contract.name}" />
+                                    </apex:column>
+                                    <apex:column headervalue="{!$ObjectType.Contract__c.fields.Status__c.Label}">
+                                        <apex:outputField value="{!con.contract.Status__c}" />
+                                    </apex:column>
+                                    <apex:column headervalue="{!$ObjectType.Contract__c.fields.Contract_BDate__c.Label}">
+                                        <apex:outputField value="{!con.contract.Contract_BDate__c}"
+                                                          rendered="{!Text(con.contract.Contract_BDate__c) != ''}" />
+                                    </apex:column>
+                                    <apex:column headervalue="{!$ObjectType.Contract__c.fields.Contract_EDate__c.Label}">
+                                        <apex:outputField value="{!con.contract.Contract_EDate__c}"
+                                                          rendered="{!Text(con.contract.Contract_EDate__c) != ''}" />
+                                    </apex:column>
+                                </apex:pageBlockTable>
+                                <apex:pageBlockButtons >
+                                    <apex:commandButton value="{!$Label.OK}" action="{!closePopup2}"
+                                                        rendered="{!If(selectedSupplierId == null || wContractNLst.empty, false, true)}"
+                                                        rerender="tstpopup2,pageBL,pageMessage,conInfo,errors,SearchSection,conName,conBdate, conEdate, Status, NS"
+                                                        oncomplete="setDateRange('{!wDiscList.size}', '{!contractBeginYear}', '{!contractBeginMonth}', '{!contractBeginDay}', '{!contractEndYear}', '{!contractEndMonth}', '{!contractEndDay}')"
+                                                        status="globalloading" />
+                                    <apex:commandButton value="{!$Label.Cancel}"
+                                                        action="{!cancelPopup2}" oncomplete="resetSelection()"
+                                                        rerender="tstpopup2,pageBL,pageMessage,conInfo,errors,SearchSection,conName, conBdate, conEdate, Status, NS"
+                                                        status="globalloading" />
+                                </apex:pageBlockButtons>
+                            </apex:pageBlock>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:pageBlock>
+			<!--<apex:actionFunction name="selectContract" action="{!closePopup2}" 
+                oncomplete="setDateRange('{!wDiscList.size}', '{!contractBeginYear}', '{!contractBeginMonth}', 
+                '{!contractBeginDay}', '{!contractEndYear}', '{!contractEndMonth}', '{!contractEndDay}')" 
+                rerender="tstpopup2,pageMessage,pageBL,conInfo,errors,SearchSection,conName, 
+                conBdate, conEdate, Status, NS"> </apex:actionFunction> -->
+			<apex:actionFunction name="selectSupplier" action="{!showPopup2}"
+				rerender="tstpopup2,pageBL,conInfo,errors,SearchSection,conName, conBdate, conEdate, Status, NS"
+				onbeforedomupdate="beforeUpdate()" oncomplete="onComplete()">
+				<apex:param name="supplierId" assignTo="{!selectedSupplierId}"
+					value="" />
+			</apex:actionFunction>
+		</apex:actionRegion>
+        
+        <apex:actionRegion id="resultRegion">
+            <apex:outputPanel id="pageBL">
+                <apex:pageBlock id="thePageBlock" rendered="{!displayInfo}">
+                    
+                    <!--<apex:actionStatus id="status" startText="Searching... please wait..."/> -->
+                    
+                    <!--<apex:outputPanel id="renderBlock"> -->
+                    <apex:pageBlocksection id="renderBlock" columns="1">
+                        
+						<apex:pageBlockTable value="{!wDiscList}" var="currentWrapperDiscount" id="theTable"
+							border="1" style="min-width: 2000px;">
+
+							<!-- <apex:column > <apex:facet name="header">Name Id</apex:facet> 
+                                <apex:inputField value="{!currentWrapperDiscount.discount.name}"/> </apex:column> -->
+
+							<!-- <apex:column > <apex:facet name="header">Type</apex:facet> <apex:inputField value="{!currentWrapperDiscount.discount.Condition_type__r.Nego_Type__c}"/> </apex:column> -->
+
+							<apex:column >
+								<apex:inputCheckbox value="{!currentWrapperDiscount.isSelected}"
+									rendered="{!currentWrapperDiscount.discount.Id != NULL}" />
+							</apex:column>
+
+							<apex:column styleClass="lookupTariffType">
+								<apex:facet name="header">{!$Label.LBL_Type}</apex:facet>
+								<apex:inputField value="{!currentWrapperDiscount.discount.Nego_Discount_Type__c}" />
+							</apex:column>
+
+							<apex:column styleClass="lookupTariff" >
+								<apex:facet name="header">{!$Label.LBL_Name}</apex:facet>
+								<apex:inputField value="{!currentWrapperDiscount.discount.Condition_Type__c}" id="tariffName">
+									<apex:actionSupport action="{!recalc_slabs}" event="onchange"
+										rerender="TEST, Col_Slab, Col_Amount, Col_Percentage">
+										<!--<apex:param assignto="{!conditiontype}" name="condition" value=" 
+                                            {!currentWrapperDiscount.discount.Condition_Type__c}"/> -->
+										<apex:param value="{!currentWrapperDiscount.index}" assignto="{!indexno}"
+											name="indexno" />
+									</apex:actionSupport>
+								</apex:inputField>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.commercial_reference__c.Label}</apex:facet>
+								<apex:inputField value="{!currentWrapperDiscount.discount.commercial_reference__c}"
+									style="width:100px;height:14px" />
+							</apex:column>
+
+							<apex:column id="BeginDate">
+								<apex:facet name="header">{!$Label.LBL_BeginDate}</apex:facet>
+								<apex:inputField id="BeginDateInput" styleClass="datepicker"
+									value="{!currentWrapperDiscount.discount.Disc_BDate__c}" showDatePicker="false" />
+							</apex:column>
+
+							<apex:column id="EndDate">
+								<apex:facet name="header">{!$Label.LBL_EndDate}</apex:facet>
+								<apex:inputField id="EndDateInput" styleClass="datepicker"
+									value="{!currentWrapperDiscount.discount.Disc_EDate__c}" showDatePicker="false" />
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Minimum_Guarantee__c.Label}</apex:facet>
+								<apex:inputField value="{!currentWrapperDiscount.discount.Minimum_Guarantee__c}"
+									style="width:50px;" />
+							</apex:column>
+
+							<apex:column >
+								<apex:facet name="header">{!$Label.LBL_Amount}</apex:facet>
+								<apex:outputpanel id="Col_Amount">
+									<apex:inputField style="width: 50px;" styleClass="amount"
+										rendered="{!currentWrapperDiscount.enableAmount == true}"
+										value="{!currentWrapperDiscount.discount.Value_amt__c}" />
+									<apex:commandLink value="{!$Label.LBL_Distribute}"
+										style="{!IF(currentWrapperDiscount.discount.Value_amt__c == NULL || currentWrapperDiscount.discount.Value_amt__c == 0, 'display:none;','')}"
+										action="{!showPopup}"
+										rerender="distributeAmountPanel,pageMessage"
+										rendered="{! currentWrapperDiscount.enableAmount == true}"
+										oncomplete="calculateDispatching('{!currentWrapperDiscount.discount.id}')"
+										status="globalloading">
+										<apex:param name="condIndex" value="{!currentWrapperDiscount.index}"
+											assignTo="{!condIndexno}" />
+										<apex:param name="popupName" value="distributeAmountPopup"
+											assignTo="{!popupName}" />
+									</apex:commandLink>
+								</apex:outputpanel>
+							</apex:column>
+
+							<apex:column style="text-align: center;">
+								<apex:facet name="header">%</apex:facet>
+								<apex:outputpanel id="Col_Percentage">
+									<apex:inputField style="width: 45px;"
+										rendered="{!currentWrapperDiscount.enablePercentage == true}"
+										value="{!currentWrapperDiscount.discount.Value_per__c}" />
+								</apex:outputpanel>
+							</apex:column>
+
+							<apex:column >
+                                <apex:outputpanel id="Col_Slab">
+                                    <apex:actionRegion >
+                                        <apex:commandLink value="{!$Label.LBL_Slabs}"
+                                                          action="{!showPopup}" rerender="tstpopup"
+                                                          rendered="{!currentWrapperDiscount.isConditional}" oncomplete="triggerSlabRadio({!currentWrapperDiscount.discount.slab_target__c})" status="globalloading">
+                                            <apex:param name="condIndex" value="{!currentWrapperDiscount.index}"
+                                                        assignTo="{!condIndexno}" />
+                                        </apex:commandLink>
+                                    </apex:actionRegion>
+                                </apex:outputpanel>
+                            </apex:column>
+
+							<apex:column >
+								<apex:facet name="header">{!$Label.LBL_ProductScope}</apex:facet>
+								<!-- <apex:commandLink value="Scope article" action="{!showNegoScope}"> 
+                                    <apex:param name="condId" value="{!currentWrapperDiscount.index}" assignTo="{!condId}"/> </apex:commandLink> -->
+								<apex:outputpanel id="Col_Product">
+									<apex:actionRegion >
+										<apex:commandLink value="{!currentWrapperDiscount.nameNS}"
+											action="{!showPopup3}" rerender="tstpopup3"
+											status="globalloading">
+											<apex:param name="condIndex2" value="{!currentWrapperDiscount.index}"
+												assignTo="{!condIndexno}" />
+											<!-- <apex:param name="condIndex" value="{!currentWrapperDiscount.index}" assignTo="{!slabIndexno}"/> -->
+										</apex:commandLink>
+
+										<apex:outputPanel id="tstpopup3">
+                                            <apex:outputPanel styleClass="overlay" layout="block" rendered="{!displayPopUp3}">
+                                                <apex:outputPanel styleClass="popup2" style="width: 40%;" layout="block" rendered="{!displayPopUp3}">
+												<apex:pageBlock title="Choose Product Scope">
+                                                    <apex:pageBlockSection columns="1">
+                                                        <apex:outputField label="Full Nego Scope =" value="{!contract.Supplier_Nego_Scope__r.Name}" />
+                                                    </apex:pageBlockSection>
+                                                    <apex:pageBlockTable value="{!wNSLst}" var="NS"
+                                                                         id="NSTable" border="1">
+                                                        <apex:column >
+                                                            <apex:facet name="header">{!$Label.LBL_Choice}</apex:facet>
+                                                            <apex:inputCheckbox id="looped" selected="{!NS.selNS}"
+                                                                                onclick="enableDisable(this)" />
+                                                            <!--<apex:outputText value="{!NS.selNS}"/> -->
+                                                        </apex:column>
+                                                        <apex:column >
+                                                            <apex:facet name="header">{!$Label.LBL_ScopeName}</apex:facet>
+                                                            <div class="requiredInput">
+                                                                <div class="requiredBlock"></div>
+                                                                <apex:inputText label="{!$Label.LBL_ScopeName}"
+                                                                                value="{!NS.nameNS}" required="true" />
+                                                            </div>
+                                                        </apex:column>
+                                                        <!-- <apex:column > <apex:facet name="header">Index</apex:facet> 
+															 <apex:inputText value="{!NS.index}"/> </apex:column> -->
+                                                        <!-- Brand column -->
+                                                        <apex:column >
+                                                            <apex:facet name="header">{!$Label.LBL_IncludedBrands}</apex:facet>
+                                                            <apex:outputpanel id="Col_Brand">
+                                                                <apex:actionRegion >
+                                                                    <apex:commandLink value="{!NS.lstShortBrands}"
+                                                                                      title="{!NS.lstBrands}" action="{!showPopup4}"
+                                                                                      rerender="tstpopup4">
+                                                                        <!-- <apex:param name="NSId" value="{!NS.cNS.Id}" assignTo="{!NSid}"/> -->
+                                                                        <apex:param name="NSIndexno" value="{!NS.index}"
+                                                                                    assignTo="{!NSIndexno}" />
+                                                                    </apex:commandLink>
+                                                                    <apex:outputPanel id="tstpopup4">
+                                                                        <apex:outputPanel styleClass="popupBackground2"
+                                                                                          layout="block" rendered="{!displayPopUp4}" />
+                                                                        <apex:outputPanel styleClass="custPopup2"
+                                                                                          layout="block" rendered="{!displayPopUp4}">
+                                                                            <apex:pageBlock >
+                                                                                
+                                                                                <apex:outputPanel >
+                                                                                    <apex:pageBlockTable value="{!NS.wNSBrandLst}"
+                                                                                                         var="brand" id="NSBrandTable"
+                                                                                                         rowClasses="odd,even" styleClass="tableClass"
+                                                                                                         border="1">
+                                                                                        <apex:column >
+                                                                                            <apex:facet name="header">{!$Label.LBL_Selected}</apex:facet>
+                                                                                            <apex:inputCheckbox id="looped"
+                                                                                                                disabled="{!brand.disSelNSBrand}"
+                                                                                                                selected="{!brand.selNSBrand}" />
+                                                                                            <!-- <apex:inputCheckbox id="looped" disabled="true" 
+selected="{!brand.selNSBrand}"/> -->
+                                                                                        </apex:column>
+                                                                                        <apex:column >
+                                                                                            <apex:facet name="header">{!$Label.LBL_BrandName}</apex:facet>
+                                                                                            <apex:outputfield value="{!brand.NSBrand.Sup_Scope_Brand__r.Name}" />
+                                                                                        </apex:column>
+                                                                                    </apex:pageBlockTable>
+                                                                                </apex:outputPanel>
+                                                                                <br />
+                                                                                <apex:commandButton value="{!$Label.OK}"
+                                                                                                    action="{!closePopup4}"
+                                                                                                    rerender="tstpopup4,Col_Brand">
+                                                                                    <apex:param name="NSIndex" value="{!NS.index}"
+                                                                                                assignTo="{!NSIndexno}" />
+                                                                                </apex:commandButton>
+                                                                            </apex:pageBlock>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </apex:actionRegion>
+                                                            </apex:outputpanel>
+                                                        </apex:column>
+                                                        <!-- HE column -->
+                                                        <apex:column >
+                                                            <apex:facet name="header">{!$Label.LBL_StructureScope}</apex:facet>
+                                                            <apex:outputpanel id="Col_Struct">
+                                                                <apex:actionRegion >
+                                                                    <apex:commandLink value="{!NS.lstShortStruct}"
+                                                                                      title="{!NS.lstStruct}" action="{!showPopup5}"
+                                                                                      rerender="tstpopup5">
+                                                                        <apex:param name="NSIndexno" value="{!NS.index}"
+                                                                                    assignTo="{!NSIndexno}" />
+                                                                        <!-- <apex:param name="NSIndex" value="{!NS.cNS.Id}" assignTo="{!NSid}"/> -->
+                                                                    </apex:commandLink>
+                                                                    
+                                                                    <apex:outputPanel id="tstpopup5">
+                                                                        <apex:outputPanel styleClass="popupBackground2"
+                                                                                          layout="block" rendered="{!displayPopUp5}" />
+                                                                        <apex:outputPanel styleClass="custPopup2"
+                                                                                          layout="block" rendered="{!displayPopUp5}">
+                                                                            <apex:pageBlock >
+                                                                                <apex:outputPanel >
+                                                                                    <apex:pageBlockTable value="{!wNSStructLst}"
+                                                                                                         var="struct" id="NSStructTable"
+                                                                                                         rowClasses="odd,even" styleClass="tableClass"
+                                                                                                         border="1">
+                                                                                        <apex:column >
+                                                                                            <apex:facet name="header">{!$Label.LBL_ElementName}</apex:facet>
+                                                                                            <apex:outputfield value="{!struct.NSStruct.Name}" />
+                                                                                        </apex:column>
+                                                                                        <apex:column >
+                                                                                            <apex:facet name="header">{!$Label.LBL_Choice}</apex:facet>
+                                                                                            <apex:outputtext value="{!struct.Choice}" />
+                                                                                            <!-- <apex:inputCheckbox id="looped" disabled="true" selected="{!brand.selNSBrand}"/> -->
+                                                                                        </apex:column>
+                                                                                        
+                                                                                    </apex:pageBlockTable>
+                                                                                </apex:outputPanel>
+                                                                                <br />
+                                                                                <apex:commandButton value="{!$Label.OK}"
+                                                                                                    action="{!closePopup5}"
+                                                                                                    rerender="tstpopup5,Col_Product">
+                                                                                    <!-- <apex:param name="condIndex" value="{!currentWrapperDiscount.index}" assignTo="{!condIndexno}"/> -->
+                                                                                </apex:commandButton>
+                                                                            </apex:pageBlock>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </apex:actionRegion>
+                                                            </apex:outputpanel>
+                                                        </apex:column>
+                                                        <!-- Product Group column -->
+                                                        <apex:column >
+                                                            <apex:facet name="header">{!$Label.LBL_ProductGroup}</apex:facet>
+                                                            <apex:outputpanel id="Col_Group">
+                                                                <apex:actionRegion >
+                                                                    <apex:commandLink value="{!NS.lstShortGroup}"
+                                                                                      title="{!NS.lstGroup}" action="{!showPopup6}"
+                                                                                      rerender="tstpopup6">
+                                                                        <apex:param name="NSIndexno" value="{!NS.index}"
+                                                                                    assignTo="{!NSIndexno}" />
+                                                                    </apex:commandLink>
+                                                                    <apex:outputPanel id="tstpopup6">
+                                                                        <apex:outputPanel styleClass="popupBackground2"
+                                                                                          layout="block" rendered="{!displayPopUp6}" />
+                                                                        <apex:outputPanel styleClass="custPopup2"
+                                                                                          layout="block" rendered="{!displayPopUp6}">
+                                                                            <apex:pageBlock >
+                                                                                <apex:outputPanel >
+                                                                                    <apex:pageBlockTable value="{!wNSProductGroupLst}"
+                                                                                                         var="pgroup" id="NSStructTable"
+                                                                                                         rowClasses="odd,even" styleClass="tableClass"
+                                                                                                         border="1">
+                                                                                        <apex:column >
+                                                                                            <apex:facet name="header">{!$Label.LBL_ProductGroupName}</apex:facet>
+                                                                                            <apex:outputfield value="{!pgroup.NSProductGroup.Name}" />
+                                                                                        </apex:column>
+                                                                                    </apex:pageBlockTable>
+                                                                                </apex:outputPanel>
+                                                                                <br />
+                                                                                <apex:commandButton value="{!$Label.OK}"
+                                                                                                    action="{!closePopup6}"
+                                                                                                    rerender="tstpopup6,Col_Group">
+                                                                                    <!-- <apex:param name="condIndex" value="{!currentWrapperDiscount.index}" assignTo="{!condIndexno}"/> -->
+                                                                                </apex:commandButton>
+                                                                            </apex:pageBlock>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </apex:actionRegion>
+                                                            </apex:outputpanel>
+                                                        </apex:column>
+                                                    </apex:pageBlockTable>
+                                                    <apex:pageBlockButtons >
+                                                        <apex:commandButton value="{!$Label.OK}"
+                                                                            action="{!closePopup3}"
+                                                                            rerender="tstpopup3,Col_Product,pageMessage"
+                                                                            status="globalloading">
+                                                            <apex:param name="condIndex" value="{!currentWrapperDiscount.index}"
+                                                                        assignTo="{!condIndexno}" />
+                                                        </apex:commandButton>
+                                                        <!-- TODO: Hide button temporary to fix the functionalities -->
+                                                        <!-- <apex:commandButton value="{!$Label.LBL_AddNegoScope}" 
+															action="{!addNewNS}" rerender="tstpopup3" Status="status" immediate="true" /> -->
+                                                    </apex:pageBlockButtons>
+												</apex:pageBlock>
+                                                </apex:outputPanel>
+                                            </apex:outputpanel>
+                                        </apex:outputpanel>
+									</apex:actionRegion>
+								</apex:outputpanel>
+							</apex:column>
+
+							<apex:column >
+								<apex:facet name="header">{!$Label.LBL_EntityScope}</apex:facet>
+								<apex:inputField value="{!currentWrapperDiscount.discount.BU_Scope__c}" />
+							</apex:column>
+
+							<apex:column style="text-align:center;">
+								<apex:facet name="header">{!$Label.LBL_Valid}</apex:facet>
+								<apex:outputPanel id="pnlValid">
+									<!--<apex:image id="imgValid" value="/img/permissions_confirm16.gif" 
+                                        onclick="changeValid(this,{!currentWrapperDiscount.discount.valid__c})"/> -->
+									<apex:image id="idImage1" value="/img/permissions_deny16.gif"
+										rendered="{!IF(!currentWrapperDiscount.discount.Valid__c,true,false)}"
+										onclick="callchangeValid('{!currentWrapperDiscount.index}')" />
+									<apex:image id="idImage2"
+										value="/img/permissions_confirm16.gif"
+										rendered="{!IF(!currentWrapperDiscount.discount.Valid__c,false,true)}"
+										onClick="callchangeValid('{!currentWrapperDiscount.index}')" />
+									<!--<apex:inputField value="{!currentWrapperDiscount.discount.Value_per__c}"/> -->
+								</apex:outputPanel>
+							</apex:column>
+
+
+							<apex:column style="text-align: center;">
+								<apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Invoice_period__c.Label}</apex:facet>
+								<apex:inputField value="{!currentWrapperDiscount.discount.Invoice_period__c}" />
+							</apex:column>
+							<apex:column style="text-align: center;">
+								<apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Invoicing_plan_generated__c.Label}</apex:facet>
+								<apex:inputField value="{!currentWrapperDiscount.discount.Invoicing_plan_generated__c}" />
+							</apex:column>
+							<apex:column style="text-align: center;">
+								<apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Is_Prenego_Envelop__c.Label}</apex:facet>
+								<apex:inputField value="{!currentWrapperDiscount.discount.Is_Prenego_Envelop__c}" />
+							</apex:column>
+
+
+							<apex:column >
+								<apex:commandLink value="{!$Label.LBL_More}..."
+									action="{!showConditionForm}"
+									rendered="{!currentWrapperDiscount.discount.Id != NULL}">
+									<apex:param name="condId" value="{!currentWrapperDiscount.index}"
+										assignTo="{!condId}" />
+								</apex:commandLink>
+							</apex:column>
+
+
+						</apex:pageBlockTable>
+						
+<script type="text/javascript">
+var conditionType = '';
+$(document).ready(function() {
+
+    $(".lookupTariff .lookupInput a").click(function() {
+        var CurrentElement = $(this).parent().parent().parent().find('td.lookupTariffType');
+        conditionType = CurrentElement.find('select').val();
+    });
+
+});
+// override lookup for tarrif conidtion 
+// http://blog.jeffdouglas.com/2011/08/12/roll-your-own-salesforce-lookup-popup-window/
+function openLookup(baseURL, width, modified, searchParam) {
+    var originalbaseURL = baseURL;
+    var originalwidth = width;
+    var originalmodified = modified;
+    var originalsearchParam = searchParam;
+
+    var lookupType = baseURL.substr(baseURL.length - 3, 3);
+    if (modified == '1') baseURL = baseURL + searchParam;
+
+    var isCustomLookup = false;
+    var urlArr = baseURL.split("&");
+    var txtId = '';
+
+    if (urlArr.length > 2) {
+        urlArr = urlArr[1].split('=');
+        txtId = urlArr[1];
+    }
+    // Following the lookup type to be not empty for Contract_Discount__c object so change this as per your standard or custom object
+    // and check lookup field based on id value 
+    // Following is the ID of inputField that is the lookup to be customized as custom lookup
+
+    if (lookupType != '' && txtId.indexOf('tariffName') > -1) {
+        // Following is the url of Custom Lookup page. You need to change that accordingly
+        baseURL = "/apex/CustomTariffConditionLookup?txt=" + txtId + "&case=tarifflookup";
+        // Following is the id of apex:form control "myForm". You need to change that accordingly
+        baseURL = baseURL + "&frm=" + escapeUTF("{!$Component.myForm}");
+        if (modified == '1') {
+            baseURL = baseURL + "&lksearch=" + searchParam + "&buId={!contract.Contract_BU__c}&conditionType=" + conditionType;
+        }
+
+        isCustomLookup = true;
+    }
+
+    if (isCustomLookup == true) {
+        openPopup(baseURL, "lookup", 350, 480, "width=" + width + ",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+    } else {
+        if (modified == '1') originalbaseURL = originalbaseURL + originalsearchParam;
+        openPopup(originalbaseURL, "lookup", 350, 480, "width=" + originalwidth + ",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+    }
+}
+</script>
+					</apex:pageBlocksection>
+					<!--</apex:outputPanel> -->
+					<apex:actionFunction name="callchangeValid" status="globalloading"
+						action="{!changeValid}" rerender="pnlValid">
+						<apex:param name="condId" value="" assignTo="{!condId}" />
+					</apex:actionFunction>
+					<apex:actionFunction name="distributeAmount" action="{!closePopup}"
+						rerender="distributeAmountPanel" status="globalloading">
+						<apex:param name="condIndex" value="" assignTo="{!condIndexno}" />
+						<apex:param name="popupName" value="distributeAmountPopup"
+							assignTo="{!popupName}" />
+					</apex:actionFunction>
+                    &nbsp;&nbsp;&nbsp;
+                    <apex:commandButton value="{!$Label.LBL_AddDiscount}" action="{!addNewRowToDiscList}"
+						rerender="pageBL,pageMessage" Status="status" immediate="true"
+						status="globalloading"
+						oncomplete="setDateRange('{!wDiscList.size}', '{!contractBeginYear}', '{!contractBeginMonth}', '{!contractBeginDay}', '{!contractEndYear}', '{!contractEndMonth}', '{!contractEndDay}')">
+					</apex:commandButton>
+
+					<apex:pageBlockButtons >
+						<!-- <apex:actionRegion > -->
+						<apex:commandButton value="{!$Label.Save}"
+							action="{!SaveMultipleDiscounts}" status="globalloading" />
+						<apex:commandButton value="{!$Label.Delete}"
+							action="{!DeleteMultipleDiscounts}" reRender="pageMessage,pageBL" />
+						<!-- </apex:actionRegion> -->
+						<apex:commandButton action="{!calculateYTD}"
+							value="{!$Label.Calculate}" reRender="pageMessage"
+							status="globalloading" />
+						<apex:commandButton action="{!generateInvoice}"
+							value="{!$Label.LBL_GenerateInvoice}" reRender="pageMessage"
+							status="globalloading" />
+						<apex:commandButton action="{!dispatching}"
+							value="{!$Label.LBL_Dispatch}" reRender="pageMessage"
+							status="globalloading" />
+						<apex:commandButton action="{!generateGRCRate}"
+							value="{!$Label.LBL_Generate_GRC}" reRender="pageMessage"
+							status="globalloading" />
+					</apex:pageBlockButtons>
+				</apex:pageBlock>
+			</apex:outputPanel>
+            <!-- Slabs popup -->
+            <apex:outputPanel id="tstpopup">
+                <apex:outputPanel styleClass="overlay" layout="block" rendered="{!displayPopUp}">
+                    <apex:outputPanel styleClass="popup2 slab-popup" style="width: 30%;" layout="block" rendered="{!displayPopUp}">
+                        <apex:pageBlock title="{!currentWrapperDiscount.discount.Condition_type__r.Name}" >
+                            <apex:pageBlockSection columns="2">
+                                <apex:inputField value="{!currentWrapperDiscount.discount.slab_calc_method__c}" />
+                                <apex:inputField value="{!currentWrapperDiscount.discount.Slab_Calc_Method_TO_Origin__c}" />
+                            </apex:pageBlockSection>
+                            
+                            <apex:pageBlockSection columns="5" id="pageBlockSlab">
+                                <apex:outputText styleClass="slab-header" style="width:10px" value="{!$Label.LBL_No}" />
+                                <apex:outputText styleClass="slab-header" value="{!$Label.LBL_Threshold}" />
+                                <apex:outputText styleClass="slab-header" value="{!$Label.LBL_Percentage}" />
+                                <apex:outputText styleClass="slab-header" value="{!$Label.LBL_Amount}" />
+                                <apex:outputText styleClass="slab-header" value="{!$Label.LBL_Target}" />
+                                
+                                <apex:repeat value="{!slabs}" var="ndx">
+                                    <apex:outputText value="{!ndx}" />
+                                    <apex:inputField value="{!currentWrapperDiscount.discount['Slab_' & TEXT(ndx) & '__c']}" label="" style="width:100px" />
+                                    <apex:inputField value="{!currentWrapperDiscount.discount['slab_per_' & TEXT(ndx) & '__c']}" label="" style="width:100px" />
+                                    <apex:inputField value="{!currentWrapperDiscount.discount['Slab_Val_' & TEXT(ndx) & '__c']}" label="" style="width:100px" />
+                                    <input type="radio" onclick="setTargetSlab(this.value);" name="slabTargetRadio" value="{!ndx}" />
+                                </apex:repeat>
+                            </apex:pageBlockSection>
+                            <apex:inputHidden id="slabTargetHidden" value="{!currentWrapperDiscount.discount.slab_target__c}"/>
+                            <apex:pageBlockButtons location="bottom">
+                                <apex:commandButton value="{!$Label.OK}"
+                                                    action="{!closePopup}" rerender="tstpopup,Col_Percentage"
+                                                    status="globalloading">
+                                    <apex:param name="condIndex" value="{!currentWrapperDiscount.index}"
+                                                assignTo="{!condIndexno}" />
+                                    <apex:param name="popupName" value="slabPopup" assignTo="{!popupName}" />
+                                </apex:commandButton>
+                            </apex:pageBlockButtons>
+                        </apex:pageBlock>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <!-- Distribute popup -->
+            <apex:outputPanel id="distributeAmountPanel">
+                <apex:outputPanel styleClass="overlay" layout="block" rendered="{!displayPopUpAmount}">
+                    <apex:outputPanel styleClass="popup2" style="width: 90%;"
+                                      layout="block" rendered="{!displayPopUpAmount}">
+                        <apex:pageMessages id="invDataMsg" />
+                        <apex:pageBlock title="{!$Label.LBL_Dispatch_Condition_Amount}">
+                            <script>
+                            currencyFormat();
+                            countNumberOfapprovedChecks();
+                            ////preventStringsInput();
+                            
+                            var conditionBMonth = '{!discountBeginMonth}';
+                            var conditionEMonth = '{!discountEndMonth}';
+                            var conditionYear = '{!discountYear}';
+                            
+                            // Return today's date and time
+                            var currentTime = new Date()
+                            var month = currentTime.getMonth() + 1
+                            var monthStart = 0;
+                            
+                            $("input.dispatch-amount").prop('disabled', true);
+                            $("input.dispatch-amount-key").prop('disabled', true);
+                            $("input.dispatch-amount-approved").prop('disabled', false);
+                            
+                            if(month > conditionBMonth){
+                                monthStart = month;
+                            }else{
+                                if(month < conditionBMonth){
+                                    monthStart = conditionBMonth;
+                                }else{
+                                    monthStart = month;
+                                }
+                            }
+                            
+                            if (conditionYear == currentTime.getFullYear()) {
+                                for(var i = monthStart ; i<= conditionEMonth ;i++){
+                                    $("input.dispatch-amount-key-"+i).prop('disabled', false);
+                                    $("input.dispatch-amount-"+i).prop('disabled', false);
+                                }
+                            } else {
+                                $(".btn-run-dispatch").prop('disabled', true);
+                                $(".btn-upload-wizard").prop('disabled', true);
+                            }
+                            
+                            // click on autodistirbute
+                            $(document).on("click", "#btn-run-dispatch", function(event) {
+                                $("input.dispatch-amount").prop('disabled', true);
+                                // enable check box approve
+                                $("input.dispatch-amount-approved").prop('disabled', false);
+                                $("input.dispatch-amount-key").prop('disabled', true);
+                                
+                                event.preventDefault();
+                                
+                                //clearDispatching();
+                                
+                                var selectedYear = '{!selectedNegoYear}';
+                                var conditionBMonth = '{!discountBeginMonth}';
+                                var conditionEMonth = '{!discountEndMonth}';
+                                
+                                // Return today's date and time
+                                var currentTime = new Date()
+                                var month = currentTime.getMonth() + 1
+                                var year = currentTime.getFullYear();
+                                
+                                
+                                if(selectedYear == year){
+                                    conditionBMonth = parseInt(conditionBMonth);
+                                    conditionEMonth = parseInt(conditionEMonth);
+                                    
+                                    if(month > conditionBMonth){
+                                        monthStart = month;
+                                    }else{
+                                        if(month < conditionBMonth){
+                                            monthStart = conditionBMonth;
+                                        }else{
+                                            monthStart = month;
+                                        }
+                                    }   
+                                    
+                                    autoDistributeMonths(monthStart, conditionEMonth);
+                                    calculateDispatching();
+                                }
+                                
+                                
+                            });
+                            
+                            calculateDispatching();
+                            
+                            </script>
+                            <apex:pageBlockSection collapsible="false" columns="1">
+                                <apex:outputPanel >
+                                    <table class="amount-wrapper" width="100%">
+                                        <tr>
+                                            <td><apex:outputText value="{!$Label.LBL_Total_Amount}: "
+                                                                 style="font-weight:bold" />
+                                                <apex:outputText styleClass="amount" style="display:none"
+                                                                 value="{!currentWrapperDiscount.discount.Value_amt__c}" />
+                                                <apex:outputText id="displayamount" styleClass="displayamount"
+                                                                 value="{!currentWrapperDiscount.discount.Value_amt__c}" /></td>
+                                            <td><apex:outputText value="{!$Label.LBL_Remaining_Amount}: "
+                                                                 style="font-weight:bold" />
+                                                <apex:outputText id="Remaining_Amount" style="display:none"
+                                                                 styleClass="remaining"
+                                                                 value="{!currentWrapperDiscount.discount.Value_amt__c}" />
+                                                <apex:outputText id="Display_Remaining_Amount"
+                                                                 styleClass="displayremaining"
+                                                                 value="{!currentWrapperDiscount.discount.Value_amt__c}" /></td>
+                                        </tr>
+                                    </table>
+                                    <apex:outputPanel id="displayWizardPopup">
+                                        <apex:outputPanel styleClass="popupBackground"
+                                                          layout="block" rendered="{!displayWizardPopup}" />
+                                        <apex:outputPanel styleClass="custPopup" layout="block"
+                                                          rendered="{!displayWizardPopup}">
+                                            <apex:pageBlock title="File">
+                                                <apex:outputPanel id="txtStep1" styleClass="txtStep1">
+                                                    <apex:pageBlockSection title="Step 1: Export Table" collapsible="false" columns="2">
+                                                        <apex:commandButton Id="DownCSV"
+                                                                            styleClass="DownCSV" value="Download as CSV"
+                                                                            action="{!export}"
+                                                                            rerender="distributeAmountPanel, displayWizardPopup"
+                                                                            onClick="showStep2()">
+                                                            <apex:param name="type" value="isCSV"
+                                                                        assignTo="{!fileType}" />
+                                                        </apex:commandButton>
+                                                        <!-- 
+<apex:commandButton Id="DownExcel" styleClass="DownExcel" value="Download as Excel"
+action="{!export}" rerender="distributeAmountPanel, displayWizardPopup"
+onClick="showStep2()" style="display: none;">
+<apex:param name="type" value="isExcel" assignTo="{!fileType}" />
+</apex:commandButton>
+-->
+                                                    </apex:pageBlockSection>
+                                                </apex:outputPanel>
+                                                <apex:outputPanel id="txtStep2" styleClass="txtStep2">
+                                                    <apex:pageBlockSection title="Step 2: Import Data (CSV)" collapsible="false" columns="2">
+                                                        <div id="uploadBox" class="uploadBox">
+                                                            <input id="filesInput" type="file" accept=".csv"
+                                                                   value="{!attachment.body}"
+                                                                   name="{!attachment.name}" />
+                                                        </div>
+                                                    </apex:pageBlockSection>
+                                                </apex:outputPanel>
+                                                <apex:outputPanel id="txtStep3" styleClass="txtStep3">
+                                                    <apex:pageBlockSection title="Step 3" collapsible="false" columns="1">
+                                                        <apex:outputPanel >
+                                                            <apex:outputText value="File uploaded successfully. Do you want to map data to the table?" />
+                                                        </apex:outputPanel>
+                                                    </apex:pageBlockSection>
+                                                </apex:outputPanel>
+                                                <apex:facet name="footer">
+                                                    <apex:outputPanel >
+                                                        <apex:commandButton id="btnCancel" value="Cancel"
+                                                                            rendered="{!showCancelButton}"
+                                                                            rerender="distributeAmountPanel"
+                                                                            oncomplete="calculateDispatching('{!currentWrapperDiscount.discount.id}')"
+                                                                            status="globalloading" action="{!submitCancel}" />
+                                                        <apex:commandButton id="btnNext"
+                                                                            styleClass="btnNext" value="Next"
+                                                                            rendered="{!showNextButton}"
+                                                                            rerender="distributeAmountPanel, displayWizardPopup"
+                                                                            onComplete="showStep2()" status="globalloading" />
+                                                        <apex:commandButton id="btnLoad"
+                                                                            styleClass="btnLoad" value="Map & Close"
+                                                                            action="{!importCSV}"
+                                                                            rerender="distributeAmountPanel"
+                                                                            oncomplete="calculateDispatching('{!currentWrapperDiscount.discount.id}')"
+                                                                            status="globalloading" />
+                                                        <apex:commandButton id="uploadButton"
+                                                                            styleClass="uploadButton" value="Next"
+                                                                            rerender="BCD" onclick="prepareFileUploads()"
+                                                                            status="globalloading" />
+                                                    </apex:outputPanel>
+                                                </apex:facet>
+                                                <div id="BCD" style="display: none">
+                                                    <apex:inputText id="ABC" styleClass="myInput"
+                                                                    value="{!attachmentId}" />
+                                                </div>
+                                            </apex:pageBlock>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                </apex:outputPanel>
+                                
+                            </apex:pageBlockSection>
+                            <!-- Matrix of Fix amount dispatch -->
+                            <style>
+                                .dispatch-amount, .dispatch-amount-key {
+                                text-align: right !important;
+                                }
+                                
+                                .dispatching-amount-table .headerRow {
+                                text-align: center !important;
+                                }
+                                
+                                .dispatching-amount-table th:nth-child(1), .dispatching-amount-table th:nth-child(2),
+                                .dispatching-amount-table th:nth-child(3) {
+                                text-align: left !important;
+                                }
+                            </style>
+                            <table class="list global-dispatching-amount-table"
+                                   border="0" cellpadding="0" cellspacing="0">
+                                <colgroup span="14"></colgroup>
+                                <thead class="">
+                                    <tr class="headerRow">
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Business_Unit}</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Section}</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            1</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            2</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            3</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            4</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            5</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            6</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            7</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            8</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            9</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            10</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            11</div></th>
+                                        <th class="headerRow" scope="col" colspan="1"><div>{!$Label.LBL_Month}
+                                            12</div></th>
+                                        <td class="dataCell" colspan="1">{!$Label.LBL_Total}</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="dataRow even first"
+                                        onmouseover="if (window.hiOn){hiOn(this);}"
+                                        onmouseout="if (window.hiOff){hiOff(this);}"
+                                        onblur="if (window.hiOff){hiOff(this);}"
+                                        onfocus="if (window.hiOn){hiOn(this);}">
+                                        <td class="dataCell" colspan="1">{!$Label.LBL_Monthly_Nego_Dispatch}</td>
+                                        <td class="dataCell" colspan="1">{!$Label.LBL_Dispatch_Key}</td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M1__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-1"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M2__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-2"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M3__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-3"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M4__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-4"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M5__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-5"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M6__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-6"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M7__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-7"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M8__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-8"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M9__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-9"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M10__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-10"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M11__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-11"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_disp_M12__c}"
+                                                                                          styleClass="dispatch-amount-key numeric dispatch-amount-key-12"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><span
+                                                                               class="total-row-dispatch-amount-key"></span></td>
+                                    </tr>
+                                    
+                                    <tr class="dataRow even first"
+                                        onmouseover="if (window.hiOn){hiOn(this);}"
+                                        onmouseout="if (window.hiOff){hiOff(this);}"
+                                        onblur="if (window.hiOff){hiOff(this);}"
+                                        onfocus="if (window.hiOn){hiOn(this);}">
+                                        <td class="dataCell" colspan="1" style="width: 98px"></td>
+                                        <td class="dataCell" colspan="1" style="width: 109px">{!$Label.LBL_Contreparties}</td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M1__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M2__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M3__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M4__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M5__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M6__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M7__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M8__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M9__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M10__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M11__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_event_M12__c}"
+                                                                                          styleClass="dispatch-amount" style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"></td>
+                                    </tr>
+                                    
+                                    <tr class="dataRow even first"
+                                        onmouseover="if (window.hiOn){hiOn(this);}"
+                                        onmouseout="if (window.hiOff){hiOff(this);}"
+                                        onblur="if (window.hiOff){hiOff(this);}"
+                                        onfocus="if (window.hiOn){hiOn(this);}">
+                                        <td class="dataCell" colspan="1"></td>
+                                        <td class="dataCell" colspan="1">{!$Label.LBL_Approved}</td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M1__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M2__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M3__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M4__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M5__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M6__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M7__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M8__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M9__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M10__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M11__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><apex:inputField value="{!currentWrapperDiscount.discount.Value_amt_approv_M12__c}"
+                                                                                          styleClass="dispatch-amount dispatch-amount-approved"
+                                                                                          style="width:45px" /></td>
+                                        <td class="dataCell" colspan="1"><span
+                                                                               class="count-approved">0</span></td>
+                                    </tr>
+                                    
+                                </tbody>
+                            </table>
+                            <outputpanel id="matrixDispatchPanel">
+                                <apex:selectRadio value="{!option}">
+                                    <apex:actionSupport event="onchange"
+                                                        rerender="distributeAmountPanel" status="globalloading"
+                                                        action="{!updateAutoDistribute}" />
+                                    <apex:selectOptions value="{!items}" />
+                                </apex:selectRadio>
+                                <!-- Matrix of dispatch details -->
+                                <apex:pageBlockTable styleClass="dispatching-amount-table"
+                                                     value="{!currentWrapperDiscount.distpatchDetailList}" var="item">
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            {!$ObjectType.Inv_BUDispatch_Details__c.fields.Inv_BUDispatch__c.Label}
+                                        </apex:facet>
+                                        <apex:outputLink target="_blank"
+                                                         value="/{!item.distpatchDetail.Inv_BUDispatch__c}">
+                                            <apex:outputText value="{!item.nameBU}"></apex:outputText>
+                                        </apex:outputLink>
+                                        
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            {!$ObjectType.Supplier_PG_Mapping__c.fields.Section__c.Label}
+                                        </apex:facet>
+                                        <apex:outputLink target="_blank"
+                                                         value="/{!item.sectionId}">
+                                            <apex:outputText value="{!item.section}"></apex:outputText>
+                                        </apex:outputLink>
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">  
+                                            
+                                            {!$ObjectType.Inv_BUDispatch_Details__c.fields.PG__c.Label}
+                                            
+                                        </apex:facet>
+                                        <apex:outputLink target="_blank"
+                                                         value="/{!item.distpatchDetail.PG__c }">
+                                            <apex:outputText value="{!item.namePG}"></apex:outputText>
+                                        </apex:outputLink>
+                                        
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M1__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-1"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M2__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-2"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M3__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-3"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M4__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-4"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M5__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-5"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M6__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-6"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M7__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-7"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M8__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-8"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M9__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-9"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M10__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-10"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M11__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-11"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <span class="total-amount-row">0</span>
+                                        </apex:facet>
+                                        <apex:inputField value="{!item.distpatchDetail.Fix_Amount_Dispatch_M12__c}"
+                                                         styleClass="dispatch-amount dispatch-amount-12"
+                                                         style="width:45px" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:outputText styleClass="total-row-dispatch-amount"
+                                                         value="" />
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            {!$Label.LBL_Total_Month}
+                                        </apex:facet>
+                                        <apex:commandLink value="Comments" action="{!showPopup}"
+                                                          rerender="commentsPanel,pageMessage"
+                                                          status="globalloading">
+                                            <apex:param name="dispIndex" value="{!item.rowIndex}"
+                                                        assignTo="{!dispatchIndexno}" />
+                                            <apex:param name="popupName" value="commentPopup"
+                                                        assignTo="{!popupName}" />
+                                        </apex:commandLink>
+                                    </apex:column>
+                                    <!-- Header Generated automatically -->
+                                </apex:pageBlockTable>
+                            </outputpanel>
+                            <!--<apex:outputLink styleClass="btn" value="#" onclick="validateAmountDistribution('{!currentWrapperDiscount.index}');">{!$Label.OK}</apex:outputLink> -->
+                            <apex:pageBlockButtons >
+                                <input type="button" value="{!$Label.OK}" class="btn"
+                                       onclick="validateAmountDistribution('{!currentWrapperDiscount.index}');" />
+                                <apex:commandButton value="{!$Label.Cancel}"
+                                                    action="{!closePopup}" rerender="distributeAmountPanel"
+                                                    status="globalloading">
+                                    <apex:param name="condIndex" value="{!currentWrapperDiscount.index}"
+                                                assignTo="{!condIndexno}" />
+                                    <apex:param name="popupName"
+                                                value="cancelDistributeAmountPopup"
+                                                assignTo="{!popupName}" />
+                                </apex:commandButton>
+                                
+                                <button style="padding: 4px 3px;" id="btn-run-dispatch" class="btn-run-dispatch">
+                                    <apex:outputText value="{!$Label.LBL_Auto_Distribute}" />
+                                </button>
+                                
+                                <apex:commandButton value="Upload Wizard" styleClass="btn-upload-wizard"
+                                                    action="{!uploadWizard}" onComplete="showStep1()"
+                                                    rerender="distributeAmountPanel, displayWizardPopup"
+                                                    status="globalloading">
+                                </apex:commandButton>
+                                
+                            </apex:pageBlockButtons>
+                        </apex:pageBlock>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <!-- comments popup-->
+            <apex:outputPanel id="commentsPanel">
+                <apex:outputPanel styleClass="overlay" layout="block"
+                                  rendered="{!displayPopup}">
+                    <apex:outputPanel styleClass="popup2" style="width: 75%;"
+                                      layout="block" rendered="{!displayPopup}">
+                        <apex:variable var="popupTitle" value="{!wDiscList[condIndexno].distpatchDetailList[dispatchIndexno]}"/>
+                        <apex:pageBlock title="{!popupTitle.nameBU}-{!popupTitle.section}-{!popupTitle.namePG}" mode="edit">
+                            <apex:pageBlockSection showHeader="false" columns="1">
+                                <apex:inputField value="{!currentDispatch.Comment__c}"
+                                                 style="width:97%" />
+                            </apex:pageBlockSection>
+                            <apex:pageBlockSection showHeader="false" columns="2">
+                                <apex:inputField value="{!currentDispatch.Comment_M1__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M2__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M3__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M4__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M5__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M6__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M7__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M8__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M9__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M10__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M11__c}" />
+                                <apex:inputField value="{!currentDispatch.Comment_M12__c}" />
+                            </apex:pageBlockSection>
+                            <apex:pageBlockButtons >
+                                <apex:commandButton value="{!$Label.OK}"
+                                                    action="{!closePopup}" rerender="commentsPanel"
+                                                    status="globalloading">
+                                    <apex:param name="condIndex" value="{!currentWrapperDiscount.index}"
+                                                assignTo="{!condIndexno}" />
+                                    <apex:param name="popupName" value="CommentsPopup"
+                                                assignTo="{!popupName}" />
+                                </apex:commandButton>
+                            </apex:pageBlockButtons>
+                        </apex:pageBlock>
+                        
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:outputPanel>
+		</apex:actionRegion>
+        
+	</apex:form>
+
+	<!-- JAVASCRIPT -->
+	<apex:outputPanel id="jsPanel">
+
+		<script type="text/javascript">
+            $(document).ready(function() {
+                var btnSearchId = '{!$Component.theForm.SearchPageBlock.btnSearch1}';
+                var calculationError = false;
+                //$('input[id="' + btnSearchId + '"]').hide();
+                initTypeaheadSupplier();
+                // load date picker
+                var conditionListSize = '{!wDiscList.size}';
+                if(conditionListSize != null && conditionListSize != '') {
+                    var rowsCount = conditionListSize,
+                        beginYear = '{!contractBeginYear}',
+                        beginMonth = '{!contractBeginMonth}',
+                        beginDay = '{!contractBeginDay}',
+                        endYear = '{!contractEndYear}',
+                        endMonth = '{!contractEndMonth}',
+                        endDay = '{!contractEndDay}';
+                    setDateRange(rowsCount, beginYear, beginMonth, beginDay, endYear, endMonth, endDay);
+                }
+         
+
+            });
+            
+            $(document).on("change", ".dispatch-amount-approved", function(event) {
+                event.preventDefault(); 
+                countNumberOfapprovedChecks();
+            });
+           
+         
+            
+            $(document).on("change", ".dispatch-amount", function() {
+                calculateDispatching(currentConditionId);
+            });
+            $(document).on("change", ".dispatch-amount-key", function() {
+                calculateDispatching(currentConditionId);
+            });
+            $(document).on("change", ".amount", function(event) {
+                activateDistributeLink(event.target);
+            });
+            // Hide/Show 'Distribute' link when Input amount filled
+            function activateDistributeLink(field) {
+                var val = stringToDecimal($(field).val());
+                var anchorElement = $(field).parent().find('a');
+                if (!isNaN(val) && val.length !== 0 && parseFloat(val) != 0) {
+                    $(field).removeClass('error');
+                    anchorElement.show();
+                }
+                else {
+                    $(field).addClass('error');
+                    anchorElement.hide();
+                }
+            }
+            // calculate the sum of the matrix of dispatching amount popup
+            function calculateDispatching(conditionId) {
+                calculationError = false;
+                // calculate the sub totals of each month
+                var $dataRows=$(".dispatching-amount-table tbody tr");
+                var totals = Array.apply(null, Array(12)).map(Number.prototype.valueOf,0);
+                var totalsItem = Array.apply(null, Array(12)).map(Number.prototype.valueOf,0);
+                $dataRows.each(function() {
+          
+                    $(this).find('td .dispatch-amount').each(function(i){
+                        var cell = stringToDecimal($(this).val());
+                        if (!isNaN(cell) && cell.length !== 0) {
+                            totals[i] += parseFloat(cell);
+                        }
+                    });
+                });
+                $(".dispatching-amount-table thead th.headerRow .total-amount-row").each(function(i){
+                        $(this).text(totals[i]);
+                        $(this).text(currencyFormat($(this).text(),0));
+                        var month_amount = parseFloat(stringToDecimal($('.dispatch-amount-key-'+(i+1)).val()));
+                        var total_row = totals[i];
+                    	
+                        if(total_row > month_amount){
+                            $('.dispatch-amount-key-'+(i+1)).addClass('error');
+                            calculationError = true;
+                        }
+                        else {
+                            if($('.dispatch-amount-key-'+(i+1)).hasClass('error')) {
+                               $('.dispatch-amount-key-'+(i+1)).removeClass('error');
+                               calculationError = false;
+                            }
+                        }
+                        
+                });
+                   // calculate the sub total of each row in the first table 
+                $('.global-dispatching-amount-table tr').each(function () {
+                    //the value of sum needs to be reset for each row, so it has to be set inside the row loop
+                    var sum = 0
+                    //find the dispatch-amount elements in the current row and sum it 
+                    $(this).find('td .dispatch-amount-key').each(function () {
+                        var cell = stringToDecimal($(this).val());
+                        if (!isNaN(cell) && cell.length !== 0) {
+                            sum += parseFloat(cell);
+                        }
+                    });
+                    //set the value of currents rows sum to the total-row-dispatch-amount element in the current row
+                    sum = currencyFormat(sum,0);
+                    $('.total-row-dispatch-amount-key', this).html(sum);
+                });
+                
+                // calculate the sub total of each row in the second table
+                $('.dispatching-amount-table tr').each(function () {
+                    //the value of sum needs to be reset for each row, so it has to be set inside the row loop
+                    var sum = 0
+                    //find the dispatch-amount elements in the current row and sum it 
+                    $(this).find('td .dispatch-amount').each(function () {
+                        var cell = stringToDecimal($(this).val());
+                        if (!isNaN(cell) && cell.length !== 0) {
+                            sum += parseFloat(cell);
+                        }
+                    });
+                    //set the value of currents rows sum to the total-row-dispatch-amount element in the current row
+                    sum = currencyFormat(sum,2);
+                    $('.total-row-dispatch-amount', this).html(sum);
+                });
+                
+                // calculate remaining amount
+                var sum = 0;
+                $(".dispatch-amount-key").each(function(){
+                    var cell = stringToDecimal($(this).val());
+                    if (!isNaN(cell) && cell.length !== 0) {
+                        sum += parseFloat(cell);
+                    }
+                });
+                var amount = stringToDecimal($(".amount").text());
+                var remaining = amount - sum;
+                $(".remaining").text(remaining);
+                if(isNaN(remaining) || remaining < 0){
+                    $(".displayremaining").addClass('error');
+                }
+                else {
+                   $(".displayremaining").removeClass('error');
+                }
+                $(".displayamount").text(currencyFormat(amount,0)); 
+                $(".displayremaining").text(currencyFormat(remaining,0)); 
+                disableEnterKey();
+                if(typeof conditionId !== "undefined") {
+                    displayUploadSection(conditionId);
+                }
+                return remaining;
+            }
+            var decimalSeparator = '{!localeDecimalSeparator}';
+            function stringToDecimal(str) {
+                var d = str.toString().replace(/\s/g, "");
+                if(decimalSeparator == ',') {
+                    d = d.replace(",", ".");
+                }
+                else {
+                    d = d.replace(/,/g, "");
+                }
+                if (!isNaN(d) && d.length !== 0)
+                    return parseFloat(d);
+                return 0;
+            }
+            function disableEnterKey(){
+                // catch the ENTER key in the popup of amount distributuion
+                $('.overlay').bind('keypress', function(e)
+                {
+                   if(e.keyCode == 13)
+                   {
+                      return false;
+                   }
+                });
+             }
+            function validateAmountDistribution(ndx) {
+                var remaining = calculateDispatching();
+                if(isNaN(remaining) || remaining < 0 || calculationError){
+                    alert('{!$Label.MSG_Amount_Dispatched_Greater_Than_Real_Amount}');
+                    //return false;
+                }
+                else {
+                    distributeAmount();
+                }
+                return true;
+            }
+            function initTypeaheadSupplier() {
+                $('.supplier')
+                        .typeahead(
+                                {
+                                    hint : true,
+                                    highlight : true,
+                                    minLength : 2,
+                                /* heigth:200px,*/
+                                },
+                                {
+                                    name : 'suppliers',
+                                    displayKey : 'Name',
+                                    source : getSuppliers,
+                                    templates : {
+                                        empty : '<div class="search-result">'
+                                                + '<p>{!JSENCODE($Label.NoSupplierFound)}</p>'
+                                                + '</div>',
+                                        suggestion : function(supplier) {
+                                            return '<div class="search-result" style="cursor:pointer;">'
+                                                    + '<p>'
+                                                    + supplier[prefix
+                                                            + 'Code__c']
+                                                    + ' - '
+                                                    + supplier.Name
+                                                    + '</p>' + '</div>';
+                                        }
+                                    }
+                                }).on('typeahead:selected',
+                                function(obj, datum, name) {
+                                    selectSupplier(datum.Id);
+                                });
+            }
+  
+            var getSuppliers = debounce(function(query, process) {
+                var q = query;
+                Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.ConditionsList.findSupplier}', q,
+                        function(result, event) {
+                            var res = JSON.parse(result);
+                            process(res);
+                        }, {
+                            escape : false
+                        });
+            }, 1);
+    
+            function debounce(func, wait, immediate) {
+                var timeout;
+                return function() {
+                    var context = this, args = arguments;
+                    var later = function() {
+                        timeout = null;
+                        if (!immediate)
+                            func.apply(context, args);
+                    };
+                    var callNow = immediate && !timeout;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                    if (callNow)
+                        func.apply(context, args);
+                };
+            };
+            function beforeUpdate() {
+                //$('input[id="' + btnSearchId + '"]').toggleClass( "btnDisabled" );
+                //$('input[id="' + btnSearchId + '"]').attr( "disabled", "disabled" );
+                //document.getElementById(btnSearchId).setAttribute("disabled","disabled");
+            }
+            function onComplete() {
+                $('input[id="' + btnSearchId + '"]').show();
+                //$('input[id="' + btnSearchId + '"]').toggleClass( "btnDisabled" );
+                //$('input[id="' + btnSearchId + '"]').toggleClass( "btn" );
+                //document.getElementById(btnSearchId).removeAttribute("disabled");
+            }
+            function resetSelection() {
+                $('input[id="' + btnSearchId + '"]').hide();
+                $('.supplier').typeahead('val', '');
+                contract = false;
+            }
+            function resetContract() {
+                contract = false;
+            }
+            function checkContractSelection(status) {
+                // used when list contain only 1 element (selected by default)
+                if (!status) {
+                    contract = true;
+                }
+                if (contract) {
+                    selectContract();
+                    return true;
+                } else {
+                    alert('{!$Label.MSG_Validation_Selection_Contract}');
+                    return false;
+                }
+            }
+             // calculate the sum of the matrix of dispatching amount per month in popup
+            
+              function autoDistributeMonths(bMonth, eMonth){
+   
+                for(var i = bMonth; i <= eMonth;i++){
+                    $("input.dispatch-amount-"+i).prop('disabled', false);
+                } 
+                
+                var monthColCount = (eMonth - bMonth) + 1;
+                var $dataRows=$(".global-dispatching-amount-table");
+                
+                // remove amount of previous month from total amount to have the remaining one
+                var remaining=0; 
+                for(var i = 1 ; i < bMonth; i++){
+                    remaining += $('.global-dispatching-amount-table .dispatch-amount-key-'+i).val();
+                    
+                }
+                var finalRemain = $(".amount").text() -  stringToDecimal(remaining);
+                $(".displayremaining").text(finalRemain);   
+                $(".remaining").text(finalRemain);      
+            
+                var dataArr = smartDivision(finalRemain, monthColCount,0);  
+
+                var j = 0;
+                for(var i = bMonth; i <= eMonth ;i++){
+                    var amountdevided = stringToDecimal($(".remaining").text()/monthColCount);
+                    $('.global-dispatching-amount-table .dispatch-amount-key-'+i).val(dataArr[j]); 
+                    $('.global-dispatching-amount-table .dispatch-amount-key-'+i).prop('disabled', false);         
+                    j++;
+                }
+                
+             }
+
+            
+            function clearDispatching(){
+          
+                $(".displayremaining").text($(".displayamount").text());    
+                $(".remaining").text($(".displayamount").text());
+                var $globalDataRows=$(".global-dispatching-amount-table tbody tr");
+                $globalDataRows.each(function() {
+                    $(this).find('td .dispatch-amount-key').each(function(i){
+                        $(this).val('');                        
+                    });
+                });
+                
+            var $dataRows=$(".dispatching-amount-table tbody tr");
+                $dataRows.each(function() {
+                    $(this).find('td .dispatch-amount').each(function(i){
+                        $(this).val('');                        
+                    });
+                });
+                
+                
+            }
+            function countNumberOfapprovedChecks() {
+             var $dataCheckboxRows=$(".global-dispatching-amount-table tbody tr");
+            var counterChecks=0;
+            $dataCheckboxRows.each(function() {
+                    $(this).find('td .dispatch-amount-approved').each(function(i){
+                     
+                     if($(this).prop('checked')==true){
+                        counterChecks++;
+                     }                   
+                    });
+                });
+             $('.count-approved').text(counterChecks+'/12');  
+            }
+            
+            function preventStringsInput() {
+            
+               $('input.numeric').on('keypress', function(e){
+                return e.metaKey || // cmd/ctrl
+                    e.which <= 0 ||   // arrow keys
+                    e.which == 8 ||  // delete key
+                    e.which == 44 || // comma
+                    ////e.which == 45 || // -
+                    ////e.which == 46 || // .
+                    /^[0-9]*\.?[0-9]*$/.test(String.fromCharCode(e.which)); // numbers
+                })
+                
+            }
+            /*
+            * @param Descimal total : total amount to be devided
+            * @param Integer division : the enumerator value 
+            * return list of values with a rest amount Ex :  1000/3 = 333.33 +333.33 + 333.34
+            */
+            function smartDivision(total, divisionNumb, decimalPlaces) {
+
+                var amountDevided = 0,
+                        amountGap = 0,
+                        sumAmount = 0;
+                var arrOfAmount = new Array();
+                
+                if (total % divisionNumb != 0) { // gap value
+                    amountDevided = total / divisionNumb;
+                    for (var i = 1; i < divisionNumb; i++) {
+    
+                        var val = stringToDecimal(currencyFormat(amountDevided,decimalPlaces));
+                        arrOfAmount.push(val);
+                        sumAmount += val;
+                 
+                    }
+        
+                    amountGap = total - sumAmount;          
+                    var amountGapVal = stringToDecimal(currencyFormat(amountGap,decimalPlaces));
+                    arrOfAmount.push(amountGapVal);
+                    
+                } else { //  no gap value 
+                    amountDevided = total / divisionNumb;
+                    for (var i = 1; i <= divisionNumb; i++) {
+                        arrOfAmount.push(amountDevided);
+                    }
+                }     
+            
+                return arrOfAmount;
+            }
+        </script>
+		<script type="text/javascript">
+            // TODO: use format from the server
+            var dateFormat = 'dd/mm/yy';
+            var locale = '{!locale}';
+            if (locale === "en_US") {
+              dateFormat = 'mm/dd/yy';
+            } else {
+              dateFormat = 'dd/mm/yy';
+            }
+            /**
+            * Apply datepicker with valid range for begin and end date for each condition
+            */
+            function setDateRange(rowsCount, beginYear, beginMonth, beginDay, endYear, endMonth, endDay) {
+                var beginDate = new Date(Date.UTC(beginYear, beginMonth - 1, beginDay, 0, 0, 0));
+                //alert(beginDate.toLocaleDateString('fr-FR'));
+                // TODO: get local date from controller
+                
+                var endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay, 0, 0, 0));
+                // TODO: get local date from controller
+                //alert(endDate.toLocaleDateString('fr-FR'));
+    
+                var str = "{!$Component.thePage.theForm.thePageBlock.renderBlock.theTable}";
+                var arrayBeginDate = new Array(), arrayEndDate = new Array(), fromDate = new Array(rowsCount), toDate = new Array(rowsCount);
+                for(var i = 0; i < rowsCount; i++) {
+                    arrayBeginDate.push(document.getElementById(str + ':' + i + ':BeginDate'));
+                    arrayEndDate.push(document.getElementById(str + ':' + i + ':EndDate'));
+                }
+                for(var i = 0; i < rowsCount; i++) {
+                    fromDate[i] = $(arrayBeginDate[i]).find('.datepicker')
+                            .datepicker({
+                                dateFormat: dateFormat,
+                                minDate: beginDate,
+                                maxDate: endDate
+                            }).on( "change", function(e) {
+                                var eltId = $(e.target).prop('id');
+                                var parts = eltId.split(':');
+                                var ndx = parts[5];
+                                toDate[ndx].datepicker("option", "minDate", getDate(this));
+                            });
+                    toDate[i] = $(arrayEndDate[i]).find('.datepicker')
+                            .datepicker({
+                                dateFormat: dateFormat,
+                                minDate: beginDate,
+                                maxDate: endDate
+                            }).on( "change", function(e) {
+                                var eltId = $(e.target).prop('id');
+                                var parts = eltId.split(':');
+                                var ndx = parts[5];
+                                fromDate[ndx].datepicker("option", "maxDate", getDate(this));
+                            });
+                    $(arrayBeginDate[i]).find('.datepicker').trigger('change');
+                    $(arrayEndDate[i]).find('.datepicker').trigger('change');
+                }
+                var localeI18N = getLocale(locale).split('-')[0];
+                $.datepicker.setDefaults($.datepicker.regional[localeI18N]);
+            }
+            /**
+            *
+            */
+            function getDate(element) {
+                var date;
+                try {
+                    date = $.datepicker.parseDate( dateFormat, element.value );
+                } catch( error ) {
+                    date = null;
+                }
+                return date;
+            }
+        </script>
+	</apex:outputPanel>
+
+	<apex:outputPanel id="uploadJSPanel">
+		<script>
+        var currentConditionId; // id of the selected condition
+        var byteChunkArray;
+        var files;
+        var currentFile;
+        var $upload;
+        var CHUNK_SIZE = 180000; //Must be evenly divisible by 3, if not, data corruption will occur
+        var VIEW_URL = '/servlet/servlet.FileDownload?file=';
+        //var parentId, you will see this variable used below but it is set in the component as this is a dynamic value passed in by component attribute
+        
+        //
+        function displayUploadSection(conditionId) {
+            currentConditionId = conditionId;
+            $(".btnLoad").hide();
+            //Event listener for click of Upload button
+            $("#uploadButton").click(function(){
+                prepareFileUploads();
+            });
+        }
+        //Executes when start Upload button is selected
+        function prepareFileUploads(){
+            //Get the file(s) from the input field
+            files = document.getElementById('filesInput').files;
+            
+            //Only proceed if there are files selected
+            if(files.length == 0){
+                alert('Please select a file!');
+                return; //end function
+            } else {
+                $(".txtStep1").hide();
+                $(".txtStep2").hide();
+                $(".txtStep3").show();
+                $(".btnNext").hide();
+                $(".DownCSV").hide();
+                $(".DownExcel").hide();
+                $(".uploadBox").hide();
+                $(".uploadButton").hide();
+                $(".btnLoad").show();
+            }
+            
+            //Disable inputs and buttons during the upload process
+            $(".uploadBox input").attr("disabled", "disabled");
+            $(".uploadBox button").attr({
+                disabled: "disabled",
+                class: "btnDisabled"
+            });
+            
+            //Build out the upload divs for each file selected
+            var uploadMarkup = '';
+            for(i = 0; i < files.length; i++){
+                //Determine file display size
+                if(files[i].size < 1000000){
+                    var displaySize = Math.floor(files[i].size/1000) + 'K';
+                }else{
+                    var displaySize  = Math.round((files[i].size / 1000000)*10)/10 + 'MB';
+                }
+                
+                //For each file being uploaded create a div to represent that file, includes file size, status bar, etc. data-Status tracks status of upload
+                uploadMarkup += '<div class="upload" data-status="pending" data-index="'+i+'">'; //index used to correspond these upload boxes to records in the files array
+                uploadMarkup += '<div class="fileName"><span class="name">'+ files[i].name + '</span> - '+ displaySize+ '</div>';
+                uploadMarkup += '<div class="percentComplete">0%</div>'
+                uploadMarkup += '<div class="clear"/>';
+                uploadMarkup += '<div class="statusBar">';
+                uploadMarkup += '<div class="statusBarPercent"/>';
+                uploadMarkup += '</div>';
+                uploadMarkup += '</div>';
+            }
+            
+            //Add markup to the upload box
+            $('.uploadBox').append(uploadMarkup);
+            //Once elements have been added to the page representing the uploads, start the actual upload process
+            checkForUploads();
+        }
+        //
+        function checkForUploads(){
+            //Get div of the first matching upload element that is 'pending', if none, all uploads are complete
+            $upload = $(".upload:first[data-status='pending']");
+            
+            if($upload.length != 0){
+                //Based on index of the div, get correct file from files array
+                currentFile = files[$upload.attr('data-index')];
+                
+                /*Build the byteChunkArray array for the current file we are processing. This array is formatted as:
+                                                                    ['0-179999','180000-359999',etc] and represents the chunks of bytes that will be uploaded individually.*/
+                byteChunkArray = new Array();
+                
+                //First check to see if file size is less than the chunk size, if so first and only chunk is entire size of file
+                if(currentFile.size <= CHUNK_SIZE){
+                    byteChunkArray[0] = '0-' + (currentFile.size - 1);
+                }else{
+                    //Determine how many whole byte chunks make up the file,
+                    var numOfFullChunks = Math.floor(currentFile.size / CHUNK_SIZE); //i.e. 1.2MB file would be 1000000 / CHUNK_SIZE
+                    var remainderBytes = currentFile.size % CHUNK_SIZE; // would determine remainder of 1200000 bytes that is not a full chunk
+                    var startByte = 0;
+                    var endByte = CHUNK_SIZE - 1;
+                    
+                    //Loop through the number of full chunks and build the byteChunkArray array
+                    for(i = 0; i < numOfFullChunks; i++){
+                        byteChunkArray[i] = startByte+'-'+endByte;
+                        
+                        //Set new start and stop bytes for next iteration of loop
+                        startByte = endByte + 1;
+                        endByte += CHUNK_SIZE;
+                    }
+                    
+                    //Add the last chunk of remaining bytes to the byteChunkArray
+                    startByte = currentFile.size - remainderBytes;
+                    endByte = currentFile.size;
+                    byteChunkArray.push(startByte+'-'+endByte);
+                }
+                //Start processing the byteChunkArray for the current file, parameter is '' because this is the first chunk being uploaded and there is no attachment Id
+                processByteChunkArray('');
+                
+            }else{
+                //All uploads completed, enable the input and buttons
+                $(".uploadBox input").removeAttr("disabled");
+                $(".uploadBox button").removeAttr("disabled").attr("class","btn");
+                
+                /*Remove the browse input element and replace it, this essentially removes
+                                                                    the selected files and helps prevent duplicate uploads*/
+                $("#filesInput").replaceWith('<input type="file" name="file" multiple="true" id="filesInput">');
+            }
+        }
+        //Uploads a chunk of bytes, if attachmentId is passed in it will attach the bytes to an existing attachment record
+        function processByteChunkArray(attachmentId){
+            //Proceed if there are still values in the byteChunkArray, if none, all piece of the file have been uploaded
+            if(byteChunkArray.length > 0){
+                //Determine the byte range that needs to uploaded, if byteChunkArray is like... ['0-179999','180000-359999']
+                var indexes = byteChunkArray[0].split('-'); //... get the first index range '0-179999' -> ['0','179999']
+                var startByte = parseInt(indexes[0]); //0
+                var stopByte = parseInt(indexes[1]); //179999
+                
+                //Slice the part of the file we want to upload, currentFile variable is set in checkForUploads() method that is called before this method
+                if(currentFile.webkitSlice){
+                    var blobChunk = currentFile.webkitSlice(startByte , stopByte + 1);
+                }else if (currentFile.mozSlice) {
+                    var blobChunk = currentFile.mozSlice(startByte , stopByte + 1);
+                }else{
+                    var blobChunk = currentFile.slice(startByte , stopByte + 1);
+                }
+                
+                //Create a new reader object, part of HTML5 File API
+                var reader = new FileReader();
+                
+                //Read the blobChunk as a binary string, reader.onloadend function below is automatically called after this line
+                reader.readAsBinaryString(blobChunk);
+                
+                //Create a reader.onload function, this will execute immediately after reader.readAsBinaryString() function above;
+                reader.onloadend = function(evt){
+                    if(evt.target.readyState == FileReader.DONE){ //Make sure read was successful, DONE == 2
+                        //Base 64 encode the data for transmission to the server with JS remoting, window.btoa currently on support by some browsers
+                        var base64value = window.btoa(evt.target.result);
+                        //Use js remoting to send the base64 encoded chunk for uploading
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ConditionsList.attachBlob}',
+                            currentConditionId,attachmentId,currentFile.name,currentFile.type,base64value, 
+                            function(result, event){
+                                //Proceed if there were no errors with the remoting call
+                                if(event.status == true){
+                                    //Update the percent of the status bar and percent, first determine percent complete
+                                    var percentComplete = Math.round((stopByte / currentFile.size) * 100);
+                                    $upload.find(".percentComplete").text(percentComplete + '%');
+                                    $upload.find(".statusBarPercent").css('width',percentComplete + '%');
+                                    
+                                    //Remove the index information from the byteChunkArray array for the piece just uploaded.
+                                    byteChunkArray.shift(); //removes 0 index
+                                    
+                                    //Set the attachmentId of the file we are now processing
+                                    attachmentId = result;
+                                    $('.myInput').val(attachmentId);
+                                    //Call process byteChunkArray to upload the next piece of the file
+                                    processByteChunkArray(attachmentId);
+                                }else{
+                                    //If script is here something broke on the JavasSript remoting call
+                                    //Add classes to reflect error
+                                    $upload.attr('data-status','complete');
+                                    $upload.addClass('uploadError');
+                                    $upload.find(".statusPercent").addClass('statusPercentError');
+                                    $upload.attr('title',event.message);
+                                    
+                                    //Check and continue the next file to upload
+                                    checkForUploads();
+                                }
+                            });
+                    }else{
+                        //Error handling for bad read
+                        alert('Could not read file');
+                    }
+                };
+            }else{
+                //This file has completed, all byte chunks have been uploaded, set status on the div to complete
+                $upload.attr('data-status','complete');
+                
+                //Change name of file to link of uploaded attachment
+                $upload.find(".name").html('<a href="' + VIEW_URL + attachmentId + '" target="_blank">'+currentFile.name+'</a>');
+                
+                //Call the checkForUploads to find the next upload div that has data-status="incomplete" and start the upload process. 
+                checkForUploads();
+            }
+        }
+        </script>
+
+
+		<script>
+        function showStep1() {
+            $(".txtStep1").show();
+            $(".txtStep2").hide();
+            $(".txtStep3").hide();
+            $(".DownCSV").show();
+            $(".DownExcel").show();
+            $(".uploadBox").hide();         
+            $(".uploadButton").hide();
+            $(".btnLoad").hide();
+        }
+        
+        function showStep2() {
+            $(".txtStep1").hide();
+            $(".txtStep2").show();
+            $(".txtStep3").hide();
+            $(".btnNext").hide();
+            $(".DownCSV").hide();
+            $(".DownExcel").hide();
+            $(".uploadBox").show();
+            $(".uploadButton").show();
+            $(".btnLoad").hide();
+        }
+        </script>
+
+	</apex:outputPanel>
+
+	<apex:actionStatus id="globalloading">
+		<apex:facet name="start">
+			<div class="loading-overlay">
+				<div class="loader-img"></div>
+				<div class="loading-block">{!$Label.Loading}</div>
+			</div>
+		</apex:facet>
+	</apex:actionStatus>
+
+<script>
+  negoptimApp = new App('{!locale}', '{!localeDecimalSeparator}'); 
+</script>
+
+	<!-- STYLE -->
+	<style type="text/css">
+.uploadBox {
+	border: none !important;
+	padding: 0px;
+}
+
+.uploadBox .uploadButton {
+	padding: 5px 5px !important;
+}
+
+.search-result {
+	background-color: white;
+	border: 1px solid #cccccc;
+	width: 350px;
+	padding: 3px;
+}
+
+.span-bold {
+	font-weight: bold;
+}
+
+.txtbox {
+	display: block;
+	float: left;
+	height: 32px;
+	width: 100px;
+}
+
+.btncls {
+	display: block;
+	float: left;
+	height: 40px;
+	margin: -1px -2px -2px;
+	width: 41px;
+}
+
+.custPopup {
+	background-color: white;
+	border-width: 2px;
+	border-style: solid;
+	z-index: 9999;
+	left: 50%;
+	padding: 10px;
+	position: absolute;
+	/* These are the 3 css properties you will need to change so the popup
+            displays in the center of the screen. First set the width. Then set
+            margin-left to negative half of what the width is. You can add
+            the height property for a fixed size pop up if you want.*/
+	width: 700px;
+	margin-left: -350px;
+	top: 100px;
+}
+
+.popupBackground {
+	background-color: black;
+	opacity: 0.20;
+	filter: alpha(opacity = 20);
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	z-index: 9998;
+}
+
+.custPopup2 {
+	background-color: white;
+	border-width: 2px;
+	border-style: solid;
+	z-index: 10001;
+	left: 75%;
+	padding: 10px;
+	position: absolute;
+	/* These are the 3 css properties you will need to change so the popup
+            displays in the center of the screen. First set the width. Then set
+            margin-left to negative half of what the width is. You can add
+            the height property for a fixed size pop up if you want.*/
+	width: 400px;
+	margin-left: -350px;
+	top: 50px;
+}
+
+.popupBackground2 {
+	background-color: black;
+	opacity: 0.20;
+	filter: alpha(opacity = 20);
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	z-index: 10000;
+}
+
+span.dateFormat {
+	display: none;
+}
+
+.overlay {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: rgba(0, 0, 0, 0.5);
+	transition: opacity 500ms;
+	z-index: 1000;
+	visibility: visible;
+	opacity: 1;
+	overflow: auto;
+}
+
+.popup2 {
+	margin: 15% auto;
+	padding: 5px;
+	background: #fff;
+	border: 2px solid black;
+	width: 30%;
+	position: relative;
+	transition: all 5s ease-in-out;
+}
+
+.popup2 h2 {
+	margin-top: 0;
+	color: #333;
+	font-family: Tahoma, Arial, sans-serif;
+}
+
+.popup2 .close {
+	position: absolute;
+	top: 20px;
+	right: 30px;
+	transition: all 200ms;
+	font-size: 30px;
+	font-weight: bold;
+	text-decoration: none;
+	color: #333;
+}
+
+.popup2 .close:hover {
+	color: #06D85F;
+}
+
+.popup2 .content {
+	max-height: 30%;
+	overflow: auto;
+}
+.slab-popup .slab-header {
+	font-weight:bold;
+}
+.slab-popup .pbBottomButtons .pbTitle{
+	display: none;
+}
+.slab-popup .pbBottomButtons .pbButtonb{
+	text-align: center;
+}
+
+@media screen and (max-width: 700px) {
+	.box {
+		width: 70%;
+	}
+	.popup2 {
+		width: 70%;
+	}
+}
+</style>
+
+</apex:page>

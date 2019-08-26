@@ -1,0 +1,711 @@
+<template>
+        <template if:true={loading}>
+                <div>
+                        <lightning-spinner size="large" variant="brand" alternative-text="Loading"></lightning-spinner>
+                </div>
+        </template>
+        <template if:false={loading}>
+                <lightning-card title={label.Nego_Dashboard}>
+                        <div class="slds-text-heading_small"></div>
+                        <div class="demo-only demo-only--sizing slds-grid slds-wrap">
+                                <div class="slds-size_1-of-12">
+                                </div>
+                                <div class="slds-size_1-of-12">
+                                </div>
+                                <div class="slds-size_1-of-12">
+                                </div>
+                                <div class="slds-size_1-of-12 slds-text-align_right slds-m-top_medium">
+                                        {label.Country}
+                                </div>
+                                <div class="slds-size_1-of-12 slds-m-left_small slds-m-top_medium">
+                                        <select onchange={changevalue}>
+                                                <option value="">----</option>
+                                                <template for:each={countryOptions} for:item="countries">
+                                                        <option key={countries.Id} value={countries.Id}>
+                                                                {countries.Name}
+                                                        </option>
+                                                </template>
+                                        </select>
+                                </div>
+                                <div class="slds-size_1-of-12 slds-text-align_right slds-m-top_medium">
+                                        {label.dateLabel}
+                                </div>
+                                <div class="slds-size_1-of-12 slds-m-left_small slds-m-top_xx-small">
+                                        <lightning-input type="date" class="dateStyle" onchange={dateChange}
+                                                value={todayDate} variant="label-hidden">
+                                        </lightning-input>
+                                </div>
+                                <div class="slds-size_1-of-12">
+                                </div>
+                                <div class="slds-size_1-of-12">
+                                </div>
+                                <div class="slds-size_1-of-12">
+                                </div>
+                                <div class="slds-size_1-of-12">
+                                </div>
+                                <div class="slds-size_1-of-12">
+                                </div>
+                        </div>
+                </lightning-card>
+                <!-- section for contracts and conditions procedures-->
+                <span if:true={SectionContractTOProcedures} class="slds-m-around_xxx-small">
+                        <lightning-card title={label.contracts_conditions}>
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.GenerateInvoice}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+
+                                                        <lightning-button label={label.Run} onclick={run}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Calculate_Contracts}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={CalculateTo}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                        <div class="slds-grid slds-gutters marginTop">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Dispatch}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={dispatching}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Dispatching_Based_On_Redistribution_Model}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={baseRedistribution}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <span if:true={SectionContractDuplication} class="slds-m-around_xxx-small">
+                        <lightning-card title={label.Contracts_Duplication}>
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Duplicate_Contract}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={duplicateContract}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <span if:true={SectionLastActiveContractProcedure} class="slds-m-around_xxx-small">
+                        <lightning-card title={label.Last_Active_Contract_Procedure}>
+
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Last_Active_Contract}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={lastActiveContract}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <!-- section for GRC Contract Rates-->
+                <span if:true={SectionContractRates} class="slds-m-around_xxx-small">
+                        <lightning-card title={label.GRC_Contract_Rates}>
+
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        <lightning-input type="checkbox"
+                                                                label={label.Last_Active_Contract}
+                                                                class="lastActiveContr" onclick={onCheck}>
+                                                        </lightning-input>
+                                                </div>
+                                                <div class="slds-col fixedWidthCalculRate">
+                                                        {label.Calculate_Rates}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={generateCRCRate}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <!-- section for Group Scan and Synchro-->
+                <h2 if:true={SectionGroupScanAndSynchro} class="slds-theme--default">
+                        <lightning-button-icon icon-name={toggleIconName} onclick={expandDiv} variant="base">
+                        </lightning-button-icon>
+                        <span class="slds-text-heading_small">
+                                {label.Group_Scan_and_Synchro}
+                        </span>
+                </h2>
+                <div class={displayed} if:true={SectionGroupScanAndSynchro}>
+                        <div class="slds-align_absolute-center slds-theme--default slds-p-bottom_large">
+                                <span>{label.Group_BU}</span>
+                                <select class="margin20" onchange={changevalueBu}>
+                                        <option value="">----</option>
+                                        <template for:each={buOptions} for:item="bu">
+                                                <option key={bu.BU_Code__c} value={bu.BU_Code__c}>
+                                                        {bu.Name}
+                                                </option>
+                                        </template>
+                                </select>
+                        </div>
+                        <div class="slds-grid slds-wrap">
+                                <div
+                                        class="slds-col slds-size--1-of-1 slds-small-size--1-of-2 slds-medium-size--1-of-4 slds-theme--default">
+                                        <div class="demo-only demo-only--sizing slds-grid slds-wrap"
+                                                style="height: 20vh;">
+                                                <div class="slds-size_4-of-4 slds-m-left_large">
+                                                        <h2>
+                                                                <span class="slds-text-heading_small">
+                                                                        {label.Contract_Group}
+                                                                </span>
+                                                        </h2>
+                                                </div>
+
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol1BU">
+                                                        {label.Scan}
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={groupContractScan}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol1BU">
+                                                        {label.Synchro}
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={groupContractSynchr}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                                <!-- section for Invoice Group-->
+                                <div class="slds-col slds-size--1-of-1 slds-small-size--1-of-2 slds-medium-size--1-of-4 slds-theme--default"
+                                        style="height: 20vh;">
+                                        <div class="demo-only demo-only--sizing slds-grid slds-wrap">
+                                                <div class="slds-size_4-of-4 slds-m-left_xx-small">
+                                                        <h2>
+                                                                <span class="slds-text-heading_small">
+                                                                        {label.Invoice_Group}
+                                                                </span>
+                                                        </h2>
+                                                </div>
+
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol1BU"
+                                                        style="margin-top: 6vh;">
+                                                        {label.Invoice_Group}
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol2"
+                                                        style="margin-top: 6vh;">
+                                                        <lightning-button label={label.Run} onclick={groupInvoiceScan}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol1BU"
+                                                        style="margin-top: 6vh;">
+                                                        {label.Synchro}
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol2"
+                                                        style="margin-top: 6vh;">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={groupInvoiceSynchr}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                                <div
+                                        class="slds-col slds-size--1-of-1 slds-small-size--1-of-2 slds-medium-size--1-of-4 slds-theme--default">
+                                        <!-- section for Invoice Payment Group-->
+                                        <div class="demo-only demo-only--sizing slds-grid slds-wrap"
+                                                style="height: 20vh;">
+                                                <div class="slds-size_4-of-4 slds-m-left_large">
+                                                        <h2>
+                                                                <span class="slds-text-heading_small">
+                                                                        {label.Invoice_Payment_Group}
+                                                                </span>
+                                                        </h2>
+                                                </div>
+
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol1BU">
+                                                        {label.Scan}
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={groupInvoicePayScan}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol1BU">
+                                                        {label.Synchro}
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={groupInvoicePaySynchr}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                                <div
+                                        class="slds-col slds-size--1-of-1 slds-small-size--1-of-2 slds-medium-size--1-of-4 slds-theme--default">
+                                        <!-- section for Rebate Payment Group-->
+                                        <div class="demo-only demo-only--sizing slds-grid slds-wrap"
+                                                style="height: 20vh;">
+                                                <div class="slds-size_4-of-4 slds-m-left_large">
+                                                        <h2>
+                                                                <span class="slds-text-heading_small">
+                                                                        {label.Rebate_Payment_Group}
+                                                                </span>
+                                                        </h2>
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol1BU">
+                                                        {label.Scan}
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={groupRebatePayScan}></lightning-button>
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol1BU">
+                                                        {label.Synchro}
+                                                </div>
+                                                <div class="slds-size_1-of-4 fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={groupRebatePaySynchr}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div>
+                </div>
+                <!-- section for commercial plan detail-->
+                <span if:true={SectionPromoDetailProcedure} class="slds-m-around_xxx-small">
+                        <lightning-card title={commercialPlanDetail}>
+
+
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Scan_Update_Contracts}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={commercialPlanScanContract}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Scan_Update_Status}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={commercialPlanScanStatus}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <span if:true={SectionContractCounterpartyDetail} class="slds-m-around_xxx-small">
+                        <lightning-card title={contrDiscCounter}>
+
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Scan_Update_Contracts}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={CounterpartiesScanContractBatch}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Scan_Update_Extraction_Status}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={CounterpartiesScanStatusBatch}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <span if:true={SectionMarketDataCollection} class="slds-m-around_xxx-small">
+                        <lightning-card title={label.marketDataCollection}>
+
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Scan}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={MarketDataCollectionScanBatch}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Synchro}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={MarketDataCollectionSynchroBatch}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <lightning-card title={assDetail}>
+                        <div class="margin40">
+                                <div class="slds-grid slds-gutters">
+                                        <div class="slds-col fixedWidthContainerCol1">
+                                                Consolidate Assortments
+                                        </div>
+                                        <div class="slds-col fixedWidthContainerCol2">
+                                                <lightning-button label={label.Run}
+                                                        onclick={ConsolidateAssortmentBatch}>
+                                                </lightning-button>
+                                        </div>
+                                </div>
+                        </div>
+                </lightning-card>
+                <span if:true={SectionAssortmentSFPlanning} class="slds-m-around_xxx-small">
+                        <lightning-card title={assortSFPlan}>
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.GenerateSFPlanningLabel}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={GenerateSFPlanning}>{label.Run}
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.UpdateSFPlanningLabel}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={UpdateSFPlanning}>
+                                                                {label.Run}
+                                                        </lightning-button>
+                                                </div>
+
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <span if:true={SectionMarketDataCollection} class="slds-m-around_xxx-small">
+                        <lightning-card title={label.Sell_In_Procedure}>
+
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Consolidate_Sell_in_Flow_Purchase_Flow_PG}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={sellinToPurchase}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Re_Scan_Sell_in_Flow}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={reparentingSellin}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <!-- section for Manually Jobs-->
+                <!--span class="slds-m-around_xxx-small">
+                        <lightning-card title="Manually Jobs">
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        submit Close Supplier Batch
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={closeSuppBatch}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        submit Last Active Contract Batch
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={lastActiveContract}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                        <div class="slds-grid slds-gutters marginTop">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        submit Sellin To Purchase Batch
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={sellinToPurchase}>
+                                                        </lightning-button>
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        submit Reparenting Sellin Batch
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run} onclick={reparentingSellin}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span-->
+                <!-- section for Invoice Reminder-->
+                <span if:true={SectionInvoiceReminder} class="slds-m-around_xxx-small">
+                        <lightning-card title={label.Invoice_Reminder}>
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthReminderLevel">
+                                                        {label.Level_of_reminder_managed}
+                                                </div>
+                                                <div class="slds-col fixedWidthReminder">
+                                                        <select onchange={changevalueReminder} class="reminderWidth">
+                                                                <template for:each={remindersval}
+                                                                        for:item="reminderItem">
+                                                                        <option key={reminderItem} value={reminderItem}>
+                                                                                {reminderItem}
+                                                                        </option>
+                                                                </template>
+                                                        </select>
+                                                </div>
+                                                <div class="slds-col fixedWidthInvoiceReminder">
+                                                        submit Invoice Reminder Batch
+                                                </div>
+                                                <div class="slds-col">
+                                                        <lightning-button label={label.Run} onclick={invoiceReminder}>
+                                                        </lightning-button>
+
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <!-- section for Mass Distribution-->
+                <span if:true={SectionMassDistribution} class="slds-m-around_xxx-small">
+                        <lightning-card title={label.Mass_Distribution}>
+                                <div class="margin40">
+
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthRadio">
+                                                        <lightning-input class="r0" type="radio" name=others
+                                                                label=Monthly&nbsp;&nbsp; onchange={changeToMonthly}
+                                                                checked>
+                                                        </lightning-input>
+                                                </div>
+                                                <div class="slds-col fixedWidthRadio">
+                                                        <lightning-input class="r1" type="radio" name=others
+                                                                label=Yearly&nbsp;&nbsp; onchange={changeToYearly}>
+                                                        </lightning-input>
+                                                </div>
+                                        </div>
+                                        <div class="slds-grid slds-gutters marginTop">
+                                                <div class="slds-col">
+                                                        <lightning-input type="file" accept=".csv"
+                                                                onchange={handleFileChange}>
+                                                        </lightning-input>
+                                                </div>
+                                                <div class="slds-col" style="margin-top: 3vh;">
+                                                        {fileNameMass}
+                                                </div>
+                                                <div class="slds-col">
+                                                        <div style="margin-top:5vh;"></div>
+                                                        <lightning-button onclick={upload} label={label.uploadLabel}
+                                                                class="uploadClass">
+                                                                {label.uploadLabel}</lightning-button>
+                                                </div>
+                                        </div>
+
+                                </div>
+                        </lightning-card>
+                </span>
+                <span if:true={SectionBatches} class="slds-m-around_xxx-small">
+                        <lightning-card title={label.Batches}>
+                                <div class="margin40">
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthContainerCol1">
+                                                        {label.Close_Supplier}
+                                                </div>
+                                                <div class="slds-col fixedWidthContainerCol2">
+                                                        <lightning-button label={label.Run}
+                                                                onclick={CloseSupplierBatch}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <span if:true={SectionPenaltiesProcedure} class="slds-m-around_xxx-small">
+                        <lightning-card title={supplyPenalty}>
+                                <div class="margin40">
+
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col fixedWidthCsvSep">CSV separator
+                                                        <select class="slds-size_3-of-12 margin10"
+                                                                onchange={changeSeparator}>
+                                                                <template for:each={separatorVal} for:item="separator">
+                                                                        <option key={separator} value={separator}>
+                                                                                {separator}
+                                                                        </option>
+                                                                </template>
+                                                        </select>
+                                                </div>
+                                                <div class="slds-col fixedWidthPenalite">
+                                                        {label.scanSynchro}
+                                                </div>
+                                                <div class="slds-col">
+                                                        <lightning-button label={label.Run} onclick={penaltyScanSynchr}>
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+
+                                        <div class="slds-grid slds-gutters">
+                                                <div class="slds-col">
+                                                        <lightning-input type="file" accept=".csv"
+                                                                onchange={handleFileChangeSeparator}>
+                                                        </lightning-input>
+                                                </div>
+                                                <div class="slds-col" style="margin-top: 3vh;">
+                                                        {fileNamePenalite}
+                                                </div>
+                                                <div class="slds-col">
+                                                        <div style="margin-top:5vh;"></div>
+                                                        <lightning-button label={label.uploadLabel}
+                                                                onclick={ConditionPenaltiesExcelFile}
+                                                                class="uploadClass">
+                                                                {label.uploadLabel}
+                                                        </lightning-button>
+                                                </div>
+                                        </div>
+                                </div>
+                        </lightning-card>
+                </span>
+                <div class="slds-scrollable">
+                        <table class="slds-table slds-table_bordered slds-table_striped slds-table_cell-buffer"
+                                style="border-bottom:0px;">
+                                <thead>
+                                        <tr class="slds-text-heading_label">
+                                                <th scope="col" style="background-color: white;">
+                                                        <div class="slds-truncate" title="">
+                                                                {label.Latest_Active_Jobs}
+                                                        </div>
+                                                </th>
+                                                <th scope="col" colspan="10" style="background-color: white;">
+                                                        <div class="slds-truncate" title="">
+                                                                <lightning-button-icon icon-name="utility:refresh"
+                                                                        variant="base" alternative-text="refresh"
+                                                                        size="large" onclick={getlastJobs}>
+                                                                </lightning-button-icon>
+                                                        </div>
+                                                </th>
+                                        </tr>
+                                        <tr class="slds-text-heading_label">
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="createdDate">
+                                                                {labelcreateddate}
+                                                        </div>
+                                                </th>
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="JobType">
+                                                                {labeljobtype}
+                                                        </div>
+                                                </th>
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="status">
+                                                                {labelstatus}
+                                                        </div>
+                                                </th>
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="TotalBatches">
+                                                                {labeltotaljobitems}
+                                                        </div>
+                                                </th>
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="BatchesProcessed">
+                                                                {labeljobitemsprocessed}
+                                                        </div>
+                                                </th>
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="Failures">
+                                                                {labelnumberoferrors}
+                                                        </div>
+                                                </th>
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="CreatedByID">
+                                                                {labelcreatedbyid}
+                                                        </div>
+                                                </th>
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="CompletionDate">
+                                                                {labelcompleteddate}
+                                                        </div>
+                                                </th>
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="ClassName">
+                                                                {apexClassName}
+                                                        </div>
+                                                </th>
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="ApexJobID">
+                                                                {apexJobId}
+                                                        </div>
+                                                </th>
+                                                <th scope="col">
+                                                        <div class="slds-truncate" title="ApexJobID">
+                                                                {logLabel}
+                                                        </div>
+                                                </th>
+                                        </tr>
+                                </thead>
+                                <tbody>
+                                        <template for:each={jobList.data} for:item="job">
+                                                <tr key={job.Id}>
+                                                        <td class="fontStyle">{job.CreatedDate}</td>
+                                                        <td class="fontStyle">{job.JobType}</td>
+                                                        <td class="fontStyle" data-id="statusCell">{job.Status}</td>
+                                                        <td class="fontStyle">{job.TotalJobItems}</td>
+                                                        <td class="fontStyle">{job.JobItemsProcessed}
+                                                        </td>
+                                                        <td class="fontStyle">{job.NumberOfErrors}</td>
+                                                        <td class="fontStyle">{job.submitterFullName}
+                                                        </td>
+                                                        <td class="fontStyle">{job.CompletedDate}</td>
+                                                        <td class="fontStyle">{job.ApexClassName}</td>
+                                                        <td class="fontStyle">{job.Id}</td>
+                                                        <td class="fontStyle">
+                                                                <a href={job.URL} target="_blank">
+                                                                        view Log
+                                                                </a>
+                                                        </td>
+                                                </tr>
+                                        </template>
+                                        <tr>
+                                                <td colspan="10">
+                                                        <a href="/lightning/setup/AsyncApexJobs/home" target="_blank">
+                                                                Show all jobs
+                                                        </a>
+                                                </td>
+                                                <td>
+                                                </td>
+                                        </tr>
+                                </tbody>
+                        </table>
+                </div>
+        </template>
+</template>

@@ -1,0 +1,397 @@
+<apex:page controller="MassBatchFormController" lightningStylesheets="true" tabStyle="Mass_Batch_Form__tab" docType="html-5.0" >
+    <apex:stylesheet value="{!URLFOR($Resource.fontawesome, 'css/font-awesome.min.css') }" />
+    <apex:pageMessages id="messagesContract" escape="false" />
+    <apex:form id="formBatch">
+        <apex:pageBlock title="{!$Label.LBL_Nego_Dashboard}">
+            <apex:actionStatus id="batchStatus">
+                <apex:facet name="start">
+                    <img src="/img/loading.gif"/>
+                </apex:facet>
+            </apex:actionStatus>
+            <apex:actionRegion >
+                <!-- Mass Batch Form -->
+                <apex:pageBlockSection collapsible="false" columns="1">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Country}" style="font-weight:bold"/>
+                        <apex:selectList multiselect="false" label="" size="1" id="country" required="false" value="{!selectedCountry}" style="margin-left: 170px;">
+                            <apex:selectOptions value="{!countries}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Date}" style="font-weight:bold"/>
+                        <apex:inputField label="" value="{!contract.Contract_BDate__c}" required="false" style="margin-left: 190px;"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <!-- Contracts and Conditions Procedures -->
+                <apex:pageBlockSection title="{!$Label.LBL_Contracts_and_Conditions_Procedures}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_ContractTOProcedures}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Calculate_Contracts}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitCalculateContractBatch}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+            <!-- <apex:pageBlockSectionItem>
+                   <apex:outputText value="NegoScope" style="font-weight:bold"/>
+                   <apex:commandButton value="Run" style="width:70px;"
+                     action="{!submitPurchasesNegoScopeBatch}" reRender="formBatch, messagesContract" status="batchStatus"/>
+                  </apex:pageBlockSectionItem> -->
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_GenerateInvoice}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" style="width:70px;"
+                                            action="{!submitGenerateInvoicesBatch}"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Dispatch}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitDispatchingBatch}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Dispatching_Based_On_Redistribution_Model}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitBaseRedistributionBatch}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <!-- <apex:pageBlockSection title="Merge Contracts" collapsible="false" columns="2">
+                    <apex:outputText value="Merge Contract" style="font-weight:bold"/>
+                        <apex:commandButton value="Run" action="{!submitMergeContractBatch}"
+                         reRender="formBatch, messagesContract" status="batchStatus"
+                        style="height:28px;width:80px;  margin-left: 190px;"/>
+                       </apex:pageBlockSection> -->
+                <apex:pageBlockSection title="{!$Label.LBL_Contracts_Duplication}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_ContractDuplication}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Duplicate_Contract}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitDuplicateContractBatch}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <!-- Last Active Contract Procedure Section -->
+                <apex:pageBlockSection title="{!$Label.LBL_Last_Active_Contract_Procedure}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_LastActiveContractProcedure}">
+                <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Last_Active_Contract}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitLastActiveContractBatch}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                 </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <!-- GRC Contract Rates Section -->
+                <apex:pageBlockSection title="{!$Label.LBL_GRC_Contract_Rates}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_ContractRates}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Last_Active_Contract}" style="font-weight:bold"/>
+                        <apex:inputCheckbox value="{!lastActiveContract}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Calculate_Rates}" style="font-weight:bold"/>
+                       <apex:commandButton value="{!$Label.LBL_Run}" action="{!generateGRCRatesBatch}" style="width:70px;"
+                                           reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <!-- Scan Group Contract Process -->
+                <apex:pageBlockSection title="{!$Label.LBL_Group_Scan_and_Synchro}" collapsible="true" columns="1" rendered="{!settings.MBF_Section_GroupScanAndSynchro}">
+                        <apex:pageBlockSection >
+                            <apex:pageBlockSectionItem >
+                                <apex:outputText value="{!$Label.LBL_Group_BU}" style="font-weight:bold"/>
+                                <apex:selectList multiselect="false" label="" size="1" id="group" value="{!selectedGroupBU}" style="margin-left: 170px;">
+                                    <apex:selectOptions value="{!groupBusinessUnits}"/>
+                                </apex:selectList>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection collapsible="false" columns="4">
+                            <apex:pageBlockSection title="{!$Label.LBL_Contract_Group}" collapsible="false" columns="2">
+                                <apex:commandButton value="{!$Label.LBL_Scan}" action="{!submitGroupContractScanBatch}" style="width:70px;"
+                                                    reRender="formBatch, messagesContract" status="batchStatus"/>
+                                <apex:commandButton value="{!$Label.LBL_Synchro}" action="{!submitGroupContractSynchroBatch}" style="width:70px;"
+                                                    reRender="formBatch, messagesContract" status="batchStatus"/>
+                            </apex:pageBlockSection>
+                            <apex:pageBlockSection title="{!$Label.LBL_Invoice_Group}" collapsible="false" columns="2">
+                                <apex:commandButton value="{!$Label.LBL_Scan}" action="{!submitGroupInvoiceScanBatch}" style="width:70px;"
+                                                    reRender="formBatch, messagesContract" status="batchStatus"/>
+                                <apex:commandButton value="{!$Label.LBL_Synchro}" action="{!submitGroupInvoiceSynchroBatch}" style="width:70px;"
+                                                    reRender="formBatch, messagesContract" status="batchStatus"/>
+                            </apex:pageBlockSection>
+                            <apex:pageBlockSection title="{!$Label.LBL_Invoice_Payment_Group}" collapsible="false" columns="2">
+                                <apex:commandButton value="{!$Label.LBL_Scan}" action="{!submitGroupInvoicePaymentScanBatch}" style="width:70px;"
+                                                    reRender="formBatch, messagesContract" status="batchStatus"/>
+                                <apex:commandButton value="{!$Label.LBL_Synchro}" action="{!submitGroupInvoicePaymentSynchroBatch}" style="width:70px;"
+                                                    reRender="formBatch, messagesContract" status="batchStatus"/>
+                            </apex:pageBlockSection>
+                            <apex:pageBlockSection title="{!$Label.LBL_Rebate_Payment_Group}" collapsible="false" columns="2">
+                                <apex:commandButton value="{!$Label.LBL_Scan}" action="{!submitGroupRebatePaymentScanBatch}" style="width:70px;"
+                                                    reRender="formBatch, messagesContract" status="batchStatus"/>
+                                <apex:commandButton value="{!$Label.LBL_Synchro}" action="{!submitGroupRebatePaymentSynchroBatch}" style="width:70px;"
+                                                    reRender="formBatch, messagesContract" status="batchStatus"/>
+                            </apex:pageBlockSection>
+                        </apex:pageBlockSection>
+                </apex:pageBlockSection>
+                
+                <apex:pageBlockSection title="{!$ObjectType.Commercial_Plan_Detail__c.Label} {!$Label.LBL_Procedure}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_PromoDetailProcedure}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Scan_Update_Contracts}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitCommercialPlanScanContractBatch}" style="width:70px;"
+                                               reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Scan_Update_Status}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitCommercialPlanScanStatusBatch}" style="width:70px;"
+                                               reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                 
+                <apex:pageBlockSection title="{!$ObjectType.Contract_discount_counterparty_detail__c.Label}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_ContractCounterpartyDetail}">
+                    <apex:pageBlockSectionItem >
+	               		<apex:outputText value="{!$Label.LBL_Scan_Update_Contracts}" style="font-weight:bold"/>
+	               		<apex:commandButton value="{!$Label.LBL_Run}" action="{!submitCounterpartiesScanContractBatch}" style="width:70px;"
+		                                       reRender="formBatch, messagesContract" status="batchStatus"/>
+	               	</apex:pageBlockSectionItem>
+	               	<apex:pageBlockSectionItem >
+	               		<apex:outputText value="{!$Label.LBL_Scan_Update_Extraction_Status}" style="font-weight:bold"/>
+	               		<apex:commandButton value="{!$Label.LBL_Run}" action="{!submitCounterpartiesScanStatusBatch}" style="width:70px;"
+		                                       reRender="formBatch, messagesContract" status="batchStatus"/>
+	               	</apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection title="{!$Label.LBL_Market_Data_Collection}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_MarketDataCollection}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Scan}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitMarketDataCollectionScanBatch}" style="width:70px;"
+                                               reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Synchro}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitMarketDataCollectionSynchroBatch}" style="width:70px;"
+                                               reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                
+                <apex:pageBlockSection title="{!$ObjectType.Assortment_BU__c.Label}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_AssortmentSFPlanning}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Consolidate_Assortments}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitConsolidateAssortmentBatch}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                
+                <!-- Assortment SF Planning Batches Section -->
+                <apex:pageBlockSection title="{!$ObjectType.Assortment_SF_Planning__c.Label}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_AssortmentSFPlanning}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_GenerateSFPlanning}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitGenerateSFPlanning}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_UpdateSFPlanning}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitUpdateSFPlanning}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <!-- Recalculate Assortment Details section -->
+                <apex:pageBlockSection title="{!$Label.LBL_Recalculate_Assortment_Detail_Section}" collapsible="false" columns="5" rendered="{!settings.MBF_Section_RecalculateAssortmentDetail}" >
+                    <apex:pageBlockSection columns="1" collapsible="false">
+                        <apex:input type="number" value="{!assortmentYear}" label="{!$ObjectType.Assortment_BU__c.fields.Year__c.label}" />
+                        <apex:inputCheckbox value="{!L4LOnly}" label="{!$Label.LBL_L4L_Only}" />
+                        <apex:inputCheckbox value="{!inPreparationOnly}" label="{!$Label.LBL_In_Preparation_Only}" />
+                    </apex:pageBlockSection>
+                    <apex:selectList multiselect="true" size="10" label="{!$ObjectType.Assortment_BU__c.fields.BU_source__c.label}" value="{!buSourceIdList}">
+                        <apex:selectOptions value="{!AssortmentBUSourceList}" />
+                    </apex:selectList>
+                    <apex:selectList multiselect="true" size="10" label="{!$ObjectType.Assortment_BU__c.fields.BU_Target__c.label}" value="{!buTargetIdList}" >
+                        <apex:selectOptions value="{!AssortmentBUTargetList}" />
+                    </apex:selectList>
+                    <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitRecalculateAssortmentDetailBatch}" style="width:70px;"
+                                        reRender="formBatch, messagesContract" status="batchStatus" />
+                </apex:pageBlockSection>
+                <apex:pageBlockSection title="{!$Label.LBL_Sell_In_Procedure}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_SellInProcedure}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Consolidate_Sell_in_Flow_Purchase_Flow_PG}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitSellinToPurchaseBatch}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Re_Scan_Sell_in_Flow}" style="font-weight:bold"/>
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitReparentingSellinBatch}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                
+                <apex:pageBlockSection title="{!$Label.LBL_Invoice_Reminder}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_InvoiceReminder}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="{!$Label.LBL_Level_of_reminder_managed}" style="font-weight:bold"/>
+                        <apex:selectList id="reminderLevel" value="{!selectedReminderLevel}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!ReminderLevels}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitInvoiceReminderBatch}" style="width:70px;"
+                                            reRender="formBatch, messagesContract" status="batchStatus"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                
+            </apex:actionRegion>
+            
+            <!-- Mass Distribution -->
+            <apex:pageBlockSection title="{!$Label.LBL_Mass_Distribution}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_MassDistribution}">
+                <apex:selectRadio value="{!option}">
+                       <apex:selectOptions value="{!items}"/>
+                </apex:selectRadio><p/>            
+                <apex:pageBlockSectionItem >
+                    <apex:inputFile value="{!file}" fileName="{!document.name}" accept="csv" contentType="Text/csv" filesize="1000"/>
+                    <apex:actionRegion >
+                        <apex:commandbutton action="{!upload}" value="{!$Label.LBL_Upload}" style="color:#4a4a56; font-size: 91%; font-weight:bold; width:70px;"/>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            <!-- Calling Web Services -->
+            <apex:pageBlockSection title="{!$Label.LBL_Calling_Web_Services}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_CallingWebServices}">
+                <apex:pageBlockSectionItem >
+                    <apex:outputText value="{!$Label.LBL_Import_Call_Suppliers}" style="font-weight:bold"/>
+                    <apex:commandbutton value="{!$Label.LBL_Run}" style="width:70px;"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputText value="{!$Label.LBL_Import_Call_PGs}" style="font-weight:bold"/>
+                    <apex:commandbutton value="{!$Label.LBL_Run}" style="width:70px;"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputText value="{!$Label.LBL_Import_Call_Purchases}" style="font-weight:bold"/>
+                    <apex:commandbutton value="{!$Label.LBL_Run}" style="width:70px;"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputText value="{!$Label.LBL_Send_Resend_Accounting_All_Month_x}" style="font-weight:bold"/>
+                    <apex:commandbutton value="{!$Label.LBL_Run}" style="width:70px;"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+             <!-- Batches Section -->
+            <apex:pageBlockSection title="{!$Label.LBL_Batches}" collapsible="false" columns="2" rendered="{!settings.MBF_Section_Batches}">
+                <apex:pageBlockSectionItem >
+                    <apex:outputText value="{!$Label.LBL_Close_Supplier}" style="font-weight:bold"/>
+                    <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitCloseSupplierBatch}" style="width:70px;"
+                                        reRender="formBatch, messagesContract" status="batchStatus"/>
+               </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+       
+        <!-- Mass Conditions Penalties -->
+        <apex:pageBlock title="{!$ObjectType.Supply_Penalty__c.Label} {!$Label.LBL_Procedure}" rendered="{!settings.MBF_Section_PenaltiesProcedure}">
+            <apex:pageBlockSection collapsible="true" columns="2">
+                <apex:pageBlockSection title="{!$Label.LBL_Upload}" collapsible="false" columns="1">
+                    <apex:outputpanel >
+                        <apex:outputText value="CSV separator" style="color:#4a4a56; font-size: 91%; font-weight:bold"/>
+                        <apex:selectList multiselect="false" label="" size="1" id="seperator" value="{!selectedSeperator}" style="margin-left: 180px;">
+                            <apex:selectOptions value="{!seperatorOptions}"/>
+                        </apex:selectList>
+                    </apex:outputpanel>
+                    
+                    <apex:outputpanel >
+                        <apex:inputFile value="{!file}" fileName="{!fileName}" accept="csv" contentType="Text/csv" filesize="1000" />
+                        <apex:actionRegion >
+                            <apex:commandbutton action="{!uploadConditionPenaltiesExcelFile}" value="{!$Label.LBL_Upload}" style="color:#4a4a56; font-size: 91%; font-weight:bold; width:70px;"/>
+                        </apex:actionRegion>
+                    </apex:outputpanel>
+                </apex:pageBlockSection>
+                
+                <apex:actionRegion >
+                    <apex:pageBlockSection title="{!$Label.LBL_Run}" collapsible="false">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputText value="{!$Label.LBL_Scan_Synchro}" style="font-weight:bold"/>
+                            <apex:commandButton value="{!$Label.LBL_Run}" action="{!submitPenaltiesScanSynchroBatch}" style="width:70px;" reRender="formBatch, messagesContract" status="batchStatus"/>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:actionRegion>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="{!$Label.LBL_Latest_Active_Jobs}">
+            <!-- Active Jobs -->
+            <apex:pageBlockSection collapsible="false" columns="1">
+                <apex:outputPanel id="apexJob">
+                  <apex:actionRegion >
+                     <apex:actionPoller action="{!getLatestActiveJobs}" rerender="apexJob" interval="10" enabled="{!isPollerActive}"/>
+                     <apex:pageBlockTable headerClass="hidden-table-header" value="{!listJobsWrapper}" var="job" width="100%">
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="{!$ObjectType.AsyncApexJob.fields.CreatedDate.Label}"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputText value="{!job.CreatedDate}">
+                            </apex:outputText>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="{!$ObjectType.AsyncApexJob.fields.JobType.Label}"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputText value="{!job.JobType}"></apex:outputText>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="{!$ObjectType.AsyncApexJob.fields.Status.Label}"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputText value="{!job.Status}"></apex:outputText>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="{!$ObjectType.AsyncApexJob.fields.TotalJobItems.Label}"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputText value="{!job.TotalJobItems}"></apex:outputText>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="{!$ObjectType.AsyncApexJob.fields.JobItemsProcessed.Label}"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputText value="{!job.JobItemsProcessed}"></apex:outputText>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="{!$ObjectType.AsyncApexJob.fields.NumberOfErrors.Label}"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputText value="{!job.NumberOfErrors}"></apex:outputText>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="{!$ObjectType.AsyncApexJob.fields.CreatedById.Label}"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputText value="{!job.submitterFullName}"></apex:outputText>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="{!$ObjectType.AsyncApexJob.fields.CompletedDate.Label}"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputText value="{!job.CompletedDate}">
+                            </apex:outputText>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="Class {!$ObjectType.ApexClass.fields.Name.Label}"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputText value="{!job.ApexClassName}"></apex:outputText>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="{!$ObjectType.AsyncApexJob.fields.Id.Label}"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputText value="{!job.Id}"></apex:outputText>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="Log"></apex:outputText>
+                            </apex:facet>
+                            <apex:outputLink target="_blank" value="/{!job.LogId}" rendered="{!job.LogId!=null}">view</apex:outputLink>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                  </apex:actionRegion>
+                    <div style="width: 100%; margin-top: 10px">
+                        <span> <apex:outputLink target="_blank" value="/apexpages/setup/listAsyncApexJobs.apexp">Show all jobs</apex:outputLink>
+                        </span> <span style="float: right;">
+                         <apex:actionRegion >
+                        <apex:actionStatus id="jobstatus">
+                        <apex:facet name="start">
+                            <img src="/img/loading.gif"/>
+                        </apex:facet>
+                        </apex:actionStatus>
+                            <apex:commandLink title="Refresh" reRender="apexJob,messagesContract" status="jobstatus" action="{!getLatestActiveJobs}">
+                                <i class="fa fa-refresh fa-2x"></i>
+                            </apex:commandLink>
+                        </apex:actionRegion>
+                        </span>
+                    </div>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,86 @@
+<apex:page Controller="UnitNeedProductMergeController"
+           contentType="application/vnd.ms-excel#UnitNeedMergeReport_{!NOW()}.xls" cache="true">
+    <apex:outputText value="{!xmlHeader}" escape="false"/>
+    <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+              xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:x="urn:schemas-microsoft-com:office:excel"
+              xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+              xmlns:html="http://www.w3.org/TR/REC-html40">  
+        <Styles>            
+            <Style ss:ID="header">
+                <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1" ss:bgcolor="#e3deb8" />
+                <Interior ss:Color="#f8f8f8" ss:Pattern="Solid"/>
+            </Style>
+            <Style ss:ID="successRecord">
+                <Font ss:FontName="Calibri" ss:Size="12"/>
+                <Interior ss:Color="#00FF00" ss:Pattern="Solid"/>
+            </Style>
+            <Style ss:ID="failedRecord">
+                <Font ss:FontName="Calibri" ss:Size="12"/>
+                <Interior ss:Color="#FF0000" ss:Pattern="Solid"/>
+            </Style>
+        </Styles>        
+        <Worksheet ss:Name="{!$ObjectType.Product2.Label}">
+            <Table x:FullColumns="1" x:FullRows="1">
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Column ss:Width="80"/>
+                <Row>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$Label.LBL_Executive_Summary}</Data></Cell>
+                </Row>
+                <Row>
+                    <Cell><Data ss:Type="String"><apex:outputText value="{!successedSummaryMessage}"/></Data></Cell>
+                </Row>
+                <Row>
+                    <Cell><Data ss:Type="String"><apex:outputText value="{!failedSummaryMessage}"/></Data></Cell>
+                </Row>
+                <Row></Row>
+                <Row>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$Label.LBL_Unit_Needs}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$Label.LBL_Linked_Product}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Status__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$Label.Comments}</Data></Cell>
+                </Row>               
+                <Row>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Name.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Category__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.ProductCode.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Name.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Category__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                </Row>
+             <apex:repeat value="{!reportMap}" var="reports">
+                 <apex:repeat value="{!reportMap[reports]}" var="reportItem" >
+                        <Row>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!reportMap[reports][reportItem].unName}"/></Data></Cell>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!reportMap[reports][reportItem].unCategory}"/></Data></Cell>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!reportMap[reports][reportItem].linkedProductCode}"/></Data></Cell>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!reportMap[reports][reportItem].linkedProductName}"/></Data></Cell>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!reportMap[reports][reportItem].linkedProductCategory}"/></Data></Cell>
+                            <Cell ss:StyleID="{!IF(reportMap[reports][reportItem].status == $Label.MSG_Success,'successRecord','failedRecord')}">
+                                <Data ss:Type="String"><apex:outputText value="{!reportMap[reports][reportItem].status}"/></Data></Cell>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!reportMap[reports][reportItem].note}"/></Data></Cell>
+                        </Row>
+                    </apex:repeat>
+                </apex:repeat>
+                <Row></Row>
+                <Row>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.User.Label}</Data></Cell>
+                    <Cell><Data ss:Type="String">{!$User.FirstName} {!$User.LastName}</Data></Cell>
+                </Row>                 
+                <Row>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">Date</Data></Cell>
+                    <Cell><Data ss:Type="String"><apex:outputText value="{!formatedExcelDate}"/></Data></Cell>
+                </Row>
+            </Table>
+        </Worksheet>
+    </Workbook>
+</apex:page>

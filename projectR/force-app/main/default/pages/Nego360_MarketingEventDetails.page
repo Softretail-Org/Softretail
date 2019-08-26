@@ -1,0 +1,290 @@
+<apex:page standardController="Commercial_Plan__c" extensions="Nego360_MarketingEventDetails_Controller" standardStylesheets="false"
+           lightningStylesheets="true">
+	<apex:stylesheet value="{!URLFOR($Resource.fontawesome, 'css/font-awesome.min.css') }" />
+	<apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }" />
+	<apex:stylesheet value="{!URLFOR($Resource.Lightbox, '/css/lightbox.css') }" />
+	<script src="{!URLFOR($Resource.Lightbox, '/js/lightbox-plus-jquery.min.js')}"></script>
+	
+	<!-- STYLE -->
+	<style type="text/css">
+        .grid-container-Lightning {
+	        padding-bottom:0px;
+	        width: 150vw;
+        }
+		.filters {
+			width:18%;
+			float:left;
+		}
+		.views {
+			width:80%;
+			float:right;
+		}
+		.resetBtn {
+			/*float:right;*/
+		}
+		.table-column {
+			 word-wrap: break-word;
+		}
+    	.grid-item {
+            width: 180px;
+            word-wrap: break-word;
+            margin-right: 40px;
+            margin-bottom: 20px;
+            float: left;
+    		height: 320px;
+        }
+	</style>
+	
+	<apex:sectionHeader title="{!$ObjectType.Commercial_Plan_Detail__c.Label}" subtitle="Event Details" />
+	<apex:form id="eventsdetailForm">
+		<apex:pageBlock >
+			<apex:actionStatus id="loadingStatus">
+				<apex:facet name="start">
+					<img src="/img/loading.gif" />
+				</apex:facet>
+			</apex:actionStatus>
+			<div style=" overflow:overlay;" >
+				<!-- Filters Section-->
+            	<div class="filters">
+           			<apex:pageBlockSection title="Filters" columns="1" collapsible="false">
+         				<!-- Status -->
+	                	<apex:outputPanel > 
+	            			<apex:outputLabel style="font-weight: bold;" value="Status"/>
+							<apex:selectList style="width:100%;" multiselect="false" value="{!valuesStatus}" size="1">
+								<apex:selectOptions value="{!statusOptions}" />
+								<apex:actionSupport action="{!getEventDetailsFilter}" event="onchange" rerender="eventsdetailForm" status="loadingStatus"/>
+							</apex:selectList>
+	            		</apex:outputPanel>
+	            		<!-- Event Type -->
+	                	<apex:outputPanel > 
+			                <apex:outputLabel style="font-weight: bold;" value="Events Type"/>
+							<apex:selectcheckboxes layout="pageDirection" styleClass="filterelements" value="{!valuesEventType}">
+								<apex:selectoptions value="{!eventsTypeOptions}"/>
+								<apex:actionSupport action="{!getEventDetailsFilter}" event="onchange" rerender="eventsdetailForm" status="loadingStatus"/>
+							</apex:selectcheckboxes>
+						</apex:outputPanel>
+						<!-- User -->
+	                	<apex:outputPanel > 
+		                	<apex:outputLabel style="font-weight: bold;" value="User"/>
+							<apex:selectcheckboxes layout="pageDirection" value="{!valuesUsers}" styleClass="filterelements">
+								<apex:selectoptions value="{!usersOptions}"/>
+								<apex:actionSupport action="{!getEventDetailsFilter}" event="onchange" rerender="eventsdetailForm" status="loadingStatus"/>
+							</apex:selectcheckboxes>
+	                	</apex:outputPanel>
+	                	<!-- Supplier -->
+	                	<apex:outputPanel > 
+		                	<apex:outputLabel style="font-weight: bold;" value="Supplier" />
+							<apex:selectcheckboxes layout="pageDirection" value="{!valuesSuppliers}" styleClass="filterelements">
+								<apex:selectoptions value="{!suppliersOptions}" />
+								<apex:actionSupport action="{!getEventDetailsFilter}" event="onchange" rerender="eventsdetailForm" status="loadingStatus"/>
+							</apex:selectcheckboxes>
+	                	</apex:outputPanel>
+	                	<!-- File Type -->
+	                	<apex:outputPanel >
+	                		<apex:outputLabel style="font-weight: bold;" value="File Type"/>
+							<apex:selectcheckboxes layout="pageDirection" value="{!valuesAttachType}" styleClass="filterelements">
+								<apex:selectoptions value="{!attachTypeOptions}" />
+								<apex:actionSupport action="{!getEventDetailsFilter}" event="onchange" rerender="eventsdetailForm" status="loadingStatus"/>
+							</apex:selectcheckboxes>
+	                	</apex:outputPanel>
+	                	<!-- Reset Button -->
+		               	<apex:commandButton value="Reset" action="{!resetFilter}" rerender="eventsdetailForm" status="loadingStatus"/>
+           			</apex:pageBlockSection>
+            	</div>
+            	<!-- End Filters Section-->
+            	<!-- Views -->
+            	<div class="views">
+					<apex:pageBlockSection columns="1">
+						<!-- Views + Send + Print -->
+						<apex:panelGroup >
+	            			<apex:commandLink style="" title="{!$Label.LBL_List_View}" styleClass="{!IF(isList==true,'opacity','')}" action="{!viewMode}" rerender="eventsdetailForm" status="loadingStatus">
+								<i class="fa fa-list fa-2x"></i>
+								<apex:param value="list" name="column" assignTo="{!valuesView}"/>
+							</apex:commandLink>
+							<apex:commandLink style="" title="{!$Label.LBL_Grid_View}" styleClass="{!IF(isList==false,'opacity','')}" action="{!viewMode}" rerender="eventsdetailForm" status="loadingStatus">
+								<i class="fa fa-th fa-2x"></i>
+								<apex:param value="grid" name="column" assignTo="{!valuesView}"/>
+							</apex:commandLink>
+		           			<apex:commandLink id="printLink" title="{!$Label.LBL_Print}" style="float:right">
+		                   		<i class="fa fa-print fa-2x"></i>
+		                   	</apex:commandLink>
+		           			<apex:commandLink id="sendLink" title="{!$Label.LBL_Send}" style="float:right">
+		                       	<i class="fa fa-send fa-2x"></i>
+		                    </apex:commandLink>
+						</apex:panelGroup>
+						<!-- List View -->
+						<apex:outputPanel StyleClass="{!IF($User.UIThemeDisplayed == 'Theme4d','grid-container-Lightning','')}" rendered="{!isList==true}">
+                        	<apex:pageBlockTable value="{!listEventsDetailWrapper}" var="e" width="100%" columnsWidth="10%,10%,10%,10%,10%,10%,10%,10%,10%,10%,10%">
+                            	<apex:column >
+                                	<apex:facet name="header">
+                                    	<apex:commandLink action="{!getEventDetailsFilter}" reRender="eventsdetailForm" status="loadingStatus">
+                                        	<apex:outputText value="PROMO {!IF(sortDirection='DESC','▼','▲')}"/> <br/>
+                                         	<apex:outputText value="LINE"/>
+                                           	<apex:param value="Name" name="column" assignTo="{!sortExpression}"/>
+                                       	</apex:commandLink>
+                                  	</apex:facet>
+                                   	<apex:outputLink value="/{!e.eventDetails.Id}">
+                                    	<apex:outputText value="{!e.eventDetails.Name}"></apex:outputText>
+                                   	</apex:outputLink>
+                             	</apex:column>
+                               	<apex:column >
+                                	<apex:facet name="header">
+                                    	<apex:commandLink action="{!getEventDetailsFilter}" reRender="eventsdetailForm" status="loadingStatus">
+                                        	<apex:outputText value="EVENT {!IF(sortDirection='DESC','▼','▲')}"/> <br/>
+                                        	<apex:outputText value="NAME"/>
+                                        	<apex:param value="Commercial_Event__r.Name" name="column" assignTo="{!sortExpression}"></apex:param>
+                                       	</apex:commandLink>
+                                   	</apex:facet>
+                                   	<apex:outputLink value="/{!e.eventDetails.Commercial_Event__r.Id}">
+                                		<apex:outputText StyleClass="table-column" value="{!e.eventDetails.Commercial_Event__r.Name}"></apex:outputText>
+                                   	</apex:outputLink>
+                               	</apex:column>
+                             	<apex:column >
+                               		<apex:facet name="header">
+                                    	<apex:commandLink action="{!getEventDetailsFilter}" value="{!$ObjectType.Commercial_Plan__c.fields.Start_Date__c.Label}  {!IF(sortDirection='DESC','▼','▲')}" reRender="eventsdetailForm" status="loadingStatus">
+                                        	<apex:param value="Commercial_Event__r.Start_Date__c" name="column" assignTo="{!sortExpression}"/>
+	                                    </apex:commandLink>
+                                 	</apex:facet>
+                                 	<apex:outputText value="{0, date, d'/'MM'/'yyyy}">
+                                    	<apex:param value="{!e.eventDetails.Commercial_Event__r.Start_Date__c}"/>
+                                	</apex:outputText>
+                             	</apex:column>
+                       			<apex:column >
+                       				<apex:facet name="header">
+                       					<apex:commandLink action="{!getEventDetailsFilter}" value="{!$ObjectType.Commercial_Plan__c.fields.End_Date__c.Label}{!IF(sortDirection='DESC','▼','▲')}"
+                                               reRender="eventsdetailForm" status="loadingStatus">
+                                       		<apex:param value="Commercial_Event__r.End_Date__c" name="column" assignTo="{!sortExpression}"/>
+                                        </apex:commandLink>
+                                  	</apex:facet>
+                                	<apex:outputText value="{0, date, d'/'MM'/'yyyy}">
+                           				<apex:param value="{!e.eventDetails.Commercial_Event__r.End_Date__c}" />
+                             		</apex:outputText>
+                          		</apex:column>
+                              	<apex:column >
+                              		<apex:facet name="header">
+                              			<apex:commandLink action="{!getEventDetailsFilter}" value="{!$ObjectType.Commercial_Plan_Detail__c.fields.Statut__c.Label} {!IF(sortDirection='DESC','▼','▲')}"
+                                        	reRender="eventsdetailForm" status="loadingStatus">
+                                        	<apex:param value="Statut__c" name="column" assignTo="{!sortExpression}"/>
+                                      	</apex:commandLink>
+                                  	</apex:facet>
+                               		<apex:outputText StyleClass="table-column" value="{!e.eventDetails.Statut__c}"/>
+                           		</apex:column>
+                         		<apex:column >
+                               		<apex:facet name="header">
+                               			<apex:commandLink action="{!getEventDetailsFilter}" value="{!$ObjectType.Commercial_Plan_Detail__c.fields.Product__c.Label}  {!IF(sortDirection='DESC','▼','▲')}"
+                                       		reRender="eventsdetailForm" status="loadingStatus">
+                                 			<apex:param value="Product__r.Name" name="column" assignTo="{!sortExpression}"/>
+                            			</apex:commandLink>
+                         			</apex:facet>
+                           			<apex:outputText StyleClass="table-column" value="{!e.eventDetails.Product__r.Name}"/>
+                         		</apex:column>
+                				<apex:column >
+                          			<apex:facet name="header">                                         
+                               			<apex:commandLink action="{!getEventDetailsFilter}" reRender="eventsdetailForm" status="loadingStatus">
+                                    		<apex:outputText value="SUPPORT {!IF(sortDirection='DESC','▼','▲')}"/> <br/>
+                                     		<apex:outputText value="TYPE"/>
+                                    		<apex:param value="Even__c" name="column" assignTo="{!sortExpression}"/>
+                                   		</apex:commandLink>
+                               		</apex:facet>
+                        			<apex:outputText value="{!e.eventDetails.Even__c}"/>
+                     			</apex:column>
+                          		<apex:column style="text-align:center;" width="10" >
+                     				<apex:facet name="header">
+                            			<apex:commandLink action="{!getEventDetailsFilter}" reRender="eventsdetailForm" status="loadingStatus">
+                               				<apex:outputText value="FROM"/> <br/>
+                                  			<apex:outputText value="PRE-NEGO {!IF(sortDirection='DESC','▼','▲')}"/> <br/>
+                                       		<apex:outputText value="BUDGET"/>
+                                       		<apex:param value="From_prenego_budget__c" name="column" assignTo="{!sortExpression}"/>
+                                   		</apex:commandLink>
+                            		</apex:facet>
+                         			<apex:inputCheckbox value="{!e.eventDetails.From_prenego_budget__c}" disabled="true" />
+                         		</apex:column>
+                           		<apex:column >
+                            		<apex:facet name="header">
+                         				<apex:commandLink action="{!getEventDetailsFilter}" value="{!$ObjectType.Commercial_Plan_Detail__c.fields.Supplier__c.Label}  {!IF(sortDirection='DESC','▼','▲')}"
+                                			reRender="eventsdetailForm" status="loadingStatus">
+	                                  		<apex:param value="Supplier__r.Name" name="column" assignTo="{!sortExpression}"/>
+                               			</apex:commandLink>
+                           			</apex:facet>
+                      				<apex:outputText value="{!e.eventDetails.Supplier__r.Name}"/>
+                       			</apex:column>
+                         		<apex:column >
+                       				<apex:facet name="header">
+                            			<apex:commandLink action="{!getEventDetailsFilter}" reRender="eventsdetailForm" status="loadingStatus">
+                                  			<apex:outputText value="MARKETING {!IF(sortDirection='DESC','▼','▲')}"/> <br/>
+                              				<apex:outputText value="EVENT"/>
+                               				<apex:param value="Commercial_Event__r.Name" name="column" assignTo="{!sortExpression}"/>
+                                  		</apex:commandLink>
+                              		</apex:facet>
+                        			<apex:outputText StyleClass="table-column" value="{!e.eventDetails.Commercial_Event__r.Name}"/>
+                     			</apex:column>
+                       			<apex:column >
+                        			<apex:facet name="header">{!$Label.LBL_Image}</apex:facet>
+                     					<apex:outputPanel rendered="{!If(e.fileWrapper.size != 0 && e.fileWrapper[0].isImage==true, true, false)}">
+                                		<a class="example-image-link" href="/servlet/servlet.FileDownload?file={!e.fileWrapper[0].Id}"
+                                       		data-lightbox="example-1"> <apex:image alt="image-1" rendered="{!If(e.fileWrapper.size != 0 && e.fileWrapper[0].isImage==true, true, false)}"
+                                       		width="100px" height="100px" url="/servlet/servlet.FileDownload?file={!e.fileWrapper[0].Id}" />
+                                 		</a>
+                                       </apex:outputPanel>
+                                       <apex:outputLink rendered="{!If(e.fileWrapper.size != 0 && e.fileWrapper[0].isImage==false, true, false)}"
+                                           value="/servlet/servlet.FileDownload?file={!e.fileWrapper[0].Id}">{!$Label.LBL_Click_here}</apex:outputLink>
+                          		</apex:column>
+               				</apex:pageBlockTable>
+							<apex:outputPanel >
+			        			<div align="center" draggable="false">
+							    	<apex:outputLabel style="float:left;" value="{!$Label.LBL_Showing_Page} {!pageNumber} of {!totalPages}"/>
+						        	<!-- First Page -->
+			                        <apex:commandLink value="◄◄ " rendered="{!pageNumber > 1}" style="padding-right:20px; text-decoration: none;" action="{!first}" rerender="eventsdetailForm" status="{!IF(pageNumber > 1,"loadingStatus","")}" />
+			                        <apex:outputLabel rendered="{!!(pageNumber > 1)}" style="color:gray; padding-right:20px;" value="◄◄ "/>
+			                        <!-- Previous Page -->
+			                        <apex:commandLink value="◄ Preview " rendered="{!If(pageNumber > 1, true, false)}" style="padding-right:2px; text-decoration: none;" action="{!previous}" rerender="eventsdetailForm" status="{!IF(pageNumber > 1,"loadingStatus","")}" />
+			                        <apex:outputLabel rendered="{!!(pageNumber > 1)}" style="color:gray; padding-right:2px;" value="◄ Preview "/>
+			                        <!-- Next Page -->
+			                        <apex:commandLink value=" Next ►" rendered="{!If(pageNumber<totalPages, true, false)}" style="padding-right:2px; text-decoration: none;" action="{!next}" rerender="eventsdetailForm" status="{!IF(pageNumber<totalPages,"loadingStatus","")}" />
+			                        <apex:outputLabel rendered="{!!(pageNumber < totalPages)}" style="color:gray; padding-right:2px;" value=" Next ►"/>
+			                        <!-- Last Page -->
+			                        <apex:commandLink value=" ►►" rendered="{!If(pageNumber<totalPages, true, false)}" style="padding-left:20px; text-decoration: none;" action="{!end}" rerender="eventsdetailForm" status="{!IF(pageNumber<totalPages,"loadingStatus","")}" />
+			                        <apex:outputLabel rendered="{!!(pageNumber < totalPages)}" style="color:gray; padding-left:20px;" value=" ►►"/>
+						        </div>
+				        	</apex:outputPanel>
+						</apex:outputPanel>
+						<!-- Grid View -->
+						<apex:outputPanel rendered="{!isList==false}">
+							<apex:repeat value="{!listEventsDetailWrapper}" var="e">
+								<div class="grid-item" >
+									<apex:outputPanel rendered="{!If(e.fileWrapper.size != 0 && e.fileWrapper[0].isImage==true, true, false)}">
+										<a class="example-image-link" href="/servlet/servlet.FileDownload?file={!e.fileWrapper[0].Id}" data-lightbox="example-1">
+	                                          <apex:image alt="image-1" rendered="{!If(e.fileWrapper.size != 0 && e.fileWrapper[0].isImage==true, true, false)}"
+												width="200px" height="200px" url="/servlet/servlet.FileDownload?file={!e.fileWrapper[0].Id}" />
+										</a>
+									</apex:outputPanel>
+									<apex:outputLink rendered="{!If(e.fileWrapper.size != 0 && e.fileWrapper[0].isImage==false, true, false)}"
+														value="/servlet/servlet.FileDownload?file={!e.fileWrapper[0].Id}">
+										<apex:image width="200px" height="200px"
+															url="https://proliftdoors.com/wp-content/themes/360franchiseBoot/images/noimage.jpg" />
+									</apex:outputLink>
+									<apex:image rendered="{!If(e.fileWrapper.size == 0, true, false)}" width="200px" height="200px"
+															url="https://proliftdoors.com/wp-content/themes/360franchiseBoot/images/noimage.jpg" />
+									<apex:outputLink style="display: block; width:80%" value="/{!e.eventDetails.Id}">
+										<apex:outputText value="{!e.eventDetails.Commercial_Event__r.Name}"/> <apex:outputPanel rendered="{!e.eventDetails.Product__r.Name!=null}"> <br></br> </apex:outputPanel>
+										<apex:outputText value="{!e.eventDetails.Product__r.Name}"/>  <apex:outputPanel rendered="{!e.eventDetails.Supplier__r.Name!=null}"> <br></br> </apex:outputPanel>
+										<apex:outputText value="{!e.eventDetails.Supplier__r.Name}"/> <apex:outputPanel > <br></br> </apex:outputPanel>
+										<apex:outputText value="{!e.eventDetails.CreatedBy.Name}"/>
+									</apex:outputLink>
+								</div>
+							</apex:repeat>
+						</apex:outputPanel>
+						<apex:outputPanel rendered="{!isList==false}">
+							<apex:actionStatus id="loadMoreStatus">
+								<apex:facet name="start">
+									<img src="/img/loading.gif" />
+								</apex:facet>
+							</apex:actionStatus> 
+							<apex:commandLink action="{!LoadMore}" value="{!$Label.LBL_Load_More}" reRender="eventsdetailForm" status="loadMoreStatus" rendered="{!If(pageNumber<totalPages, true, false)}" />
+						</apex:outputPanel>
+					</apex:pageBlockSection>
+            	</div>
+			</div>
+		</apex:pageBlock>
+	</apex:form>
+</apex:page>

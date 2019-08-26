@@ -1,0 +1,47 @@
+<!-- Left Side Menu -->
+<apex:page controller="Main_App_launcher_Controller">
+    <apex:repeat value="{!appMenuItems}" var="app">
+        <div class="app-item">
+            <a href=""
+                onclick="window.top.location='{!app.StartUrl}'; return false"> <apex:image value="{!app.LogoUrl}" styleClass="imgClass" /> <!--{!app.Label}-->
+            </a>
+        </div>
+    </apex:repeat>
+
+    <style>
+        .app-item {
+            
+        }
+        
+        .app-item a {
+            border: solid 1px #E6E6E6;
+            /*background-color: #FAFAFA;*/
+            width: 85%;
+            text-align: left;
+            margin: 1% 10px;
+            padding: 4px 5px;
+            font-size: 10px;
+            cursor: pointer;
+            float: left;
+            text-decoration: none;
+        }
+        
+        .app-item a:hover {
+            text-decoration: none;
+            border: solid 1px #CEE3F6;
+            background-color: #A9D0F5;
+            color: white;
+        }
+        
+        .imgClass {
+            width: 90%;
+        /*height: auto;*/
+            height: 35px;
+        }
+        
+        .app-item:hover {
+            
+        }
+    </style>
+
+</apex:page>

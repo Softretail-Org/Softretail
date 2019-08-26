@@ -1,0 +1,91 @@
+<apex:page standardController="Commercial_Plan__c" extensions="CancelPromoController" tabStyle="Commercial_Plan__c"
+           lightningStylesheets="true" showHeader="true" sidebar="false">
+    
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}"/>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"/>
+    <apex:includeScript value="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.1/js/jquery.tablesorter.min.js"/>
+    <apex:stylesheet value="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.1/css/theme.blue.css" />
+    
+    <script type="">
+    $(function() {
+        var sortedCol ;
+        $("[id$=details]").tablesorter();
+        
+    });
+    $(document).ready(function() {
+        var linkElements = $('[id$=theForm]').find('a');
+        for (var k = 0 ; k < linkElements.length ; k++) {
+            linkElements.attr('target','_blank');
+        }
+    });
+    </script>
+    <apex:pageMessages id="messages"/>
+    <apex:sectionHeader title="{!$ObjectType.Commercial_Plan__c.Label}" subtitle="{!commercialPlan.Name} - {!commercialPlan.Event_Code__c}" />
+    <apex:form Id="theForm">
+        <!-- global loading action status -->
+        <apex:actionStatus id="globalloading">
+            <apex:facet name="start">
+                <div class="loading-overlay">
+                    <div class="loader-img"></div>
+                    <div class="loading-block">{!$Label.Loading}</div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        <apex:pageBlock id="promo" mode="maindetail">
+            <apex:pageBlockButtons >
+                <apex:commandButton value="{!$Label.LBL_Cancel_Promo}" action="{!cancelPromo}"
+                                    status="globalloading" reRender="promo,messages" rendered="{!AND(commercialPlan != null, NOT(isCanceled))}" />
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}"
+                                    status="globalloading" reRender="promo,messages"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection columns="1" title="{!$ObjectType.Commercial_Plan__c.Label}" collapsible="true">
+                <apex:pageBlockSection columns="2">
+                    <apex:outputField value="{!commercialPlan.Name}" />
+                    <apex:outputField value="{!commercialPlan.Event_Code__c}" />
+                    <apex:outputField value="{!commercialPlan.Start_Date__c}" />
+                    <apex:outputField value="{!commercialPlan.End_Date__c}" />
+                    <apex:outputField value="{!commercialPlan.Supplier__c}" />
+                    <apex:outputField value="{!commercialPlan.BU_Target__c}" />
+                    <apex:outputField value="{!commercialPlan.History_Reference__c}" />
+                    <apex:outputField value="{!commercialPlan.Condition_Code__c}" />
+                    <apex:outputField value="{!commercialPlan.Promo_Budget_Type__c}" />
+                    <apex:outputField value="{!commercialPlan.Target_Elasticity__c}" />
+                    <apex:outputField value="{!commercialPlan.Target_Constribution_rate__c}" />
+                    <apex:outputField value="{!commercialPlan.Contribution_Validated__c}" />
+                </apex:pageBlockSection>
+                <apex:pageBlockTable id="details" value="{!commercialPlan.Marketing_Event_Detail__r}" var="item" border="0">
+                    <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail__c.fields.Name.Label}">
+                        <apex:outputLink value="/{!item.Id}" target="_blank"><apex:outputField value="{!item.Name}" /></apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Product2.fields.Name.Label}">
+                        <apex:outputField value="{!item.Product__c}" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail__c.fields.Contribution_Unit_Quantity__c.Label}">
+                        <apex:outputField value="{!item.Contribution_Unit_Quantity__c}" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail__c.fields.Contribution_Unit_Amount__c.Label}">
+                        <apex:outputField value="{!item.Contribution_Unit_Amount__c}" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail__c.fields.Regular_Purchase_Price__c.Label}">
+                        <apex:outputField value="{!item.Regular_Purchase_Price__c}" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail__c.fields.Regular_Sales_Price__c.Label}">
+                        <apex:outputField value="{!item.Regular_Sales_Price__c}" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail__c.fields.Promo_Purchase_Price__c.Label}">
+                        <apex:outputField value="{!item.Promo_Purchase_Price__c}" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail__c.fields.Promo_Sales_Price__c.Label}">
+                        <apex:outputField value="{!item.Promo_Sales_Price__c}" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail__c.fields.Contract__c.Label}">
+                        <apex:outputField value="{!item.Contract__c}" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail__c.fields.Prenego_envelop__c.Label}">
+                        <apex:outputField value="{!item.Prenego_envelop__c}" />
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

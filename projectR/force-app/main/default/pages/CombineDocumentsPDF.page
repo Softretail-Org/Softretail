@@ -1,0 +1,9 @@
+<apex:page controller="CombineDocumentsController" renderAs="PDF" title="" name=""
+           showHeader="false" sidebar="false" standardStylesheets="false" applyBodyTag="false" applyHtmlTag="false" cache="true">
+    <head>
+        <apex:outputText value="{!head}" escape="false" />
+    </head>
+    <body>      
+        <apex:outputText value="{!body}" escape="false" />
+    </body>
+</apex:page>

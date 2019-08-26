@@ -1,0 +1,143 @@
+<apex:page standardController="Assortment_BU__c"
+           extensions="AssortmentBUProductSelectionController"
+           lightningStylesheets="true" >
+    <apex:pageMessages id="messages" />
+    <apex:sectionHeader title="{!Assortment_BU__c.Name}" />
+    <apex:form id="theForm" >
+        <apex:actionFunction name="searchProducts" action="{!searchProducts}" reRender="productsTable" status="globalloading" />
+        <apex:actionFunction name="refreshPageSize" action="{!refreshPageSize}" reRender="productsTable" status="fetchStatus" oncomplete="toggleSelectAllProductsCheckbox();" />
+        <apex:PageBlock >
+            <apex:pageBlockSection columns="1" >
+                <apex:pageBlockSection id="productFilters" title="{!$Label.LBL_Filter}" columns="2" >
+                    <apex:pageBlockSectionItem id="categoryLookup">
+                        <apex:outputLabel value="{!$ObjectType.Product2.Fields.Category__c.Label}" />
+                        <c:AdvancedLookup sObjectName="Orga_HE__c" value="{!categoryLookup}" searchFields="Name, Elt_Code__c" 
+                                          formFields="Name, Elt_Code__c" canCreate="false" fieldLabel="Name"
+                                          tabIndexLookup="11" multiSelect="true"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem id="brandLookup">
+                        <apex:outputLabel value="{!$ObjectType.Product2.Fields.Brand__c.Label}" />
+                        <c:AdvancedLookup sObjectName="Sup_Brand__c" value="{!brandLookup}" searchFields="Name, Brand_code__c" 
+                                          formFields="Name, Brand_code__c" canCreate="false" fieldLabel="Name"
+                                          tabIndexLookup="10" multiSelect="true" />
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel ></apex:outputLabel>
+                        <apex:panelGroup >
+                            <apex:inputText id="searchInput" value="{!searchString}" html-placeholder="{!$Label.Search}" onkeypress="return onPressEnterKey(event);" />
+                            <apex:commandButton value="{!$Label.LBL_Search}"
+                                                action="{!searchProducts}" reRender="productsTable"
+                                                status="globalloading" />
+                            <apex:commandButton Id="resetBtn" value="{!$Label.LBL_Reset}"
+                                                action="{!resetFilter}" reRender="productsTable, productFilters"
+                                                status="globalloading" onComplete="return onPressEnterKey(event);" />
+                            <apex:actionStatus id="globalloading" >
+                                <apex:facet name="start" >
+                                    <img src="/img/loading.gif" />
+                                </apex:facet>
+                            </apex:actionStatus> 
+                        </apex:panelGroup>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <apex:pageBlockTable id="productsTable" value="{!ProductRecords}" var="item" columnsWidth="1%,30%,20%,10%,10%,10%,10%">
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:inputCheckbox styleClass="selectAllProductsCheckbox" onclick="toggleSelectAllProductsCheckbox(this);" />
+                        </apex:facet>
+                        <apex:inputCheckbox value="{!item.isSelected}" styleClass="productCheckbox" onchange="toggleSelectAllProductsCheckbox(this);"/>
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Product2.fields.Name.Label}">
+                        <apex:outputLink value="/{!item.product.Id}" target="_blank">
+                            <apex:outputText value="{!item.product.Name}" />
+                        </apex:outputLink>
+                    </apex:column>
+                    <apex:column value="{!item.product.Product_EAN__c}" />
+                    <apex:column value="{!item.product.Brand__c}" />
+                    <apex:column value="{!item.product.Category__r.Parent_Element__c}" />
+                    <apex:column value="{!item.product.Category__c}" />
+                    <apex:column headerValue="Image" width="20%" >
+                        <apex:image url="{!URLFOR($Action.Attachment.Download,item.productImageId)}"
+                                    rendered="{!AND(item.productImageId!=null, !item.isFile)}"
+                                    width="75px" height="75px" />
+                        <apex:image url="/sfc/servlet.shepherd/version/renditionDownload?rendition=ORIGINAL_Png&versionId={!item.productImageId}"
+                                    rendered="{!AND(item.productImageId!=null, item.isFile)}"
+                                    width="75px" height="75px"/>
+                        <apex:image url="/img/icon/products16.png" rendered="{!item.productImageId==null}"
+                                    width="30px" height="30px" />
+                    </apex:column>
+                    <apex:facet name="footer" >
+                        <apex:outputPanel >
+                            <apex:selectList value="{!pageSize}" multiselect="false"
+                                         size="1" onchange="refreshPageSize();">
+                                <apex:selectOptions value="{!pageSizes}" />
+                            </apex:selectList>
+                            <apex:commandButton status="fetchStatus" value="{!$Label.LBL_First}" action="{!first}"
+                                                disabled="{!!productStdSetCtrl.hasPrevious}" reRender="productsTable"
+                                                styleClass="btn" oncomplete="toggleSelectAllProductsCheckbox();" />
+                            <apex:commandButton status="fetchStatus" value="{!$Label.LBL_Previous}" action="{!previous}"
+                                                disabled="{!!productStdSetCtrl.hasPrevious}" reRender="productsTable"
+                                                styleClass="btn" oncomplete="toggleSelectAllProductsCheckbox();" />
+                            <apex:commandButton status="fetchStatus" value="{!$Label.LBL_Next}" action="{!next}"
+                                                disabled="{!!productStdSetCtrl.hasNext}" reRender="productsTable"
+                                                styleClass="btn" oncomplete="toggleSelectAllProductsCheckbox();" />
+                            <apex:commandButton status="fetchStatus" value="{!$Label.LBL_Last}" action="{!last}"
+                                                disabled="{!!productStdSetCtrl.hasNext}" reRender="productsTable"
+                                                styleClass="btn" oncomplete="toggleSelectAllProductsCheckbox();" />
+                            <apex:outputText style="text-align: right" >{!(productStdSetCtrl.pageNumber * pageSize)+1-pageSize}-{!IF((productStdSetCtrl.pageNumber * pageSize)>noOfRecords, noOfRecords,
+                                (productStdSetCtrl.pageNumber * pageSize))} {!$Label.LBL_Of} {!noOfRecords}
+                            </apex:outputText>
+                            <apex:actionStatus id="fetchStatus" >
+                                <apex:facet name="start" >
+                                    <img src="/img/loading.gif" />
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            <apex:pageBlockButtons >
+                <apex:actionStatus id="fetchStatus" >
+                    <apex:facet name="start" >
+                        <img src="/img/loading.gif" />
+                    </apex:facet>
+                </apex:actionStatus>
+                <apex:commandButton action="{!importAll}" value="{!$Label.LBL_Import_All_Filtered}" status="fetchStatus" reRender="messages, productsTable"/>
+                <apex:commandButton action="{!importSelected}" value="{!$Label.Save}" status="fetchStatus" reRender="messages, productsTable" />
+                <apex:commandButton action="{!cancel}" value="{!$Label.Cancel}" rerender=""/>
+            </apex:pageBlockButtons>
+        </apex:PageBlock>
+    </apex:form>
+    <apex:includeScript value="https://code.jquery.com/jquery-1.12.4.js" />
+    <script>
+    $(document).ready(function() {
+        $("[id*='searchInput']").focus(function() {
+            $(this).select();
+        });
+    });
+    
+    function onPressEnterKey(e) {
+        if (e.keyCode == 13) {
+            searchProducts();
+            return false;
+        }
+        return e.keyCode !== 13;
+    }
+    
+    function toggleSelectAllProductsCheckbox(cb) {
+        var productCheckboxes = document.getElementsByClassName('productCheckbox');
+        if (cb == null || cb.classList.contains('productCheckbox')) {
+            var selectAll = true;
+            for (var i = 0; i < productCheckboxes.length; i++) {
+                selectAll = selectAll && productCheckboxes[i].checked;
+                if (!selectAll) break;
+            }
+            document.getElementsByClassName('selectAllProductsCheckbox')[0].checked = selectAll;
+        }
+        else {
+            for (var i = 0; i < productCheckboxes.length; i++) {
+                productCheckboxes[i].checked = cb.checked;
+            }
+        }
+    }
+    </script>
+</apex:page>

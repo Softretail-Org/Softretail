@@ -1,0 +1,65 @@
+<apex:page controller="ReportsFilteringController">
+	<style>
+	   .panelGridWidth {width:50%}
+	   .panelGridCenter {margin:0 auto; width:100%;}
+	</style>
+	<apex:sectionHeader title="Nego+ Reports" subtitle="Reports Manager"/>
+	<apex:form id="form">	
+		<apex:panelGrid columnClasses="panelGridWidth" styleClass="panelGridCenter" columns="2">
+			<apex:pageBlock >
+				<apex:pageMessages id="msg"/>
+				<apex:actionStatus id="status">
+					<apex:facet name="start">
+						<img src="/img/loading.gif"/>
+					</apex:facet>
+				</apex:actionStatus>
+				<apex:pageBlockSection title="Report Filtering" collapsible="false" columns="1">
+					<apex:outputPanel >
+						<apex:outputText value="Country" label="Country" style="font-weight:bold"/>
+						<apex:selectList id="country" multiselect="false" label="" size="1" required="true" value="{!selectCountry}" style="margin-left:50px;">
+							<apex:selectOptions value="{!buOptions}"/>
+						</apex:selectList>
+					</apex:outputPanel>
+					<apex:outputPanel >
+						<apex:outputLabel style="font-weight:bold" value="{!$Label.LBL_SelectYear}" for="field__year"/>
+						<apex:selectList value="{!year}" id="field__year" style="margin-left:32px;" multiselect="false" size="1" label="{!$Label.LBL_SelectYear}" required="true">
+							<apex:selectOptions value="{!Years}"/>
+						</apex:selectList>
+					</apex:outputPanel>
+					<apex:outputPanel >
+						<apex:outputText value="Report" style="font-weight:bold"/>
+						<apex:selectList multiselect="false" label="" size="1" required="true" value="{!selectReport}" style="margin-left: 58px;">
+							<apex:selectOptions value="{!reportsOptions}"/>
+						</apex:selectList>
+					</apex:outputPanel>
+					<apex:outputPanel >
+						<apex:commandlink action="{!submitReportResult}" target="_blank">
+							<apex:commandButton value="Run" reRender="formBatch, msg" status="status"/>
+						 </apex:commandLink>
+					</apex:outputPanel>
+				</apex:pageBlockSection>
+			</apex:pageBlock>
+			<apex:pageBlock >
+				<apex:pageBlockSection title="Custom Reports" collapsible="false" columns="1">
+					<apex:outputPanel >
+						<apex:outputText value="Links:" style="font-weight:bold"/>
+					</apex:outputPanel>
+	                <apex:outputPanel >
+		                <span>
+		                    <apex:outputLink value="/apex/ZeroRebatesContract" target="_blank">
+		                        <apex:outputText value="Zero Rebates Contract"/>
+		                    </apex:outputLink>
+		                </span>
+	                </apex:outputPanel>
+		            <apex:outputPanel >
+		            	<span>
+			                <apex:outputLink value="/apex/RebatesVarianceReport" target="_blank">
+		                        <apex:outputText value="Rebates Variance"/>
+		                    </apex:outputLink>
+                    	</span>
+                    </apex:outputPanel>
+		       	</apex:pageBlockSection>
+	       	</apex:pageBlock>
+     	</apex:panelGrid>
+	</apex:form>
+</apex:page>

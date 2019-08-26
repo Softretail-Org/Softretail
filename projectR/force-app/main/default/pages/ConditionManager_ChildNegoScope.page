@@ -1,0 +1,164 @@
+<apex:page standardController="Contract__c" extensions="ConditionManagerController" lightningStylesheets="true" readOnly="false">
+    <apex:form id="formChildNegoScope" >
+        <!-- popup choose product scope -->
+        <apex:outputPanel id="popupChildNegoscope" styleClass="overlayPopupChildNegoscope" layout="block" rendered="{!popupChildNegoscope}" >
+            <apex:outputPanel styleClass="popupChildNegoscope"  layout="block" rendered="{!popupChildNegoscope}">
+                <apex:pageBlock title="{!$ObjectType.Contract_Discount__c.fields.Product_Scope__c.Label}"> 
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputLabel value="Parent Negoscope" style="font-weight: bold;"/>
+                        <apex:outputField value="{!contract.Supplier_Nego_Scope__c}" />
+                    </apex:pageBlockSection>
+                    <apex:pageBlock >
+                        <apex:pageBlockTable value="{!wChildNegoscopeList}" var="item" >
+                            <apex:column >
+                                <apex:inputCheckbox id="looped" selected="{!item.selected}" onclick="selectProductScope(this);" />
+                            </apex:column>
+                            <apex:column headerValue="{!$Label.LBL_ScopeName}">
+                                <apex:outputField value="{!item.negoscope.Name}"/>
+                            </apex:column>
+                            <apex:column headerValue="{!$Label.LBL_IncludedBrands}">
+                                <apex:commandLink value="{!item.brandsLabel}" action="{!showPopup}" reRender="formChildNegoScope"
+                                                  status="globalloading" oncomplete="afterRerender()" >
+                                    <apex:param name="popupChildNegoscope" assignTo="{!popupChildNegoscope}" value="false" />
+                                	<apex:param name="popupChildNegoscopeBrands" assignTo="{!popupChildNegoscopeBrands}" value="true" />
+                                    <apex:param name="currentNegoscopeIndex" assignTo="{!currentNegoscopeIndex}" value="{!item.index}" />
+                                </apex:commandLink>
+                            </apex:column>
+                            <apex:column headerValue="{!$Label.LBL_StructureScope}">
+                                <apex:commandLink value="{!item.HELabel}" action="{!showPopup}" reRender="formChildNegoScope"
+                                                  status="globalloading" oncomplete="afterRerender()" >
+                                    <apex:param name="popupChildNegoscope" assignTo="{!popupChildNegoscope}" value="false" />
+                                    <apex:param name="popupChildNegoscopeHEs" assignTo="{!popupChildNegoscopeHEs}" value="true" />
+                                    <apex:param name="currentNegoscopeIndex" assignTo="{!currentNegoscopeIndex}" value="{!item.index}" />
+                                </apex:commandLink>
+                            </apex:column>
+                            <apex:column headerValue="{!$Label.LBL_ProductGroup}"> 
+                                <apex:commandLink value="{!item.PGLabel}" action="{!showPopup}" reRender="formChildNegoScope"
+                                                  status="globalloading" oncomplete="afterRerender()" >
+                                    <apex:param name="popupChildNegoscope" assignTo="{!popupChildNegoscope}" value="false" />    
+                                    <apex:param name="popupChildNegoscopePGs" assignTo="{!popupChildNegoscopePGs}" value="true" />
+                                    <apex:param name="currentNegoscopeIndex" assignTo="{!currentNegoscopeIndex}" value="{!item.index}" />
+                                </apex:commandLink>
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlock>
+                    <apex:pageBlockButtons >
+                        <apex:commandButton value="{!$Label.OK}" action="{!hidePopup}"
+                                            rerender="col_product_scope, toolbar, formChildNegoScope"
+                                            status="globalloading" oncomplete="afterRerender()" />
+                        <apex:commandButton value="{!$Label.Cancel}" action="{!cancelPopup}"
+                                            rerender="formChildNegoScope"
+                                            status="globalloading" oncomplete="afterRerender()" />
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- end popup choose product scope -->
+        
+        <!-- popup negoscope brands -->
+        <apex:outputPanel id="popupChildNegoscopeBrands" styleClass="overlayPopupChildNegoscope" layout="block" rendered="{!popupChildNegoscopeBrands}" >
+            <apex:outputPanel styleClass="popupChildNegoscope" layout="block" rendered="{!popupChildNegoscopeBrands}">
+                <apex:pageBlock title="{!$ObjectType.Sup_Bra_Distributor__c.Label}" >
+                    <apex:pageBlockTable value="{!BrandList}" var="item" >
+                        <apex:column headerValue="{!$ObjectType.Sup_NS_Brand__c.fields.Name.Label}" >
+                            <apex:outputField value="{!item.Name}" />
+                        </apex:column>
+                        <apex:column headerValue="{!$ObjectType.Sup_Supplier__c.fields.Name.Label}" >
+                            <apex:outputField value="{!item.Sup_Scope_Brand__r.Brand_Owner__r.Name}" />
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    <apex:pageBlockButtons >
+                        <apex:commandButton value="{!$Label.OK}" action="{!cancelPopup}" rerender="formChildNegoScope"
+                                            status="globalloading" oncomplete="afterRerender()" />
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- end popup negoscope brands -->
+        
+        <!-- popup negoscope Structure Elements -->
+        <apex:outputPanel id="popupChildNegoscopeHEs" styleClass="overlayPopupChildNegoscope" layout="block" rendered="{!popupChildNegoscopeHEs}" >
+            <apex:outputPanel styleClass="popupChildNegoscope" layout="block" rendered="{!popupChildNegoscopeHEs}">
+                <apex:pageBlock title="{!$Label.LBL_StructureElements}" >
+                    <apex:pageBlockTable value="{!HEList}" var="item" >
+                        <apex:column headerValue="{!$ObjectType.Orga_HE__c.fields.Name.Label}" >
+                            <apex:outputField value="{!item.Structure_Element__r.Name}" />
+                        </apex:column>
+                        <apex:column headerValue="{!$ObjectType.Supplier_NS_HE__c.fields.Choice__c.Label}" >
+                            <apex:outputField value="{!item.Choice__c}" />
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    <apex:pageBlockButtons >
+                        <apex:commandButton value="{!$Label.OK}" action="{!cancelPopup}" rerender="formChildNegoScope"
+                                            status="globalloading" oncomplete="afterRerender()" />
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- end popup negoscope Structure Elements -->
+        
+        <!-- popup negoscope PGs -->
+        <apex:outputPanel id="popupChildNegoscopePGs" styleClass="overlayPopupChildNegoscope" layout="block" rendered="{!popupChildNegoscopePGs}" >
+            <apex:outputPanel styleClass="popupChildNegoscope" layout="block" rendered="{!popupChildNegoscopePGs}">
+                <apex:pageBlock title="{!$ObjectType.Supplier_PG_Mapping__c.Label}" >
+                    <apex:pageBlockTable value="{!PGList}" var="item" >
+                        <apex:column headerValue="{!$ObjectType.Sup_NS_PG__c.fields.Name.Label}" >
+                            <apex:outputField value="{!item.Name}" />
+                        </apex:column>
+                        <apex:column headerValue="{!$ObjectType.Supplier_PG_Mapping__c.fields.Name.Label}" >
+                            <apex:outputField value="{!item.sup_PG__r.Name}" />
+                        </apex:column>
+                        <apex:column headerValue="{!$ObjectType.Sup_NS_PG__c.fields.Department__c.Label}" >
+                            <apex:outputField value="{!item.Department__c}" />
+                        </apex:column>
+                        <apex:column headerValue="{!$ObjectType.Sup_NS_PG__c.fields.Section__c.Label}" >
+                            <apex:outputField value="{!item.Section__c}" />
+                        </apex:column>
+                        <apex:column headerValue="{!$ObjectType.Sup_NS_PG__c.fields.Status__c.Label}" >
+                            <apex:outputField value="{!item.Status__c}" />
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    <apex:pageBlockButtons >
+                        <apex:commandButton value="{!$Label.OK}" action="{!cancelPopup}" rerender="formChildNegoScope"
+                                            status="globalloading" oncomplete="afterRerender()" />
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- end popup negoscope PGs -->
+    </apex:form>
+    
+    
+    
+    <style>
+    
+        .overlayPopupChildNegoscope {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.5);
+            transition: opacity 500ms;
+            z-index: 1000;
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        
+        .popupChildNegoscope {
+            margin: 10% auto;
+            padding: 5px;
+            width: 60%;
+        	height: 350px;
+            position: relative;
+            transition: all 5s ease-in-out;
+        	overflow: auto;
+        }
+        
+    </style>
+    
+    
+    
+    
+</apex:page>

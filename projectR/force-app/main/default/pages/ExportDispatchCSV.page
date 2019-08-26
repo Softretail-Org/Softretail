@@ -1,0 +1,12 @@
+<apex:page controller="ImportExportDispatchController" cache="true"
+           contentType="application/octet-stream#{!fileName}.csv"
+           showHeader="false" sidebar="false" standardStylesheets="false">Supplier name,{!condition.Contract__r.Supplier__r.Name}, Contract name,{!condition.Contract__r.Name}, Condition name,{!condition.Name}
+{!csvHeader}
+<apex:repeat value="{!wDispatchDetailList}" var="item">
+{!item.nameBU},{!item.section},{!item.sna},{!item.distpatchDetail.Fix_Amount_Dispatch_M1__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M2__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M3__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M4__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M5__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M6__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M7__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M8__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M9__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M10__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M11__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M12__c}
+</apex:repeat>
+<apex:repeat value="{!remainderWDDList}" var="item">
+{!item.nameBU},{!item.section},{!item.sna},{!item.distpatchDetail.Fix_Amount_Dispatch_M1__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M2__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M3__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M4__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M5__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M6__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M7__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M8__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M9__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M10__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M11__c},{!item.distpatchDetail.Fix_Amount_Dispatch_M12__c}
+</apex:repeat>
+{!IF((remainderWDDList != Null && remainderWDDList.size > 0), 'Collection size exceeds maximum of 1000. Remaining rows will not appear below.', '')}
+</apex:page>

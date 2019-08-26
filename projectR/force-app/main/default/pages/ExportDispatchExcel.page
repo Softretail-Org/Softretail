@@ -1,0 +1,104 @@
+<apex:page standardController="Contract_Discount__c" extensions="ImportExportDispatchController"
+           cache="true" contentType="application/vnd.ms-excel#{!fileName}.xls">
+    <apex:pageBlock >
+        <apex:dataTable value="{!Contract_Discount__c}" var="info">
+			<apex:column >
+				<apex:outputText value="Supplier name"/>
+			</apex:column>
+			<apex:column >
+				<apex:outputText value="{!Contract_Discount__c.Contract__r.Supplier__r.Name}"/>
+			</apex:column>
+			<apex:column >
+				<apex:outputText value="Contract name"/>
+			</apex:column>
+			<apex:column >
+				<apex:outputText value="{!Contract_Discount__c.Contract__r.Name}"/>
+			</apex:column>
+			<apex:column >
+				<apex:outputText value="Condition name"/>
+			</apex:column>
+			<apex:column >
+				<apex:outputText value="{!Contract_Discount__c.Name}"/>
+			</apex:column>
+		</apex:dataTable>
+        <apex:outputPanel >
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="col1"><apex:pageBlockTable value="{!wDispatchDetailList}" var="item">
+                            <apex:column >
+                                <apex:facet name="header">Business Unit</apex:facet>
+                                <apex:outputText value="{!item.nameBU}"></apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Section</apex:facet>
+                                <apex:outputText value="{!item.section}"></apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 1</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M1__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 2</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M2__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 3</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M3__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 4</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M4__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 5</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M5__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 6</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M6__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 7</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M7__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 8</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M8__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 9</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M9__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 10</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M10__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 11</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M11__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Month 12</apex:facet>
+                                <apex:outputText value="{!item.distpatchDetail.Fix_Amount_Dispatch_M12__c}">
+                                </apex:outputText>
+                            </apex:column>
+                            </apex:pageBlockTable>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </apex:outputPanel>
+    </apex:pageBlock>
+</apex:page>

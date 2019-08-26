@@ -1,0 +1,95 @@
+<apex:page controller="ZeroRebatesContractController" cache="true" contentType="application/vnd.ms-excel#{!fileName}.xls">
+    
+    <apex:pageBlock >
+        <apex:pageBlockTable value="{!purchases}" var="purchase" border="1px">
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.Supplier__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.Supplier__r.Name}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.Contrat1__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.Contrat1__r.Name}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.PG__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.PG__r.Name}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.Supplier_Nego_Scope__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.Supplier_Nego_Scope__r.Name}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO1__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO1__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO2__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO2__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO3__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO3__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO4__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO4__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO5__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO5__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO6__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO6__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO7__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO7__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO8__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO8__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO9__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO9__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO10__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO10__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO11__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO11__c}"></apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">{!$ObjectType.Purchases_Flow_PG__c.fields.TO12__c.Label}</apex:facet>
+                <apex:outputText value="{!purchase.TO12__c}"></apex:outputText>
+            </apex:column>
+        </apex:pageBlockTable>
+        <br/><br/>
+        <table style="width:100%">
+	  		<tr>
+	  			<td></td>
+		    	<th><apex:outputLabel value="{!$Label.LBL_Zero_Rebates_Contract}"/></th>
+		  	</tr>
+		  	<tr>
+		  		<td></td>
+		    	<td><apex:outputLabel value="{!$Label.LBL_Zero_Rebates_Contract_Description}"/></td>
+		  	</tr>
+		  	<tr><td></td></tr>
+		  	<tr>
+		  		<td></td>
+				<td><apex:outputLabel value="{!$Label.LBL_Copyright}"/></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td><apex:outputLabel value="{!$Label.LBL_Conf_Information}"/></td>
+			</tr>
+			<tr>
+				<td></td>
+		    	<td><apex:outputLabel value="{!$Label.LBL_Generated_By}: {!$User.FirstName} {!$User.LastName} {!NOW()}"/></td>
+			</tr>
+		</table>
+    </apex:pageBlock>
+</apex:page>

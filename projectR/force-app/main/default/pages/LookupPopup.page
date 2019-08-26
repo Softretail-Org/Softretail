@@ -1,0 +1,151 @@
+<apex:page controller="LookupPopupCtrl" showHeader="false" cache="Boolean" sidebar="false">
+    
+    <apex:includeScript value="https://code.jquery.com/jquery-1.12.4.js" />
+    <apex:form >
+        <style>
+            body{background: #fff url(/img/alohaSkin/lookup_bg.png) repeat-x !important;padding: 5px;}
+           .pageTitleIcon{background-image: url(/img/sprites/master.png);background-position: 0 -1202px;width: 32px;height: 32px;}
+            h1{font-size: 1.8em;color: #333435;margin: 8px 0 4px;}
+        </style>
+        <script>
+        function returnToMainPage(name, id){
+            window.opener.{!JSENCODE(componentId)}setValue(name, id);
+            window.close();
+        }
+        window.onblur = function(){
+            window.close();
+        }
+        </script>
+        <apex:panelGrid columns="2">
+            <img src="/s.gif" alt="" class="pageTitleIcon" />
+            <h1>{!$Label.LBL_Lookup}</h1>
+        </apex:panelGrid>
+        
+        <apex:actionFunction name="searchRecord" action="{!search}" rerender="recordTable,scriptPanel" status="search"/>
+        <apex:panelGrid columns="3" id="recordFilter">
+            <apex:inputText value="{!searchTerm}" id="searchInput" html-placeholder="{!$Label.LBL_Search}..."/>
+            <apex:commandButton value="{!$Label.LBL_Go}!" action="{!search}" reRender="msgs,recordBlock,scriptPanel" status="search" oncomplete="removeCheckAll()"/>
+            <apex:commandButton value="{!$Label.LBL_Reset}" rendered="{!multiSelect}" action="{!resetRecord}" rerender="recordFilter,recordBlock,scriptPanel" status="search" oncomplete="removeCheckAll()" />
+            <apex:commandButton value="New" action="{!newRecord}" rendered="{!canCreate}"/>
+        </apex:panelGrid>
+        <br />
+        <apex:pageMessages id="msgs"/>
+        <apex:pageBlock id="recordBlock" mode="edit" title="{!IF(mode == 'RECENT', $Label.LBL_Recently_Viewed + ' ' + $ObjectType[sObjectName].labelPlural, $Label.LBL_Search_Results)}" rendered="{!OR(mode == 'SEARCH', mode == 'RECENT')}">
+            <apex:outputPanel id="recordPanel">
+                <apex:pageBlockSection columns="1">
+                    <apex:actionFunction name="refreshPageSize" action="{!refreshPageSize}" status="fetchStatus" reRender="recordBlock"/>
+                    <apex:actionStatus id="search">
+                        <apex:facet name="start">
+                            <img src="/img/loading.gif" />
+                        </apex:facet>
+                    </apex:actionStatus>
+                    <apex:pageBlockTable var="item" value="{!records}" id="recordTable">
+                        <!-- Case Multi Select -->
+                        <apex:column width="2%" rendered="{!multiSelect}">
+                            <apex:facet name="header">
+                                <apex:inputCheckbox id="checkAll" styleClass="checkAllRecord" onclick="checkAll(this)" />
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!item.selected}" id="checkedRecord">
+                                <!--<apex:actionSupport action="{!processRecordSelection}" event="onclick" reRender="msgs,selectedRecords" status="search"/>-->
+                            </apex:inputCheckbox>
+                        </apex:column>
+                        <apex:repeat var="fieldName" value="{!searchFields}">
+                            <!-- Case Select One -->
+                            <apex:column headerValue="{!$ObjectType[sObjectName].fields[fieldName].Label}" rendered="{!!multiSelect}">
+                                <apex:outputLink value="#" onclick="returnToMainPage('{!JSENCODE(item.record[mainField])}', '{!item.record.Id}')">{!item.record[fieldName]}</apex:outputLink>
+                            </apex:column>
+                            <!-- Case Multi Select -->
+                            <apex:column rendered="{!multiSelect}">
+                                <apex:facet name="header">
+                                    <apex:commandLink action="{!SortToggle}" rerender="recordBlock" status="search">
+                                        <apex:param name="SortField" value="{!fieldName}" assignTo="{!SortField}" />
+                                        <apex:outputText value="{!$ObjectType[sObjectName].fields[fieldName].Label}
+                                                                {!IF(SortField==fieldName,IF(SortDirection='asc','▲','▼'),'')}" />
+                                    </apex:commandLink>
+                                </apex:facet>
+                                <apex:outputLink value="/{!item.record.Id}" target="_blank"><apex:outputField value="{!item.record[fieldName]}" /></apex:outputLink>
+                            </apex:column>
+                        </apex:repeat>
+                        <apex:facet name="footer">
+                            <apex:outputPanel layout="table" >
+                                <apex:outputText rendered="{!NULLVALUE(noOfRecords,0)==0}" value="{!$Label.LBL_No_Record_To_Display}"/>
+                                <apex:outputPanel layout="table" rendered="{!noOfRecords>0}">
+                                    <apex:selectList value="{!recPerPage}" multiselect="false" size="1" onchange="refreshPageSize();">
+                                        <apex:selectOptions value="{!recPerPageOption}"/>
+                                    </apex:selectList>
+                                    <apex:commandButton status="fetchStatus" reRender="recordBlock" value="{!$Label.LBL_First}" action="{!first}" disabled="{!!StdSetControllerRecord.hasPrevious}" title="{!$Label.LBL_First}" oncomplete="removeCheckAll()" /> 
+                                    <apex:commandButton status="fetchStatus" reRender="recordBlock" value="{!$Label.LBL_Previous}" action="{!previous}" disabled="{!!StdSetControllerRecord.hasPrevious}" title="{!$Label.LBL_Previous}" oncomplete="removeCheckAll()" /> 
+                                    <apex:commandButton status="fetchStatus" reRender="recordBlock" value="{!$Label.LBL_Next}" action="{!next}" disabled="{!!StdSetControllerRecord.hasNext}" title="{!$Label.LBL_Next}" oncomplete="removeCheckAll()" /> 
+                                    <apex:commandButton status="fetchStatus" reRender="recordBlock" value="{!$Label.LBL_Last}" action="{!last}" disabled="{!!StdSetControllerRecord.hasNext}" title="{!$Label.LBL_Last}" oncomplete="removeCheckAll()" /> 
+                                    <apex:outputText style="text-align: right" >{!(StdSetControllerRecord.pageNumber * recPerPage)+1-recPerPage}-{!IF((StdSetControllerRecord.pageNumber * recPerPage)>noOfRecords, noOfRecords,
+                                        (StdSetControllerRecord.pageNumber * recPerPage))} {!$Label.LBL_Of} {!noOfRecords}
+                                    </apex:outputText>
+                                    <apex:outputPanel >                      
+                                        <apex:actionStatus id="fetchStatus">
+                                            <apex:facet name="start" >
+                                                <img src="/img/loading.gif" />
+                                            </apex:facet>
+                                        </apex:actionStatus>
+                                    </apex:outputPanel>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:facet>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection columns="1">
+                    <apex:outputPanel id="selectedRecords" rendered="{!multiSelect}">
+                        <apex:outputLabel value="{!selectedRecords}" />
+                    </apex:outputPanel>                    
+                </apex:pageBlockSection>
+                <apex:pageBlockSection columns="1">
+                    <apex:outputPanel rendered="{!multiSelect}">
+                        <apex:commandButton value="Get Selected Records" action="{!getSelectedRecord}" />
+                    </apex:outputPanel>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+        </apex:pageBlock>
+
+        <apex:pageBlock id="formBlock" mode="edit" title="New {!$ObjectType[sObjectName].label}" rendered="{!mode == 'NEW'}">
+            {!recordNew.Id}
+            <apex:pageBlockButtons location="bottom">
+                <apex:commandButton value="{!$Label.Save}" action="{!saveNewRecord}">
+                </apex:commandButton>
+                <apex:commandButton value="{!$Label.Cancel}" action="{!null}" onclick="window.close(); return false;"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection title="{!$ObjectType[sObjectName].label} Information" columns="1">
+                <apex:repeat var="field" value="{!formFields}">
+                    <apex:inputField value="{!recordNew[field]}" />
+                </apex:repeat>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+
+	</apex:form>    
+    <apex:outputPanel id="scriptPanel">
+        <script>
+        $(document).ready(function() {
+            $("[id*='searchInput']").focus(function() {
+                $(this).select();
+            });            
+            $("[id*='searchInput']").keypress(function(e) {
+                if (e.keyCode == 13) {
+                    searchRecord();
+                }
+                return e.keyCode !== 13;
+            });
+        });
+        </script>
+    </apex:outputPanel>
+    <script>
+    function checkAll(cb) {
+        var inputElem = document.getElementsByTagName("input");
+        for (var i = 0; i < inputElem.length; i++) {
+            if (inputElem[i].id.indexOf("checkedRecord") != -1)
+                inputElem[i].checked = cb.checked;
+        }
+    }    
+    function removeCheckAll() {
+        var input = document.getElementsByClassName("checkAllRecord");
+        input[0].checked = false;
+    };
+    </script>
+</apex:page>

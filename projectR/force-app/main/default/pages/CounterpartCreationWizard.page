@@ -1,0 +1,283 @@
+<apex:page id="thePage" tabStyle="Contract_discount_counterparty_detail__c"
+           standardController="Contract_discount_counterparty_detail__c"
+           extensions="CounterpartCreationWizardController">
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}" />
+    <apex:pageMessages id="messages" />
+    <apex:sectionHeader title="{!$ObjectType.Contract_discount_counterparty_detail__c.label}"/>
+    <apex:form id="theForm" >
+        <!-- global loading action status -->
+        <apex:actionStatus id="globalloading">
+            <apex:facet name="start">
+                <div class="loading-overlay">
+                    <div class="loader-img"></div>
+                    <div class="loading-block">{!$Label.Loading}</div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        
+        <!-- action functions -->
+        <apex:actionFunction name="showPopup" action="{!next}" reRender="thePageBlock, messages, jsPanel"
+                             status="globalloading" oncomplete="afterRerender()" >
+            <apex:param name="supplierId" assignTo="{!supplierId}" value=""/>
+        </apex:actionFunction>
+
+        <apex:pageBlock id="thePageBlock" mode="edit" title="{!stepTitle}" >
+            <!-- select Supplier, Event support of counterpart, begin date and end date of counterpart -->
+            <apex:pageBlockSection columns="2" title="{!$Label.LBL_General_Infos}" >
+                <apex:outputText label="{!$ObjectType.Contract_discount_counterparty_detail__c.fields.Supplier_Code__c.label}"
+                                 value="{!supplierCode}" rendered="{!step >= 3}" />
+                
+                <apex:outputField value="{!Contract_discount_counterparty_detail__c.Temp_Contract_Reference__c}" rendered="{!step >= 3}" />
+                
+                <apex:pageBlockSectionItem rendered="{!OR(editMode, AND(step == 1, IsNull(Contract_discount_counterparty_detail__c.Supplier__c)))}" >
+                    <apex:outputLabel value="{!$ObjectType.Contract_discount_counterparty_detail__c.fields.Supplier__c.label}" />
+                    <apex:inputText value="{!supplierName}" styleClass="suppliersSearchBox" />
+                </apex:pageBlockSectionItem>
+                <apex:outputField value="{!Contract_discount_counterparty_detail__c.Supplier__c}"
+                                  rendered="{!AND(!editMode, !IsNull(Contract_discount_counterparty_detail__c.Supplier__c))}" />
+                
+                <apex:outputField value="{!contract.Contract_Numbder__c}" rendered="{!step >= 3}" />
+                <apex:outputText value="" rendered="{!step >= 3}" />
+                <apex:outputField value="{!Contract_discount_counterparty_detail__c.Contract__c}" rendered="{!step >= 3}" />
+                <apex:outputText label="{!$ObjectType.Contract_discount_counterparty_detail__c.fields.Nego_Scope_Code__c.label}"
+                                 value="{!negoscopeCode}" rendered="{!step >= 3}" />
+                <apex:outputText value="" rendered="{!step >= 3}" />
+                <apex:outputField value="{!Contract_discount_counterparty_detail__c.Nego_Scope__c}" rendered="{!step >= 3}" />
+                <apex:outputField id="Contract_discount__c" value="{!Contract_discount_counterparty_detail__c.Contract_discount__c}" rendered="{!step >= 4}" />
+                <apex:outputText value="" rendered="{!step >= 3}" />
+                <apex:outputField value="{!contractDiscount.Nego_Discount_Type__c}" rendered="{!step >= 4}" />
+                <apex:inputField value="{!Contract_discount_counterparty_detail__c.Event_Support__c}"
+                                 rendered="{!OR(step == 1, IsNull(Contract_discount_counterparty_detail__c.Event_Support__c))}" />
+                <apex:outputField value="{!Contract_discount_counterparty_detail__c.Event_Support__c}"
+                                  rendered="{!AND(step > 1, !IsNull(Contract_discount_counterparty_detail__c.Event_Support__c))}" />
+                <apex:outputField value="{!contractDiscount.Condition_Type__c}" rendered="{!step >= 4}" />
+                <apex:inputField value="{!Contract_discount_counterparty_detail__c.Start_Date__c}"
+                                 rendered="{!OR(step == 1, IsNull(Contract_discount_counterparty_detail__c.Start_Date__c))}" />
+                <apex:outputField value="{!Contract_discount_counterparty_detail__c.Start_Date__c}"
+                                  rendered="{!AND(step > 1, !IsNull(Contract_discount_counterparty_detail__c.Start_Date__c))}" />
+                <apex:outputField id="Value_per__c" value="{!contractDiscount.Value_per__c}" rendered="{!step >= 4}" />
+                <apex:inputField value="{!Contract_discount_counterparty_detail__c.End_Date__c}"
+                                 rendered="{!OR(step == 1, IsNull(Contract_discount_counterparty_detail__c.End_Date__c))}" />
+                <apex:outputField value="{!Contract_discount_counterparty_detail__c.End_Date__c}"
+                                  rendered="{!AND(step > 1, !IsNull(Contract_discount_counterparty_detail__c.End_Date__c))}" />
+                <apex:outputField value="{!contractDiscount.Value_amt__c}" rendered="{!step >= 4}" />
+                
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="{!$Label.LBL_Contribution}" columns="1" rendered="{!step >= 4}">                
+                <apex:outputField value="{!Contract_discount_counterparty_detail__c.Applicable_Rate_Manual__c}"
+                                  rendered="{!AND(!IsNull(contractDiscount), OR(!IsNull(contractDiscount.Value_per__c),
+                                            !IsNull(contractDiscount.Value_amt__c)), step >= 4)}" />
+                <apex:inputField id="Applicable_Rate_Manual__c" value="{!Contract_discount_counterparty_detail__c.Applicable_Rate_Manual__c}"
+                                 rendered="{!AND(OR(IsNull(contractDiscount), AND (IsNull(contractDiscount.Value_per__c),
+                                           IsNull(contractDiscount.Value_amt__c))), step >= 4)}"
+                                 onchange="updateDisplayedContribution();" />
+                <br/>
+                <apex:inputField id="Contribution_Unit_Quantity__c" value="{!Contract_discount_counterparty_detail__c.Contribution_Unit_Quantity__c}" rendered="{!step >= 4}" 
+                                 onchange="updateDisplayedContribution();" />
+                <apex:inputField id="Contribution_Unit_Amount__c" value="{!Contract_discount_counterparty_detail__c.Contribution_Unit_Amount__c}" rendered="{!step >= 4}" 
+                                 onchange="updateDisplayedContribution();" />
+                <br/>
+                <apex:inputText id="Contribution_Total__c" label="{!$ObjectType.Contract_discount_counterparty_detail__c.fields.Contribution_Total__c.label}"
+                                 disabled="true" />
+                <apex:inputText id="displayedContribution" label="{!$Label.Displayed_Contribution_on_contract}" disabled="true" />
+                <br/>
+                <apex:inputField value="{!Contract_discount_counterparty_detail__c.Edition_Date__c}"/>
+                <apex:pageBlockSectionItem />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="{!$Label.LBL_Products_1_10}" columns="2" rendered="{!step >= 4}">
+                <apex:repeat value="{!productIndexesMap['Products_1_10']}" var="index" >
+                    <apex:inputField value="{!Contract_discount_counterparty_detail__c['Product_' + TEXT(index) + '__c']}" html-tabindex="{!index}" />
+                </apex:repeat>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="{!$Label.LBL_Products_11_20}" columns="2" rendered="{!step >= 4}">
+                <apex:repeat value="{!productIndexesMap['Products_11_20']}" var="index" >
+                    <apex:inputField value="{!Contract_discount_counterparty_detail__c['Product_' + TEXT(index) + '__c']}" html-tabindex="{!index}" />
+                </apex:repeat>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="{!$Label.LBL_Products_21_30}" columns="2" rendered="{!step >= 4}">
+                <apex:repeat value="{!productIndexesMap['Products_21_30']}" var="index" >
+                    <apex:inputField value="{!Contract_discount_counterparty_detail__c['Product_' + TEXT(index) + '__c']}" html-tabindex="{!index}" />
+                </apex:repeat>
+            </apex:pageBlockSection>
+            <br />
+            <!-- select Contract -->
+            <apex:pageBlockTable value="{!contractWrappersList}" var="item" rendered="{!showContractList}" >
+                <apex:column >
+                    <apex:inputCheckbox id="contractCheckbox" value="{!item.isSelected}" onchange="selectContract(this);" />
+                </apex:column>
+                <apex:column value="{!item.contract.NS_Code__c}" />
+                <apex:column value="{!item.contract.Supplier_Nego_Scope__c}" />
+                <apex:column value="{!item.contract.Contract_Numbder__c}" />
+                <apex:column value="{!item.contract.Name}" />
+                <apex:column value="{!item.contract.Contract_BDate__c}" />
+                <apex:column value="{!item.contract.Contract_EDate__c}" />
+            </apex:pageBlockTable>
+            
+            <!-- select NS -->
+            <apex:pageBlockSection columns="1" rendered="{!showNSForm}" >
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.Contract_discount_counterparty_detail__c.fields.Nego_Scope__c.label}" />
+                    <apex:selectList value="{!negoscopeId}" size="1" disabled="{!startedFromNegoscope}">
+                        <apex:selectOptions value="{!nsOptionList}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!Contract_discount_counterparty_detail__c.Temp_Contract_Reference__c}" />
+            </apex:pageBlockSection>
+            
+            <!-- select Condition -->
+            <apex:pageBlockTable value="{!contractDiscountWrappersList}" var="item" rendered="{!showContractDiscountList}" >
+                <apex:column >
+                    <apex:inputCheckbox id="contractDiscountCheckbox" value="{!item.isSelected}" onchange="selectContractDiscount(this);" />
+                </apex:column>
+                <apex:column value="{!item.contractDiscount.Name}" />
+                <apex:column value="{!item.contractDiscount.Condition_Type__r.Condition_Code__c}" />
+                <apex:column value="{!item.contractDiscount.Condition_Type__c}" />
+                <apex:column value="{!item.contractDiscount.Value_per__c}" />
+                <apex:column value="{!item.contractDiscount.Value_amt__c}" />
+                <apex:column value="{!item.contractDiscount.Base_TO_Nego__c}" />
+                <apex:column value="{!item.contractDiscount.YTD_Nego__c}" />
+            </apex:pageBlockTable>
+            
+            <apex:pageBlockButtons >
+                <apex:commandButton value="{!$Label.Previous}" action="{!previous}" rendered="{!showPreviousButton}"
+                                    status="globalloading" reRender="thePageBlock" oncomplete="afterRerender()"/>
+                <apex:commandButton value="{!$Label.Next}" onclick="showPopup(sId); return false;" rendered="{!step == 1}"
+                                    reRender="thePageBlock, messages" oncomplete="afterRerender()"/>
+                <apex:commandButton value="{!$Label.Next}" action="{!next}" rendered="{!showNextButton}" status="globalloading"
+                                    reRender="thePageBlock, messages, jsPanel" oncomplete="afterRerender()"/>
+                <apex:commandButton value="{!$Label.Save}" action="{!save}" status="globalloading" rendered="{!step == 4}" />
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" status="globalloading" rendered="{!step == 4}" />
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+        
+        <apex:outputPanel id="jsPanel">
+            <script>
+            var condition = '{!JSENCODE(Contract_discount_counterparty_detail__c.Contract_discount__c)}'
+            </script>
+        </apex:outputPanel>
+        
+    </apex:form>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js" />
+    <apex:includeScript value="{!URLFOR($Resource.typeahead, 'typeahead.js')}"/>
+    <script>
+    
+    var prefix = '{!JSENCODE(prefix)}';
+    var selectedContractId;
+    var sId = '{!JSENCODE(supplierId)}';
+    
+    $(document).ready(function() {
+        initTypeaheadSupplier();
+    });
+    
+    function afterRerender() {
+        initTypeaheadSupplier();
+        updateDisplayedContribution();
+    }
+    function selectContract(cb, contractId) {
+        $("input:checkbox[id*=contractCheckbox]").prop("checked", false);
+        cb.checked = true;
+        selectedContractId = contractId;
+    }
+    
+    function selectContractDiscount(cb, contractId) {
+        $("input:checkbox[id*=contractDiscountCheckbox]").prop("checked", false);
+        cb.checked = true;
+    }
+    
+    function updateDisplayedContribution() {
+        var displayedContribution = '';
+        var valuePercent = $('[id*=Value_per__c]').text().trim();
+        var manualRate = $('[id*=Applicable_Rate_Manual__c]').val();
+        var calculatedContribution = $('[id*=Contribution_Unit_Quantity__c]').val() * $('[id*=Contribution_Unit_Amount__c]').val();
+        $('[id*=Contribution_Total__c]').val(calculatedContribution);
+        
+        var displayedContribution = '';
+        if (calculatedContribution != null && calculatedContribution != '' && calculatedContribution != 0) {
+            displayedContribution = calculatedContribution + ' {!currencyIsoCode}';
+        }
+        if (manualRate != null && manualRate != '')
+            displayedContribution = manualRate + ' % ';     
+        if (condition != '' && valuePercent != null && valuePercent != '')
+            displayedContribution = valuePercent + ' % ';
+        $('[id*=displayedContribution]').val(displayedContribution);
+    }
+    
+    function initTypeaheadSupplier() {
+        $('.suppliersSearchBox')
+        .typeahead
+        (
+            {
+                hint: true,
+                highlight: true,
+                minLength: 2
+            },
+            {
+                name: 'suppliers',
+                displayKey: 'Name',
+                source: getSuppliers,
+                templates: {
+                    empty: [
+                        '<div class="search-result" syle="position: fixed;z-index: 1000;">',
+                        '<p>{!JSENCODE($Label.NoSupplierFound)}</p>',
+                        '</div>'
+                    ].join('\n'),
+                    suggestion: function(supplier) {
+                        return [
+                            '<div class="search-result" style="position: fixed;cursor:pointer;z-index: 1000;">',
+                            '<p>', supplier[prefix + 'Code__c'] + ' - ' + supplier.Name + '</p>',
+                            '</div>'
+                        ].join('\n');
+                    }
+                }
+            }
+        ).on(
+            'typeahead:selected',
+            function(obj, datum, name) {
+                sId = datum.Id;
+            }
+        );
+    }
+    
+    var getSuppliers = debounce(function(query, process) {
+        var q = query;
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.CounterpartCreationWizardController.findSuppliers}', q,
+            function(result, event) {
+                var res = JSON.parse(result);
+                if (res.length == 1) sId = res[0].Id;
+                process(res);
+            }, {
+                escape: false
+            });
+    }, 1);
+    
+    function debounce(func, wait, immediate) {
+        var timeout;
+        return function() {
+            var context = this,
+                args = arguments;
+            var later = function() {
+                timeout = null;
+                if (!immediate)
+                    func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow)
+                func.apply(context, args);
+        };
+    };
+    
+    </script>
+    
+    <style>
+        .search-result {
+        background-color: white;
+        border: 1px solid #cccccc;
+        width: 350px;
+        padding: 3px;
+        }
+    </style>
+</apex:page>

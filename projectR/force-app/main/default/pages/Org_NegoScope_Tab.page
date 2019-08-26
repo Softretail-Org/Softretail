@@ -1,0 +1,6 @@
+<apex:page standardController="Sup_sup_NegoScope__c" recordSetVar="Scopes" sidebar="true" lightningStylesheets="true">
+
+  <h2 style="font-size:22px;">{!$ObjectType.Sup_sup_NegoScope__c.labelPlural}</h2>          
+  <apex:enhancedList type="Sup_sup_NegoScope__c" height="600" rowsPerPage="50" />
+
+</apex:page>

@@ -1,0 +1,4 @@
+<apex:page standardController="Communication_Flash__c" recordSetVar="Elements" sidebar="true" lightningStylesheets="true">
+  <h2 style="font-size:22px;">{!$ObjectType.Communication_Flash__c.labelPlural}</h2>          
+  <apex:enhancedList type="Communication_Flash__c" height="600" rowsPerPage="50"/>
+</apex:page>

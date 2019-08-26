@@ -1,0 +1,4 @@
+<design:component>
+    <design:attribute name="folderName" label="Select folder" datasource="apex://ReportsGridDataSource"/>
+    <design:attribute name="height" label="Height (px)"  />
+</design:component>

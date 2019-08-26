@@ -1,0 +1,385 @@
+<apex:page controller="Nego360_ES_Pdf_Controller" renderAs="{!ctrlr.contentType}">
+    <table border="0" cellpadding="0" cellspacing="0" style="width: 700px;">
+        <tr padding="3px" bgcolor="#39B1D9" style="font-size: 10px; color: #fffffd; background-color: #39B1D9">
+        	<td padding="3px" colspan="2" style="padding: 3px;">{!$Label.LBL_Executive_Summary}: {!ctrlr.simulationContract.Name}</td>
+        </tr>
+        <tr>
+            <td>
+            	<table border="0" cellpadding="0" cellspacing="0">
+                	<tr>
+                    	<td>
+                        	<table border="0" cellpadding="5" cellspacing="0" width="300" style="width: 300px;">
+                            	<tr style="font-size: 10px;">
+                                	<td colspan="2">
+	                                    <apex:outputLabel value="{!$ObjectType.Contract__c.fields.Contract_BU__c.Label} " style="font-weight:bold"/>
+	                                    <apex:outputText value="{!ctrlr.currentContract.Contract_BU__r.Name}"/>
+                                	</td>
+                            	</tr>
+                            	<tr style="font-size: 10px;">
+                                	<td colspan="2">
+	                                    <apex:outputLabel value="{!$ObjectType.Contract__c.fields.Supplier__c.Label} " style="font-weight:bold"/>
+	                                    <apex:outputText value="{!ctrlr.currentContract.Supplier__r.Name}"/>
+                                	</td>
+                            	</tr>
+                            	<tr style="font-size: 10px;">
+                                	<td colspan="2">
+                                    	<apex:outputLabel value="{!$ObjectType.Contract__c.fields.Supplier_Nego_Scope__c.Label} " style="font-weight:bold"/>
+                                    	<apex:outputText value="{!ctrlr.currentContract.Supplier_Nego_Scope__r.Name}"/>
+                                	</td>
+                            	</tr>
+                            	<tr style="font-size: 10px;">
+                                	<td>
+                                    	<apex:outputLabel value="{!$Label.LBL_NS_Dpt_rank} " style="font-weight:bold"/>
+                                    	<apex:outputText value="1"/>
+                                	</td>
+                                	<td>
+	                                    <apex:outputLabel value="{!$Label.LBL_Dpt_Weight} " style="font-weight:bold"/>
+	                                    <apex:outputText value="35.2%"/>
+                                	</td>
+                            	</tr>
+                            	<tr style="font-size: 10px;">
+                                	<td>
+                                    	<apex:outputLabel value="{!$Label.LBL_NS_Supplier_rank} " style="font-weight:bold"/>
+                                    	<apex:outputText value="1"/>
+                                	</td>
+                                	<td>
+	                                    <apex:outputLabel value="{!$Label.LBL_Supplier_Weight} " style="font-weight:bold"/>
+	                                    <apex:outputText value="35.2%"/>
+                                	</td>
+                            	</tr>
+                        	</table>
+                    	</td>
+                    	<td>
+                        	<table border="0" cellpadding="5" cellspacing="0" width="300" style="width: 300px;">
+                            	<tr style="font-size: 10px;">
+                                	<td colspan="3">
+	                                    <apex:outputText value="{!$ObjectType.Contract__c.fields.Reference_Year__c.Label} " style="font-weight:bold"/>
+	                                    <apex:outputText value="{!ctrlr.simulationContract.Reference_Year__c}"/>
+                                	</td>
+                            	</tr>
+                            	<tr style="font-size: 10px;">
+                                	<td colspan="3">
+	                                    <apex:outputText value="{!$Label.LBL_Date_of_Submit_for_approval} " style="font-weight:bold"/>
+	                                    <apex:outputText value="{!IF(ctrlr.contractProcessInstance != null && ctrlr.contractProcessInstance.Status == 'Pending', ctrlr.contractProcessInstance.CreatedDate, '')}"/>
+                                	</td>
+                            	</tr>
+                            	<tr style="font-size: 10px;">
+                                	<td colspan="3">
+	                                    <apex:outputText value="{!$Label.LBL_Status_validation} " style="font-weight:bold"/>
+	                                    <apex:outputText value="1/2"/>
+                                	</td>
+                            	</tr>
+                            	<tr style="font-size: 10px;">
+	                                <td width="100"></td>
+	                                <td width="200">
+	                                    <apex:outputText value="{!$Label.LBL_Catman} "/>
+	                                    	<i class="fa fa-smile-o"  aria-hidden="true"></i> <br/>
+	                                    <apex:outputText value="{!$Label.LBL_Head_Of_Department} "/>
+	                                    	<i class="fa fa-smile-o" aria-hidden="true"></i> <br/>
+	                                    <apex:outputText value="{!$Label.LBL_Country_Finance} "/>
+	                                    	<i class="fa fa-meh-o" aria-hidden="true"></i>
+                                	</td>
+                                	<td width="100"></td>
+                            	</tr>
+                        	</table>
+                    	</td>
+                	</tr>
+                </table>
+            </td>
+        </tr>        
+        <tr>
+            <td><table border="0" cellpadding="0" cellspacing="0" style="width: 700px;">
+                <tr>
+                    <td style="width: 700px;" valign="top">
+                        <table border="0" cellpadding="0" cellspacing="0" width="300" style="width: 700px; border-top-left-radius: 10px; border-top-right-radius: 10px; border: 1px solid #eaeaea; border-top: 3px solid #1797c0; padding: 10px;">
+                            <tr>
+                                <td>
+                                	<table border="0" cellpadding="0" cellspacing="0" width="400" style="width: 400px; border: 1px solid #eaeaea;">
+                                    	<apex:repeat var="item" value="{!ctrlr.gswList}">
+	                                        <tr style="font-size: 10px;">
+	                                            <td style="border-bottom: 1px solid #eaeaea;"><apex:outputText value="{!item.label}"/></td>
+	                                            <td style="border-bottom: 1px solid #eaeaea;"><apex:outputText value="{!IF(item.isPercentage == true, item.sValueRef +'%', item.sValueRef)}"/></td>
+	                                            <td style="border-bottom: 1px solid #eaeaea;"><apex:outputText value="{!IF(item.isPercentage == true, item.sValueNew +'%', item.sValueNew)}"/></td>
+	                                        </tr>
+                                    	</apex:repeat>
+                                    </table>
+                                    <table border="0" cellpadding="0" cellspacing="0" width="400" style="width: 400px; border: 1px solid #eaeaea;">
+                                        <tr bgcolor="#39B1D9" style="text-align: center; font-size: 10px; font-weight: bold; background-color: #f2f3f3">
+                                            <td><apex:outputText value="{!$Label.LBL_Type}"/></td>
+                                            <td>{!$ObjectType.Contract__c.fields.Supplier_Nego_Scope__c.Label}</td>
+                                            <td><apex:outputText value="{!$Label.LBL_Reference_contract}"/></td>
+                                            <td><apex:outputText value="{!$Label.LBL_New_contract}"/></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <apex:repeat var="item" value="{!ctrlr.executiveSummaryMap}">
+                                            <tr style="font-size: 10px;">
+                                                <td style="padding: 5px"><apex:outputText value="{!item.conditionName}"/></td>
+                                                <td style="padding: 5px"><apex:outputText value="{!item.negoscopeName}"/></td>
+                                                <td style="padding: 5px"><apex:outputText value="{!item.sPercentageRef}"/> <apex:outputText rendered="{!item.valueRef != 0}">&nbsp;|&nbsp;</apex:outputText>
+                                                	<apex:outputText rendered="{!item.valueRef != 0}" value="{!item.sValueRef}"/></td>
+                                                <td style="padding: 5px"><apex:outputText value="{!item.sPercentageNew}"/> <apex:outputText rendered="{!item.valueNew != 0}">&nbsp;|&nbsp;</apex:outputText>
+                                                    <apex:outputText rendered="{!item.valueNew != 0}" value="{!item.sValueNew}"/></td>
+                                                <td>
+                                                	<apex:outputPanel rendered="{!item.percentageStatus != NULL}">
+                                                    <apex:outputText rendered="{!item.percentageStatus> 0}">
+                                                        <apex:image value="{!imgUp}" width="20" height="20"/>
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!item.percentageStatus < 0}">
+                                                        <apex:image value="{!imgDown}" width="20" height="20"/>
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!item.percentageStatus == 0}">
+                                                        <apex:image value="{!imgRight}" width="20" height="20"/>
+                                                    </apex:outputText>
+                                                    </apex:outputPanel>
+                                                </td>
+                                                <td>
+                                                	<apex:outputPanel rendered="{!item.valueStatus != NULL}">
+                                                    &nbsp;
+                                                    <apex:outputText rendered="{!item.valueStatus> 0}">
+                                                        <apex:image value="{!imgUp}" width="20" height="20"/>
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!item.valueStatus < 0}">
+                                                        <apex:image value="{!imgDown}" width="20" height="20"/>
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!item.valueStatus == 0}">
+                                                        <apex:image value="{!imgRight}" width="20" height="20"/>
+                                                    </apex:outputText>
+                                                    </apex:outputPanel>
+                                               	</td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </table>
+                                    <table border="0" cellpadding="0" cellspacing="0" width="400" style="width: 400px; border: 1px solid #eaeaea;">
+                                        <tr>
+                                            <td>
+                                            	<table border="0" cellpadding="0" cellspacing="0" width="400" style="width: 400;">
+	                                                <apex:repeat value="{!ctrlr.executiveSummaryMap}" var="key">
+	                                                    <tr align="left" style="text-align: left; font-size: 10px; font-weight: bold;background-color: #f2f3f3;">
+	                                                        <td padding="5px" colspan="5" style="padding: 5px"><strong style="float:left">{!key.conditionName} - ({!key.negoscopeName})</strong></td>
+	                                                    </tr>
+	                                                    <apex:repeat value="{!ctrlr.executiveSummaryMap[key]}" var="keyvalue">
+	                                                        <tr bgcolor="#ffffff" style="text-align: center; font-size: 10px; font-weight: bold; background-color: #ffffff">
+	                                                            <td style="padding: 5px">	<apex:outputText value="{!keyvalue.conditionName}"/></td>
+	                                                            <td style="padding: 5px;">   <apex:outputText value="{!keyvalue.sPercentageRef}"/>
+	                                                                <apex:outputText rendered="{!keyvalue.valueRef != 0}">&nbsp;|&nbsp;</apex:outputText>
+	                                                                <apex:outputText rendered="{!keyvalue.valueRef != 0}" value="{!keyvalue.sValueRef}"/></td>
+	                                                            <td style="padding: 5px;">                                                <apex:outputText value="{!keyvalue.sPercentageNew}"/>
+	                                                                <apex:outputText rendered="{!keyvalue.valueNew != 0}">&nbsp;|&nbsp;</apex:outputText>
+	                                                                <apex:outputText rendered="{!keyvalue.valueNew != 0}" value="{!keyvalue.sValueNew}"/>
+	                                                            </td>
+	                                                            <td>
+	                                                                <apex:outputPanel rendered="{!keyvalue.percentageStatus != NULL}">
+	                                                                    <apex:outputText rendered="{!keyvalue.percentageStatus> 0}"> <apex:image value="{!imgUp}" width="20" height="20"/></apex:outputText>
+	                                                                    <apex:outputText rendered="{!keyvalue.percentageStatus < 0}"> <apex:image value="{!imgDown}" width="20" height="20"/></apex:outputText>
+	                                                                    <apex:outputText rendered="{!keyvalue.percentageStatus == 0}"> <apex:image value="{!imgRight}" width="20" height="20"/></apex:outputText>
+	                                                                </apex:outputPanel>
+	                                                            </td>
+	                                                            <td>
+	                                                                <apex:outputPanel rendered="{!keyvalue.valueStatus != NULL}">
+	                                                                    &nbsp;
+	                                                                	<apex:outputText rendered="{!keyvalue.valueStatus> 0}"> <apex:image value="{!imgUp}" width="20" height="20"/></apex:outputText>
+	                                                                	<apex:outputText rendered="{!keyvalue.valueStatus < 0}"> <apex:image value="{!imgDown}" width="20" height="20"/></apex:outputText>
+	                                                                    <apex:outputText rendered="{!keyvalue.valueStatus == 0}"> <apex:image value="{!imgRight}" width="20" height="20"/></apex:outputText>
+	                                                                </apex:outputPanel>
+	                                                            </td>
+	                                                        </tr>
+	                                                    </apex:repeat>
+	                                           		</apex:repeat>
+                                       			</table>
+                                    		</td>
+                                        </tr>
+                                    </table>
+                          		</td>
+                                <td style="width: 250px;" valign="top">
+                                	<table border="0" cellpadding="0" cellspacing="0" width="250" style="width: 250px; border-top-left-radius: 10px; border-top-right-radius: 10px; border: 1px solid #eaeaea; border-top: 3px solid #1797c0; padding: 10px;">
+                                    <tr>
+                                        <td>
+                                        	<table border="0" cellpadding="0" cellspacing="0" width="250" style="width:250px">
+                                            	<tr bgcolor="#39B1D9" style="font-size: 10px; color: #fffffd; background-color: #39B1D9">
+                                                <td style="padding:5px">
+                                                	<apex:outputText value="{!$ObjectType.Nego_Plan__c.fields.NEGO_Keynote_Marketing_Plan__c.Label}"></apex:outputText></td>
+                                            	</tr>
+                                            	<tr style="font-size: 10px;">
+                                                <td style="border-bottom: 1px solid #eaeaea;padding:5px">  
+                                                    <apex:outputText value="{!ctrlr.negoPlan.NEGO_Keynote_Marketing_Plan__c}"/>
+                                                </td>
+                                            </tr>
+                                           	</table>
+                                    	</td>
+                                    </tr>
+                                    </table>
+                            	</td>
+                            </tr>
+                        </table>
+                  	</td>
+                </tr>
+                </table>
+        	</td>
+        </tr>
+        <tr>
+            <td width="700" style="width: 700px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="700" style="width: 700px; padding: 10px; border: 1px solid #eaeaea;">
+                    <tr>
+                    	<td>
+                        	<table border="0" cellpadding="0" cellspacing="0" width="675" style="width:675px;">
+                            	<tr>
+	                                <td style="font-size: 12px;">
+	                                	<apex:outputText value="{!$Label.LBL_Reference_contract}"/>
+                               		</td>
+	                                <td></td>
+	                                <td></td>
+	                                <td></td>
+	                                <td></td>
+	                                <td></td>
+	                                <td></td>
+	                                <td></td>
+	                            </tr>
+	                            <tr style="font-size: 10px;background-color:#f2f3f3;">
+	                                <td>{!$ObjectType.Pol_Com_Condition__c.fields.Name.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Slab_1__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_1__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Slab_2__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_2__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Slab_3__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_3__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Slab_4__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_4__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Slab_5__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_5__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_6__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_6__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Product_Scope__c.Label}</td>
+	                            </tr>
+	                            <apex:repeat value="{!ctrlr.refProgressiveConditions}" var="item">
+	                                <tr style="font-size: 10px;">
+	                                    <td><apex:outputText value="{!item.Condition_Type__r.Name}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_1__c != NULL}" value="{!item.Slab_1__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_1__c != NULL}" value="{!item.slab_per_1__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_2__c != NULL}" value="{!item.Slab_2__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_2__c != NULL}" value="{!item.slab_per_2__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_3__c != NULL}" value="{!item.Slab_3__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_3__c != NULL}" value="{!item.slab_per_3__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_4__c != NULL}" value="{!item.Slab_4__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_4__c != NULL}" value="{!item.slab_per_4__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_5__c != NULL}" value="{!item.Slab_5__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_5__c != NULL}" value="{!item.slab_per_5__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_6__c != NULL}" value="{!item.Slab_6__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_6__c != NULL}" value="{!item.slab_per_6__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Product_Scope__r.Name != NULL}" value="{!item.Product_Scope__r.Name}"/></td>
+	                                </tr>
+	                            </apex:repeat>
+	                        </table>
+	                        <table border="0" cellpadding="0" cellspacing="0" width="675" style="width: 675px; border-top: 1px solid #eaeaea;">
+	                            <tr>
+	                                <td style="font-size: 12px;"><apex:outputText value="{!$Label.LBL_New_contract}"/></td>
+	                                <td></td>
+	                                <td></td>
+	                                <td></td>
+	                                <td></td>
+	                                <td></td>
+	                                <td></td>
+	                                <td></td>
+	                            </tr>
+	                            <tr style="font-size: 10px;background-color:#f2f3f3;">
+	                                <td>{!$ObjectType.Pol_Com_Condition__c.fields.Name.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Slab_1__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_1__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Slab_2__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_2__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Slab_3__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_3__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Slab_4__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_4__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Slab_5__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_5__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_6__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.slab_per_6__c.Label}</td>
+	                                <td>{!$ObjectType.Contract_Discount__c.fields.Product_Scope__c.Label}</td>
+	                            </tr>
+	                            <apex:repeat value="{!ctrlr.newProgressiveConditions}" var="item">
+	                                <tr style="font-size: 10px;">
+	                                    <td><apex:outputText value="{!item.Condition_Type__r.Name}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_1__c != NULL}" value="{!item.Slab_1__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_1__c != NULL}" value="{!item.slab_per_1__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_2__c != NULL}" value="{!item.Slab_2__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_2__c != NULL}" value="{!item.slab_per_2__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_3__c != NULL}" value="{!item.Slab_3__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_3__c != NULL}" value="{!item.slab_per_3__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_4__c != NULL}" value="{!item.Slab_4__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_4__c != NULL}" value="{!item.slab_per_4__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_5__c != NULL}" value="{!item.Slab_5__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_5__c != NULL}" value="{!item.slab_per_5__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Slab_6__c != NULL}" value="{!item.Slab_6__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.slab_per_6__c != NULL}" value="{!item.slab_per_6__c}"/></td>
+	                                    <td><apex:outputText rendered="{!item.Product_Scope__r.Name != NULL}" value="{!item.Product_Scope__r.Name}"/></td>
+	                                </tr>
+	                            </apex:repeat>
+	                       	</table>
+                 		</td>
+               		</tr>
+           		</table>
+   			</td>
+  		</tr>
+   		<tr>
+            <td>
+            	<table border="0" cellpadding="0" cellspacing="0" width="700" style="width: 700px; border-top-left-radius: 10px; border-top-right-radius: 10px; border: 1px solid #eaeaea; border-top: 3px solid #1797c0; padding: 10px;">
+                	<tr>
+                    	<td>	
+                    		<table border="0" cellpadding="0" cellspacing="0" width="675px" style="width: 675px">
+		                        <tr bgcolor="#39B1D9" style="font-size: 10px; color: #fffffd; background-color: #39B1D9">
+		                            <td style="padding:3px;color:#ffffff;font-weight:bold">{!$Label.LBL_Exceptions_comments_in_contract}</td>
+		                        </tr>
+		                        <tr style="font-size: 10px;">
+		                            <td style="border-bottom: 1px solid #eaeaea;padding:5px">
+		                            	<apex:outputLabel value="{!$ObjectType.Pol_Sale_Condition__c.fields.Return_Authorization1__c.Label}" style="font-weight:bold"/>
+		                                <apex:outputLabel value="{!ctrlr.refContract.Default_Sales_Conditions__r.Return_Authorization1__c}"/>
+		                            </td>
+		                        </tr>
+                        		<tr style="font-size: 10px;">
+		                            <td style="border-bottom: 1px solid #eaeaea;padding:5px">    
+		                                <apex:outputLabel value="{!$ObjectType.Pol_Sale_Condition__c.fields.Merchandiser_Authorization__c.Label}" style="font-weight:bold"/>
+		                                <apex:outputLabel value="{!ctrlr.refContract.Default_Sales_Conditions__r.Merchandiser_Authorization__c}"/>
+                            		</td>
+                        		</tr>
+                        	</table>
+                        </td>
+                	</tr>
+                </table>
+        	</td>
+        </tr>
+        <tr>
+           	<td>
+       			<table border="0" cellpadding="0" cellspacing="0" width="700" style="width: 700px; border-top-left-radius: 10px; border-top-right-radius: 10px; border: 1px solid #eaeaea; border-top: 3px solid #1797c0; padding: 10px;">
+           			<tr>
+                    	<td>
+		                    <table border="0" cellpadding="0" cellspacing="0" width="675px" style="width: 675px">
+		                        <tr bgcolor="#39B1D9" style="font-size: 10px; color: #fffffd; background-color: #39B1D9">
+		                            <td style="padding:3px;color:#ffffff;font-weight:bold">{!$ObjectType.Nego_Plan__c.Label}</td>
+		                        </tr>
+		                        <tr style="font-size: 10px;">
+		                            <td colspan="2" style="border-bottom: 1px solid #eaeaea;padding:5px">
+		                            	<apex:outputLabel value="{!$ObjectType.Nego_Plan__c.fields.NEGO_MOM_RDV1__c.Label} " style="font-weight:bold"/>
+		                                <apex:outputText >{!ctrlr.negoPlan.NEGO_MOM_RDV1__c}</apex:outputText>
+		                            </td>
+		                        </tr>
+		                        <tr style="font-size: 10px;">
+		                            <td style="border-bottom: 1px solid #eaeaea;padding:5px">
+		                            	<apex:outputLabel value="{!$ObjectType.Nego_Plan__c.fields.NEGO_MOM_RDV2__c.Label} " style="font-weight:bold"/>
+		                                <apex:outputText >{!ctrlr.negoPlan.NEGO_MOM_RDV2__c}</apex:outputText>
+		                            </td>
+		                        </tr>
+		                        <tr style="font-size: 10px;">
+		                            <td style="border-bottom: 1px solid #eaeaea;padding:5px">
+		                            	<apex:outputLabel value="{!$ObjectType.Nego_Plan__c.fields.NEGO_MOM_RDV3__c.Label} " style="font-weight:bold"/>
+		                                <apex:outputText >{!ctrlr.negoPlan.NEGO_MOM_RDV3__c}</apex:outputText>
+		                            </td>
+		                        </tr>
+                        	</table>
+                        </td>
+                	</tr>
+        		</table>
+        	</td>
+   		</tr>
+	</table>
+</apex:page>

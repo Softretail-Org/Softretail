@@ -1,0 +1,145 @@
+<apex:page standardController="Product2" extensions="MassProductsSwitchController"
+           contentType="application/vnd.ms-excel#MassProductsSwitch_{!NOW()}.xls" cache="true">
+    <apex:outputText value="{!xmlHeader}" escape="false"/>
+    <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+              xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:x="urn:schemas-microsoft-com:office:excel"
+              xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+              xmlns:html="http://www.w3.org/TR/REC-html40">  
+        <Styles>            
+            <Style ss:ID="header">
+                <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:bgcolor="#e3deb8" />
+                <Interior ss:Color="#f8f8f8" ss:Pattern="Solid"/>
+            </Style>
+        </Styles>
+        <Worksheet ss:Name="{!$ObjectType.Product2.Label}">
+            <Table x:FullColumns="1" x:FullRows="1">
+                <!-- 19 columns -->
+                <Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/>
+                <Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/>
+                <Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/>
+                <Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/>
+                <Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/>
+                <!-- 3 columns for each orgaBU -->
+                <apex:repeat value="{!assortmentBUList}" var="bu">
+                    <Column ss:Width="80"/>
+                    <Column ss:Width="80"/>
+                    <Column ss:Width="80"/>
+                </apex:repeat>
+                <Row>
+                    <apex:repeat value="{!listOfMonthSelected}" var="option">
+                        <Cell ss:StyleID="header">
+                            <Data ss:Type="String">
+                                <apex:outputText >{!options[option]}</apex:outputText>
+                            </Data>
+                        </Cell>
+                    </apex:repeat>
+                </Row>
+                <Row>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!IF(onlySwitchProduct,'Only switch product', 'All Intro')}</Data></Cell>
+                </Row>
+                <Row>
+                    <!-- intro product -->
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Category__c.Label}</Data></Cell>
+                    <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="item">
+                        <Cell ss:StyleID="header"><Data ss:Type="String">{!item.fieldLabel}</Data></Cell>
+                    </apex:repeat>
+                    <!-- reference Product -->
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Name.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Product_EAN__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Retail_Price_Reco__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Average_Weekly_Sales_Hyper__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Average_Weekly_Sales_Super__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Market_Introduction_Date__c.Label}</Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Product2.fields.Market_End_of_Life_Date__c.Label}</Data></Cell>
+                    <apex:repeat value="{!assortmentBUList}" var="bu">
+                        <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                        <Cell ss:StyleID="header"><Data ss:Type="String">{!bu.Name}</Data></Cell>
+                        <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    </apex:repeat>
+                </Row>
+                <Row>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="item">
+                        <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    </apex:repeat>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <Cell ss:StyleID="header"><Data ss:Type="String"></Data></Cell>
+                    <apex:repeat value="{!assortmentBUList}" var="bu">
+                        <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Assortment_Detail__c.fields.Fact_WD_MarketBased__c.Label}</Data></Cell>
+                        <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Assortment_Detail__c.fields.Ass_BU_Cluster__c.Label}</Data></Cell>
+                        <Cell ss:StyleID="header"><Data ss:Type="String">{!$ObjectType.Assortment_Detail__c.fields.Movement_Date__c.Label}</Data></Cell>
+                    </apex:repeat>
+                </Row>
+                <apex:repeat value="{!ProductWrappersByCategoryList}" var="productList">
+                    <apex:repeat value="{!productList}" var="productWrapper" >
+                        <Row>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!productWrapper.introducedProduct.Category__r.Name}"/></Data></Cell>
+                            <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="item">
+                                <Cell>
+                                    <Data ss:Type="String">
+                                        <apex:outputText value="{!productWrapper.introducedProduct[item.fieldName]}" />
+                                    </Data>
+                                </Cell>
+                            </apex:repeat>
+                            <!-- Reference Product --->
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!productWrapper.introducedProduct.Reference_Product__r.Name}"/></Data></Cell>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!productWrapper.introducedProduct.Reference_Product__r.Product_EAN__c}"/></Data></Cell>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!productWrapper.introducedProduct.Reference_Product__r.Retail_Price_Reco__c}"/></Data></Cell>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!productWrapper.introducedProduct.Reference_Product__r.Average_Weekly_Sales_Hyper__c}"/></Data></Cell>
+                            <Cell><Data ss:Type="String"><apex:outputText value="{!productWrapper.introducedProduct.Reference_Product__r.Average_Weekly_Sales_Super__c}"/></Data></Cell>
+                            <Cell>
+                                <Data ss:Type="String">                                    
+                                    <apex:outputText value="{0,date,dd'/'MM'/'yyyy}" rendered="{!productWrapper.introducedProduct.Reference_Product__r.Market_Introduction_Date__c != null}">
+                                        <apex:param value="{!productWrapper.introducedProduct.Reference_Product__r.Market_Introduction_Date__c}" /> 
+                                    </apex:outputText>
+                                </Data>
+                            </Cell>
+                            <Cell>
+                                <Data ss:Type="String">
+                                    <apex:outputText value="{0,date,dd'/'MM'/'yyyy}" rendered="{!productWrapper.introducedProduct.Reference_Product__r.Market_End_of_Life_Date__c != null}">
+                                        <apex:param value="{!productWrapper.introducedProduct.Reference_Product__r.Market_End_of_Life_Date__c}" /> 
+                                    </apex:outputText>
+                                </Data>
+                            </Cell>
+                            <apex:repeat value="{!assortmentBUList}" var="assortment">
+                                <apex:variable var="assortmentId" value="{!assortment.Id}" />                                
+                                <apex:outputPanel layout="none" rendered="{!CONTAINS(productWrapper.detailsMapKeySet, assortmentId)}">
+                                    <apex:outputPanel layout="none"
+                                                      rendered="{!AND(productWrapper.switchStatusMap[assortmentId],
+                                                                OR(productWrapper.isUpdatable, productWrapper.referenceProduct.Id != null))}">
+                                        <Cell ss:MergeAcross="2">
+                                            <Data ss:Type="String">{!$Label.Product_Already_Switched}</Data>
+                                        </Cell>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="none" rendered="{!!productWrapper.switchStatusMap[assortmentId]}">
+                                        <Cell><Data ss:Type="String">{!productWrapper.detailsMap[assortmentId].Fact_WD_MarketBased__c}</Data></Cell>
+                                        <Cell><Data ss:Type="String">{!productWrapper.detailsMap[assortmentId].Ass_BU_Cluster__r.Name}</Data></Cell>
+                                        <Cell>
+                                            <Data ss:Type="String">
+                                                <apex:outputText value="{0,date,dd'/'MM'/'yyyy}"
+                                                                 rendered="{!productWrapper.detailsMap[assortmentId].Movement_Date__c != null}">
+                                                    <apex:param value="{!productWrapper.detailsMap[assortmentId].Movement_Date__c}" /> 
+                                                </apex:outputText>
+                                            </Data>
+                                        </Cell>
+                                    </apex:outputPanel>
+                                </apex:outputPanel>
+                                <!-- show hashed area if detail doesn't exist -->
+                                <apex:outputPanel layout="none" rendered="{!OR(!CONTAINS(productWrapper.detailsMapKeySet, assortmentId),
+                                                                          AND(!productWrapper.isUpdatable, productWrapper.referenceProduct.Id == null))}">
+                                    <Cell ss:MergeAcross="2"/>
+                                </apex:outputPanel>
+                            </apex:repeat>
+                        </Row>
+                    </apex:repeat>
+                </apex:repeat>
+            </Table>
+        </Worksheet>
+    </Workbook>
+</apex:page>

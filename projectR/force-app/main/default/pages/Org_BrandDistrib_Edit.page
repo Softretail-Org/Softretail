@@ -1,0 +1,28 @@
+<apex:page standardcontroller="Sup_Bra_Distributor__c" extensions="Org_BrandDistrib_Edit_Controller" lightningStylesheets="true">
+    <apex:pageMessages />
+    <apex:sectionheader title="{!$ObjectType.Sup_Bra_Distributor__c.label}" subtitle="{!IF(ISNULL(Sup_Bra_Distributor__c.Name), 'New ' + $ObjectType.Sup_Bra_Distributor__c.label, Sup_Bra_Distributor__c.Name)}"/>
+    <apex:form >
+        <apex:pageblock mode="edit" title="{!$Label.LBL_Edit} {!$ObjectType.Sup_Bra_Distributor__c.label}">
+            <apex:pageblockbuttons >
+                <apex:commandbutton value="{!$Label.Save}" action="{!Save}"/>
+                <apex:commandbutton value="{!$Label.Cancel}" action="{!Cancel}"/>
+            </apex:pageblockbuttons>
+            
+            <apex:pageblocksection title="System Information" showheader="true" columns="2">
+                <apex:inputfield value="{!Sup_Bra_Distributor__c.Brand__c}" required="true"/>
+                <apex:inputfield value="{!Sup_Bra_Distributor__c.Name}" required="true"/>
+            </apex:pageblocksection>
+            
+            <apex:pageblocksection title="Information" showheader="true" columns="2">
+                <apex:inputfield value="{!Sup_Bra_Distributor__c.Supplier__c}" required="true"/> 
+                <!-- <apex:inputfield value="{!Sup_Bra_Distributor__c.Is_Brand_Owner__c}" required="false"/>-->
+                <apex:outputField value="{!Sup_Bra_Distributor__c.Is_Brand_Owner_2__c}"/>
+                <apex:inputfield value="{!Sup_Bra_Distributor__c.Status__c}" required="false"/>
+                <apex:inputfield value="{!Sup_Bra_Distributor__c.Is_Brand_Distributor__c}" required="false"/>
+                <apex:inputfield value="{!Sup_Bra_Distributor__c.Status_BDate__c}" required="true"/>
+                <apex:pageblocksectionitem />
+                <apex:inputfield value="{!Sup_Bra_Distributor__c.Status_EDate__c}" required="false"/>
+            </apex:pageblocksection>
+        </apex:pageblock>
+    </apex:form>
+</apex:page>

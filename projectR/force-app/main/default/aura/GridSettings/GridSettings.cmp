@@ -1,0 +1,179 @@
+<aura:component
+    implements="force:appHostable,flexipage:availableForAllPageTypes,lightning:actionOverride,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+    access="global" controller="GridSettingsController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="allMetaData" type="Map" />
+    <aura:attribute name="templateList" type="Map" />
+    <aura:attribute name="selectedTemplate" type="String" default="Custom_Template" />
+    <aura:attribute name="selectedReferenceFields" type="String" default="" />
+    <aura:attribute name="templateName" type="String" />
+    <aura:attribute name="currentReferenceFieldName" type="String" default="" />
+    <aura:attribute name="isCustomTemplate" type="boolean" default="true" />
+    <!-- This attribute will hold all object list -->
+    <aura:attribute name="allObjects" type="List" />
+    <!-- This attribute will hold current selected object name -->
+    <aura:attribute name="selectedObject" type="String" />
+    <aura:attribute name="selectedInOutOptions" type="List"
+        default="[{'label': 'Input', 'value': 'I'}, {'label': 'Output', 'value': 'O'}]" />
+    <aura:attribute name="selectedInOutValue" type="String" default="O" />
+    <aura:attribute name="isInputField" type="boolean" default="false" />
+    <aura:attribute name="sObjectFields" type="List" />
+    <aura:attribute name="addedFields" type="Map" />
+    <aura:attribute name="referenceFields" type="Map" />
+    <aura:attribute name="displayReference" type="boolean" default="false" />
+    <aura:attribute name="jsonGenerated" type="string" />
+    <aura:attribute name="showLoadingSpinner" type="boolean" default="false" />
+    <aura:attribute name="showMessage" type="boolean" default="false" />
+    <aura:attribute name="message" type="String" />
+    <aura:attribute name="showColorPicker" type="boolean" default="false" />
+    <aura:attribute name="messageType" description="Message type, can be error/warning/info/success" type="String"
+        default="info" />
+    <aura:if isTrue="{!v.showLoadingSpinner}">
+        <div class="fixed-spinner slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+        </div>
+    </aura:if>
+    <lightning:card title="Grid Layout" footer="" class="slds-card__header">
+        <div class="slds-form--stacked slds-p-around--medium slds-m-bottom--x-small">
+            <aura:if isTrue="{!v.showMessage}">
+                <div class="{!'slds-box slds-theme–alert-texture slds-theme–' + v.messageType}">
+                    <lightning:icon iconName="{! 'utility:'+ v.messageType }" size="medium"
+                        alternativeText="{!v.messageType}" Class="iconContainer" />&nbsp;
+                    <span class="slds-text-body–regular">
+                        <aura:unescapedHtml value="{!v.message}" />
+                    </span>
+                </div>
+            </aura:if>
+            <lightning:layout class="slds-page-header slds-page-header--object-home">
+                <lightning:layoutItem size="12" flexibility="auto" padding="horizontal-medium">
+                    <div class="slds-form slds-form--inline">
+                        <div class="slds-form-element">
+                            <div class="c-container">
+                                <lightning:radioGroup aura:id="templateid" name="templateGroup" label="Template List"
+                                    options="{!v.templateList}" value="{!v.selectedTemplate}"
+                                    onchange="{!c.onSelectedTemplateChange}" />
+                            </div>
+                        </div>
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>
+            <lightning:layout class="slds-page-header slds-page-header--object-home">
+                <lightning:layoutItem size="4" flexibility="auto" padding="horizontal-medium">
+                    <div class="slds-form-element">
+                        <lightning:input aura:id="templatename" label="Template Name" value="{!v.templateName}" />
+                    </div>
+                    <lightning:select aura:id="objectList" name="objects" label="Select Object"
+                        onchange="{!c.onObjectSelectionChange}" value="{!v.selectedObject}">
+                        <option value="" disabled="true" hidden="true" selected="true">Select object..</option>
+                        <aura:iteration items="{!v.allObjects}" var="item">
+                            <option value="{!item.objectName}">{!item.objectLabel}</option>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+            </lightning:layout>
+            <lightning:layout class="slds-page-header slds-page-header--object-home">
+                <lightning:layoutItem size="12" flexibility="auto" padding="around-small">
+                    <div style="display: inline-flex;flex-direction: row;">
+                        <ui:inputSelect aura:id="selectedFields" options="{!v.sObjectFields}"
+                            change="{!c.onSelectedFieldsChange}" multiple="true" label="Available Fields"
+                            class="dynamic oSelect" />
+                        <!--ui:inputSelect aura:id="selectedFields"
+                            change="{!c.onSelectedFieldsChange}" multiple="true" label="Available Fields"
+                            class="dynamic oSelect">
+                            <aura:iteration items="{!v.sObjectFields}" var="item">
+                                <ui:inputSelectOption text="{!item.value}" value="{!item.key}"/>
+                            </aura:iteration>
+                        </ui:inputSelect-->
+                        <aura:if isTrue="{!v.displayReference}">
+                            <div class="slds-dueling-list__column" style="margin-left:10px;">
+                                <ui:inputSelect multiple="true" label="{!v.currentReferenceFieldName}"
+                                    aura:id="selectedReferenceFields" class="dynamic oSelect"
+                                    value="{!v.selectedReferenceFields}">
+                                    <aura:iteration items="{!v.referenceFields}" var="field" indexVar="key">
+                                        <ui:inputSelectOption text="{!field.value}" class="{!field.key}" />
+                                    </aura:iteration>
+                                </ui:inputSelect>
+                            </div>
+                        </aura:if>
+                    </div>
+                    <div class="slds-dueling-list__column" style="margin:5px;">
+                        <lightning:radioGroup aura:id="inoutGroup" name="radioInOutGroup" label="Field Type in Grid"
+                            options="{!v.selectedInOutOptions}" value="{!v.selectedInOutValue}"
+                            onchange="{!c.onSelectedInOut}" required="true" />
+                    </div>
+                    <div class="slds-dueling-list__column" style="margin:5px;">
+                        <div class='In InBackground rectangle-big'>-----
+                        </div>
+                        <div class='rectangle-small'></div>
+                        <div class='Out OutBackground rectangle-big'>-----
+                        </div>
+                    </div>
+                    <div class="slds-dueling-list__column" style="margin:2px;">
+                        <lightning:buttonIcon title="Move selection to Selected" class="addBtn" iconName="utility:right"
+                            size="medium" variant="bare" alternativeText="Add" onclick="{!c.addField}" />
+                        <lightning:buttonIcon title="Move selection to Available" class="removeBtn"
+                            iconName="utility:left" size="medium" variant="bare" alternativeText="Remove"
+                            onclick="{!c.removefield}" />
+                        <lightning:buttonIcon title="Add Separator" iconName="utility:add" size="medium" variant="bare"
+                            alternativeText="Add Separator" onclick="{!c.addSeparator}" />
+                    </div>
+                    <div class="slds-dueling-list__column">
+                        <span id="selected-list-label-7" class="slds-form-element__label">Selected Fields</span>
+                        <ui:inputSelect multiple="true" aura:id="insertedFields" class="dynamic oSelect"
+                            change="{!c.onSelectedInsertedFieldsChange}">
+                            <aura:iteration items="{!v.addedFields}" var="field" indexVar="key">
+                                <aura:if isTrue="{!field.isSeparator}">
+                                    <ui:inputSelectOption text="{!field.key}" class="{!field.value}" />
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!field.isInputField}">
+                                            <ui:inputSelectOption text="{!field.key}" class="{!field.value+' In'}"
+                                                aura:id="{!field.value}"/>
+                                            <aura:set attribute="else">
+                                                <ui:inputSelectOption text="{!field.key}" class="{!field.value+' Out'}"
+                                                    aura:id="{!field.value}"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:iteration>
+                        </ui:inputSelect>
+                    </div>
+                    <div class="slds-dueling-list__column">
+                        <lightning:buttonIcon title="Move selection up" class="marginArrowUp" iconName="utility:up"
+                            size="medium" variant="bare" alternativeText="Move selection up"
+                            onclick="{!c.moveUpSelectedColumnsList}" />
+                        <lightning:buttonIcon title="Move selection down" class="marginArrowDown"
+                            iconName="utility:down" size="medium" variant="bare" alternativeText="Move selection down"
+                            onclick="{!c.moveDownSelectedColumnsList}" />
+                    </div>
+                    <aura:if isTrue="{!v.showColorPicker}">
+                        <div class="slds-dueling-list__column">
+                            <span id="selected-list-label-7" class="slds-form-element__label">Selected Fields Background
+                                Color</span>
+                            <lightning:input type="color" variant="label-hidden" name="color" aura:id="ColorPicker"/>
+                            <br /> <lightning:button variant="success" label="Confirm" onclick="{! c.confirmColor }">
+
+                            </lightning:button>
+                            <lightning:button label="Cancel" onclick="{!c.dismissColorPicker}" variant="destructive">
+                            </lightning:button>
+                           
+                        </div>
+                    </aura:if>
+                </lightning:layoutItem>
+            </lightning:layout>
+            <lightning:layout class="slds-page-header slds-page-header--object-home">
+                <lightning:layoutItem size="12" flexibility="auto" padding="horizontal-medium">
+                    <div>
+                        <lightning:button variant="brand" label="Save" title="Save" onclick="{!c.doSave}" />
+                        <lightning:button variant="brand" label="Generate" title="generate Json"
+                            onclick="{!c.generateJson}" />
+                        <lightning:button variant="brand" label="Copy" title="copy Json" onclick="{!c.copyJson}" />
+                        <div>Generated JSON</div>
+                        <textarea rows="10" cols="100" id="jsonData" readonly="true"
+                            style="background-color: rgba(0, 112, 210, 0.13);">{!v.jsonGenerated}</textarea>
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </div>
+    </lightning:card>
+</aura:component>

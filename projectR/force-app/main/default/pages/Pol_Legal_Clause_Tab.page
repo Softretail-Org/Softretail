@@ -1,0 +1,4 @@
+<apex:page standardController="Legal_Clause__c" recordSetVar="Elements" sidebar="true" lightningStylesheets="true">
+  <h2 style="font-size:22px;">{!$ObjectType.Legal_Clause__c.labelPlural}</h2>          
+  <apex:enhancedList type="Legal_Clause__c" height="600" rowsPerPage="50"/>
+</apex:page>

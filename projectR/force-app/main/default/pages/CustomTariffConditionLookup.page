@@ -1,0 +1,84 @@
+<apex:page controller="CustomLookupController" title="Search"
+	showHeader="false" sideBar="false" standardStylesheets="true"
+	applyBodyTag="false" id="pg">
+	<script
+		src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+	<script>
+        $(document).ready(function() {   
+        	$('body').addClass('hasMotif lookupTab  LookupSearchFrame  brandNoBgrImg');
+    	});
+    </script>
+    <apex:sectionHeader title="Reference" />
+	<apex:form id="form">
+		<apex:actionStatus id="loadingStatus">
+			<apex:facet name="start">
+				<img src="/img/loading.gif" />
+			</apex:facet>
+		</apex:actionStatus>
+		<apex:outputPanel id="page" layout="block">
+			<apex:actionRegion >
+				<apex:outputPanel id="top" layout="block"
+					style="margin:5px;padding:10px;padding-top:2px;">
+					<apex:outputLabel value="Search"
+						style="font-weight:Bold;padding-right:10px;" for="txtSearch" />
+					<apex:inputText id="txtSearch" value="{!searchString}" />
+					<span style="padding-left: 5px"><apex:commandButton id="btnGo" value="Go" action="{!Search}" rerender="searchResults"></apex:commandButton></span>
+					<br />
+					<br />
+					<apex:commandLink style="margin-top:5px"
+						title="Clear Search Results" rerender="form,searchResults"
+						status="loadingStatus" action="{!clearSearch}">
+						<apex:param value="tarifflookup" name="column"
+							assignTo="{!caseString}"></apex:param>			
+                        Clear Search Results	</apex:commandLink>
+				</apex:outputPanel>
+				<apex:outputPanel id="pnlSearchResults"
+					style="margin:10px;height:350px;overflow-Y:auto;" layout="block">
+					<apex:pageBlock id="searchResults">
+						<apex:pageBlockTable value="{!resultsTariff}" var="a"
+							id="tblResults">
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Pol_Com_Condition__c.fields.Name.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputLink value="javascript:top.window.opener.lookupPick2('{!FormTag}','{!TextBox}_lkid','{!TextBox}','{!a.Id}','{!a.Comment__c}', false)"
+									rendered="{!NOT(ISNULL(a.Id))}">{!a.Name}</apex:outputLink>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Pol_Com_Condition__c.fields.Condition_Mode__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.Condition_Mode__c}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Pol_Com_Condition__c.fields.Index__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.Index__c}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Pol_Com_Condition__c.fields.Is_Conditional__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.Is_Conditional__c}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Pol_Com_Condition__c.fields.VAT_Type__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.VAT_Type__c}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Pol_Com_Condition__c.fields.Master_BU__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.Master_BU__r.Name}</apex:outputText>
+							</apex:column>
+						</apex:pageBlockTable>
+					</apex:pageBlock>
+				</apex:outputPanel>
+			</apex:actionRegion>
+		</apex:outputPanel>
+	</apex:form>
+</apex:page>

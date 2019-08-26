@@ -1,0 +1,629 @@
+<apex:page standardController="Sup_sup_NegoScope__c" lightningStylesheets="true"
+           extensions="Org_NegoScope_Edit_Controller" standardStylesheets="false">
+    
+    <link href="{!URLFOR($Resource.FooTable, 'FooTable-2.0.3/css/footable.core.min.css')}"
+          rel="stylesheet" type="text/css" />
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+	<!--<apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js}" />-->
+    
+    <script src="{!URLFOR($Resource.FooTable, 'FooTable-2.0.3/dist/footable.min.js')}"></script>
+    <script src="{!URLFOR($Resource.FooTable, 'FooTable-2.0.3/dist/footable.sort.min.js')}"></script>
+    <script src="{!URLFOR($Resource.FooTable, 'FooTable-2.0.3/dist/footable.filter.min.js')}"></script>
+    <script src="{!URLFOR($Resource.FooTable, 'FooTable-2.0.3/dist/footable.paginate.min.js')}">
+    </script>
+
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }" />
+    
+    <apex:includeScript value="{!URLFOR($Resource.Assets, 'assets/js/app.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.Assets, 'assets/js/Org_NegoScope_Edit.js')}" />
+    <apex:pageMessages id="messages" />
+    <apex:form id="formNegoScope">
+        <apex:sectionHeader id="sectionHeader" title="{!$ObjectType.Sup_sup_NegoScope__c.Label}"
+                            subtitle="{!IF(editMode==FALSE,$Label.LBL_NewNegoScope,negoScope.Name)}" />
+        
+        <apex:actionFunction action="{!processSelection}" name="onProcessSelection"/>
+        <apex:actionFunction action="{!filterPG}" name="selectAllHighlighted" reRender="messages" oncomplete="enableSaveButton()" />
+        <apex:actionFunction name="saveNego" action="{!saveNegoScope}"/>
+        <!-- General Information Block ( negoscope name, supplier, owner name )  -->
+        <apex:pageBlock title="{!IF(editMode,$Label.LBL_EditNegoScope,'')}" id="pageBlockNego" mode="edit">
+            <apex:actionStatus id="loadingStatus">
+                <apex:facet name="start">
+                    <img src="/img/loading.gif" />
+                </apex:facet>
+            </apex:actionStatus>
+            <apex:pageBlockSection title="{!$Label.LBL_Information}" columns="3" id="pageBlockSectionNego2">
+                
+                <apex:pageBlockSectionItem dataStyle="width:0%" labelStyle="width:18%" >
+                    <apex:outputLabel value="{!$ObjectType.Sup_sup_NegoScope__c.fields.NS_Code__c.Label}" />
+                    <apex:inputField value="{!negoScope.NS_Code__c}" style="width:100px" required="true" onkeypress="return submitByEnterKey(event);" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem dataStyle="width:0%" labelStyle="width:0%" >
+                    <apex:outputLabel value="{!$ObjectType.Sup_sup_NegoScope__c.fields.NS_Code_Prefix__c.Label}" />
+                    <apex:inputField value="{!negoScope.NS_Code_Prefix__c}" style="width:80px" onkeypress="return submitByEnterKey(event);" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:inputField styleClass="allhecheckobx" value="{!negoScope.Is_All_HE__c}">
+                    <apex:actionSupport event="onchange" action="{!init}" reRender="listStructureElementsPanel, messages" status="loadingStatus"
+                                        oncomplete="afterReRender();" />
+                </apex:inputField>
+                
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection columns="2" id="pageBlockSectionNego">
+                <apex:outputPanel >
+                    <table style="width: 100%">
+                        <tr>
+                            <td class="labelCol" style="width:34%;text-align: right;">
+                                <apex:outputLabel style="color: #4a4a56;font-weight:bold;"
+                                                  value="{!$ObjectType.Sup_sup_NegoScope__c.fields.Name.Label}"
+                                                  for="negoscopeNameId" />
+                            </td>
+                            <td><apex:inputField value="{!negoScope.Name}" id="negoname" onkeypress="return submitByEnterKey(event);"
+                                                 onfocus="var temp_value=this.value; this.value=''; this.value=temp_value"
+                                                 styleClass="negoscopeName" style="width: 60%;margin-left: 11px;" />&nbsp; 
+                                <apex:commandLink styleClass="generateLink" action="{!refreshNsName}" status="loadingStatus"
+                                                  reRender="pageBlockNego" oncomplete="afterReRender('focus');" >{!$Label.LBL_Generate_Name}               
+                                </apex:commandLink>
+                            </td>
+                        </tr>
+                    </table>
+                </apex:outputPanel>
+                <apex:inputField styleClass="allbrandcheckbox" value="{!negoScope.Is_All_Brands__c}">
+                    <apex:actionSupport event="onchange" action="{!getBrandDistributorList}" reRender="listBrandsPanel, messages"
+                                        status="loadingStatus" oncomplete="includedBrands = [];afterReRender();" />
+                </apex:inputField>
+                <apex:inputField value="{!negoScope.OwnerId}" style="width: 35%;" onkeypress="return submitByEnterKey(event);" required="true" />
+                <apex:inputField value="{!negoScope.Is_All__c}">
+                    <apex:actionSupport event="onchange" action="{!getProductList}" reRender="formNegoScope, messages" status="loadingStatus"
+                                        oncomplete="afterReRender();" />
+                </apex:inputField>
+                <apex:inputField onchange="onChangeSupplier()" style="width: 35%;" onkeypress="return submitByEnterKey(event);" value="{!negoScope.Supplier__c}" rendered="{!!editMode}" />
+                <apex:outputField value="{!negoScope.Supplier__c}" rendered="{!editMode}" />
+                <apex:inputCheckbox label="View & change addresses" value="{!isContactShow}" id="my_chk_bx">
+                    <apex:actionSupport action="{!setAddressFromSupplier}" reRender="formNegoScope, messages" status="loadingStatus"
+                                        oncomplete="afterReRender();" event="onchange" />
+                </apex:inputCheckbox>
+                <apex:inputField style="width: 35%;" value="{!negoScope.Stock_Owner__c}" />
+                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:inputField style="width: 35%;" value="{!negoScope.Parent_Nego_Scope__c}" onkeypress="return submitByEnterKey(event);"  required="false" />
+                <apex:inputField value="{!negoScope.Status__c}" />
+                <apex:inputField value="{!negoScope.Comment__c}" style="width: 100%;" required="false" />
+                <apex:inputField value="{!negoScope.CurrencyISOCode}" />
+            </apex:pageBlockSection>
+            
+            <!-- Structre Element Grid  -->
+            <apex:outputPanel id="listStructureElementsPanel">
+                <apex:pageBlockSection title="{!$Label.LBL_StructureElements}"
+                                       columns="2" rendered="{!negoScope.Is_All_HE__c== false}">
+                    
+                    <apex:outputPanel id="elementstree">
+                        <div id="breadcrumbElement">
+                            <apex:commandLink action="{!refresh}"
+                                              rendered="{!currentElement.Parent_Element__r.Parent_Element__r.Name != null}"
+                                              reRender="elementstree,messages,formNegoScope"
+                                              status="loadingStatus"
+                                              oncomplete="afterReRender();"
+                                              styleClass="bc-element">
+                                <apex:param name="currentElemId"
+                                            value="{!currentElement.Parent_Element__r.Parent_Element__c}"
+                                            assignTo="{!currentElementId}" />
+                                {!currentElement.Parent_Element__r.Parent_Element__r.Name}
+                            </apex:commandLink>
+                            <apex:commandLink action="{!refresh}"
+                                              rendered="{!currentElement.Parent_Element__r.Name != null}"
+                                              reRender="elementstree,messages,formNegoScope" oncomplete="afterReRender();"
+                                              status="loadingStatus"
+                                              styleClass="bc-element">
+                                <apex:param name="currentElemId"
+                                            value="{!currentElement.Parent_Element__c}"
+                                            assignTo="{!currentElementId}" />
+                                {!currentElement.Parent_Element__r.Name}
+                            </apex:commandLink>
+                            <apex:commandLink action="{!refresh}" reRender="elementstree,formNegoScope"
+                                              oncomplete="afterReRender();" styleClass="bc-element">
+                                <apex:param name="currentElemId" value="{!currentElement.Id}"
+                                            assignTo="{!currentElementId}" />
+                                {!currentElement.Name}
+                            </apex:commandLink>
+                        </div>
+                        <div class="rootelementwrapper">
+                            <!-- Added  by kareem . Ajax link to add root element in selected element  -->
+                            <div id="addRoot-{!currentElement.Id}">
+                                <apex:commandLink value="{!$Label.LBL_Add} {!currentElement.Name}" action="{!addAllElement}"
+                                                  rendered="{!currentElement.Level__c==0}" id="addRoot"
+                                                  status="selectElementStatus"
+                                                  reRender="selected_elements,elementstree"
+                                                  oncomplete="afterReRender('addroot');" styleClass="rootelement" />
+                            </div>
+                        </div>
+                        <table class="green-table footable" id="elementslisttable"
+                               data-page-size="50">
+                            <thead>
+                                <tr>
+                                    <th class="elementCodeHeader" data-type="text"
+                                        data-sort-initial="ascending">{!$ObjectType.Orga_HE__c.fields.Elt_Code__c.Label}
+                                    </th>
+                                    <th class="elementNameHeader" data-type="text">{!$ObjectType.Orga_HE__c.fields.Name.Label}</th>
+                                    <th data-sort-ignore="true">{!$ObjectType.Supplier_NS_HE__c.fields.Choice__c.Label}&nbsp;
+                                        <apex:actionStatus id="selectElementStatus">
+                                            <apex:facet name="start">
+                                                <img src="/img/loading.gif" />
+                                            </apex:facet>
+                                        </apex:actionStatus>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <apex:repeat value="{!childElementsWrapped}" var="wElement">
+                                    
+                                    <tr class="elementLine ProductGroupRow"
+                                        id="{!wElement.element.Id}">
+                                        <td class="elementCode"><apex:outputField value="{!wElement.element.Elt_Code__c}" /></td>
+                                        <td class="elementName"><apex:commandLink action="{!refresh}"
+                                                                                  reRender="elementstree,messages,formNegoScope"
+                                                                                  oncomplete="afterReRender();">
+                                            <apex:param name="currentElemId"
+                                                        value="{!wElement.element.Id}"
+                                                        assignTo="{!currentElementId}" />
+                                            {!wElement.element.Name}
+                                            </apex:commandLink></td>
+                                        <td class="elementChoice" id="PgSelect">
+                                            <!--<apex:inputField value="{!wElement.negoScopeElem.Choice__c}" />-->
+                                            <apex:selectList value="{!wElement.negoScopeElem.Choice__c}"
+                                                                                                 multiselect="false" size="1">
+                                            
+                                            <apex:selectOptions value="{!choiceOptions}" />
+                                            <apex:actionSupport event="onchange"
+                                                                action="{!selectElement}"
+                                                                reRender="selected_elements,elementstree,messages"
+                                                                oncomplete="afterReRender();" status="selectElementStatus">
+                                                <apex:param name="elemIdToSelect"
+                                                            value="{!wElement.element.Id}"
+                                                            assignTo="{!elementIdToSelect}" />
+                                            </apex:actionSupport>
+                                            </apex:selectList></td>
+                                    </tr>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                    </apex:outputPanel>
+                    <!-- Selected Structure Element grid -->
+                    <apex:outputPanel id="selected_elements">
+                        <h1>
+                            {!$Label.LBL_SelectedStructureElements}
+                            ({!wNegoScopeElementList.size}): &nbsp;
+                            <apex:actionStatus id="deleteElementStatus">
+                                <apex:facet name="start">
+                                    <img src="/img/loading.gif" />
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </h1>
+                        <table class="green-table footable" id="selected-structure-element-table"
+                               style="margin-left: 0px; margin-top: 15px;" data-page-size="50">
+                            <thead>
+                                <tr>
+                                    <th class="elementCodeHeader">{!$ObjectType.Supplier_NS_HE__c.fields.Name.Label}</th>
+                                    <th class="elementNameHeader" data-type="text"
+                                        data-sort-initial="ascending">{!$ObjectType.Supplier_NS_HE__c.fields.Structure_Element__c.Label}</th>
+                                    <th>{!$ObjectType.Supplier_NS_HE__c.fields.Choice__c.Label}</th>
+                                    <th class="elementDeleteHeader" data-sort-ignore="true">{!$Label.Delete}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <apex:repeat value="{!wNegoScopeElementList}" var="nsew">
+                                    <tr class="elementLine "
+                                        id="{!nsew.negoScopeElem.Choice__c}-{!nsew.negoScopeElem.Structure_Element__c}-{!nsew.elementLevel}">
+                                        <td class="elementCode"><apex:outputText value="{!nsew.elementCode}" /></td>
+                                        <td class="elementName"><apex:commandLink action="{!refresh}" reRender="elementstree"
+                                                                                  oncomplete="afterReRender();">
+                                            <apex:param name="currentElemId"
+                                                        value="{!nsew.negoScopeElem.Structure_Element__c}"
+                                                        assignTo="{!currentElementId}" />
+                                            {!nsew.elementName}
+                                            </apex:commandLink></td>
+                                        <td class="elementChoice"><apex:outputField value="{!nsew.negoScopeElem.Choice__c}" /></td>
+                                        <td><apex:commandLink action="{!unselectElement}"
+                                                              value="X" reRender="elementstree, selected_elements"
+                                                              onClick="onDeleteSructureElement('{!nsew.negoScopeElem.Structure_Element__c}')"
+                                                              oncomplete="afterReRender();" status="deleteElementStatus">
+                                            <apex:param name="unselectElementId"
+                                                        value="{!nsew.negoScopeElem.Structure_Element__c}"
+                                                        assignTo="{!elementIdToSelect}" />
+                                            </apex:commandLink></td>
+                                    </tr>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                    </apex:outputPanel>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+            <!-- Brand Distributor grid -->
+            <apex:outputPanel id="listBrandsPanel">
+                <apex:pageBlockSection rendered="{!negoScope.Is_All_Brands__c == false}"
+                                       id="pageBlockSectionBrand1" title="{!$ObjectType.Sup_Bra_Distributor__c.Label}"
+                                       columns="1">
+                    <apex:toolbar style="background-color: transparent;background-image: none;">
+                        <apex:toolbarGroup style="vertical-align: middle;">
+                            <apex:inputField id="include_brand" value="{!negoScope.Incl_NewBrand__c}" />
+                            <apex:outputLabel title="{!$ObjectType.Sup_sup_NegoScope__c.fields.Incl_NewBrand__c.inlineHelpText}"
+                                              value="{!$ObjectType.Sup_sup_NegoScope__c.fields.Incl_NewBrand__c.Label}"
+                                              for="include_brand" />
+                        </apex:toolbarGroup>
+                    </apex:toolbar>
+                    <apex:pageBlockTable id="brandTable" value="{!brandDistributorList}" var="item" columnsWidth="1%">
+                        <apex:column title="{!item.brand.Brand__c}">
+                            <apex:inputCheckbox onclick="processHighlight();" value="{!item.isSelected}" id="selectedBrand" />
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputText value="{!$ObjectType.Sup_Bra_Distributor__c.fields.Name.Label}" />
+                            </apex:facet>
+                            <apex:outputLink value="/{!item.brand.Id}" target="_blank"><apex:outputField value="{!item.brand.Name}" /></apex:outputLink>
+                        </apex:column>
+                        <apex:column headerValue="{!$ObjectType.Sup_Bra_Distributor__c.fields.Brand__c.Label}">
+                            <apex:outputField value="{!item.brand.Brand__c}" />
+                        </apex:column>
+                        <apex:column headerValue="{!$ObjectType.Sup_Brand__c.fields.Brand_Owner__c.Label}">
+                            <apex:outputField value="{!item.brand.Brand__r.Brand_Owner__c}" />
+                        </apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+            <!-- Product Group Grid  -->
+            <apex:pageBlockSection id="pageBlockSectionPG" rendered="{!negoScope.Is_All__c == false}" title="{!$ObjectType.Supplier_PG_Mapping__c.Label}" columns="1">
+                <apex:actionFunction name="refreshPageSize" action="{!refreshPageSize}" status="fetchStatus" reRender="pageBlockSectionPG, messages" oncomplete="afterReRender()" />              
+                <apex:toolbar style="background-color: transparent;background-image: none;">
+                    <apex:toolbarGroup style="vertical-align: middle;">
+                        <apex:inputField id="include_product" value="{!negoScope.Incl_NewProduct__c}" />
+                        <apex:outputLabel title="{!$ObjectType.Sup_sup_NegoScope__c.fields.Incl_NewProduct__c.inlineHelpText}"
+                                          value="{!$ObjectType.Sup_sup_NegoScope__c.fields.Incl_NewProduct__c.Label}"
+                                          for="include_product" />
+                    </apex:toolbarGroup>
+                    <apex:toolbarGroup style="vertical-align: middle;">
+                        <button id="all_include_product" style="padding: 4px 3px;" class="btn" reRender="pageBlockSectionPG">Select highlighted options only</button>
+                    </apex:toolbarGroup>
+                </apex:toolbar>
+                <apex:pageBlockTable id="pgTable" value="{!Records}" var="item" columnsWidth="1%">
+                    <apex:column styleClass="pg brand-{!item.pg.Brand__c} dep-{!item.pg.Department__c} sec-{!item.pg.Section__c}">
+                        <apex:facet name="header">
+                            <!--<apex:inputCheckbox id="checkAll" />-->
+                        </apex:facet>
+                        <apex:inputCheckbox value="{!item.selected}" id="checkedone" />
+                    </apex:column>
+                    <apex:column styleClass="pg brand-{!item.pg.Brand__c} dep-{!item.pg.Department__c} sec-{!item.pg.Section__c}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortToggle}" rerender="pageBlockSectionPG" status="fetchStatus" oncomplete="afterReRender();">
+                                <apex:param name="sortField" value="Name" assignTo="{!sortField}" />
+                                <apex:outputText value="{!$ObjectType.Supplier_PG_Mapping__c.fields.Name.Label}{!IF(sortField=='Name',IF(sortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputLink value="/{!item.pg.Id}" target="_blank"><apex:outputField value="{!item.pg.Name}" /></apex:outputLink>
+                    </apex:column>
+                    <apex:column styleClass="pg brand-{!item.pg.Brand__c} dep-{!item.pg.Department__c} sec-{!item.pg.Section__c}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortToggle}" rerender="pageBlockSectionPG" status="fetchStatus" oncomplete="afterReRender();">
+                                <apex:param name="sortField" value="Brand__r.Name" assignTo="{!sortField}" />
+                                <apex:outputText value="{!$ObjectType.Supplier_PG_Mapping__c.fields.Brand__c.Label}{!IF(sortField=='Brand__r.Name',IF(sortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{!item.pg.Brand__c}" />
+                    </apex:column>
+                    <apex:column styleClass="pg brand-{!item.pg.Brand__c} dep-{!item.pg.Department__c} sec-{!item.pg.Section__c}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortToggle}" rerender="pageBlockSectionPG" status="fetchStatus" oncomplete="afterReRender();">
+                                <apex:param name="sortField" value="Department__r.Name" assignTo="{!sortField}" />
+                                <apex:outputText value="{!$ObjectType.Supplier_PG_Mapping__c.fields.Department__c.Label}{!IF(sortField=='Department__r.Name',IF(sortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{!item.pg.Department__c}" />
+                    </apex:column>
+                    <apex:column styleClass="pg brand-{!item.pg.Brand__c} dep-{!item.pg.Department__c} sec-{!item.pg.Section__c}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortToggle}" rerender="pageBlockSectionPG" status="fetchStatus" oncomplete="afterReRender();">
+                                <apex:param name="sortField" value="Section__r.Name" assignTo="{!sortField}" />
+                                <apex:outputText value="{!$ObjectType.Supplier_PG_Mapping__c.fields.Section__c.Label}{!IF(sortField=='Section__r.Name',IF(sortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{!item.pg.Section__c}" />
+                    </apex:column>
+                    <apex:column styleClass="pg brand-{!item.pg.Brand__c} dep-{!item.pg.Department__c} sec-{!item.pg.Section__c}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortToggle}" rerender="pageBlockSectionPG" status="fetchStatus" oncomplete="afterReRender();">
+                                <apex:param name="sortField" value="Status__c" assignTo="{!sortField}" />
+                                <apex:outputText value="{!$ObjectType.Supplier_PG_Mapping__c.fields.Status__c.Label}{!IF(sortField=='Status__c',IF(sortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{!item.pg.Status__c}" />
+                    </apex:column>
+                    <apex:facet name="footer">
+                        <apex:outputPanel layout="table"> 
+                            <apex:selectList value="{!size}" multiselect="false" size="1" onchange="refreshPageSize();">
+                                <apex:selectOptions value="{!paginationSizeOptions}"/>
+                            </apex:selectList>
+                            <apex:commandButton status="fetchStatus" reRender="pageBlockSectionPG, messages" value="{!$Label.LBL_First}" action="{!first}" disabled="{!!setCtrlr.hasPrevious}" title="{!$Label.LBL_First}" oncomplete="afterReRender()" /> 
+                            <apex:commandButton status="fetchStatus" reRender="pageBlockSectionPG, messages" value="{!$Label.LBL_Previous}" action="{!previous}" disabled="{!!setCtrlr.hasPrevious}" title="{!$Label.LBL_Previous}" oncomplete="afterReRender()" /> 
+                            <apex:commandButton status="fetchStatus" reRender="pageBlockSectionPG, messages" value="{!$Label.LBL_Next}" action="{!next}" disabled="{!!setCtrlr.hasNext}" title="{!$Label.LBL_Next}" oncomplete="afterReRender()" /> 
+                            <apex:commandButton status="fetchStatus" reRender="pageBlockSectionPG, messages" value="{!$Label.LBL_Last}" action="{!last}" disabled="{!!setCtrlr.hasNext}" title="{!$Label.LBL_Last}" oncomplete="afterReRender()" /> 
+                            <apex:outputText rendered="{!noOfRecords > 0}" style="text-align: right" >{!(setCtrlr.pageNumber * size)+1-size}-{!IF((setCtrlr.pageNumber * size)>noOfRecords, noOfRecords,
+                                (setCtrlr.pageNumber * size))} of {!noOfRecords}
+                            </apex:outputText>
+                            <apex:outputPanel >
+                                <apex:actionStatus id="fetchStatus" >
+                                    <apex:facet name="start" >
+                                        <img src="/img/loading.gif" />                    
+                                    </apex:facet>
+                                </apex:actionStatus>
+                            </apex:outputPanel> 
+                            
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            
+            <!--apex:outputPanel id="listProductsPanel">
+                <apex:outputPanel rendered="{!negoScope.Is_All__c == false}">
+                    <apex:pageBlockSection title="{!$Label.LBL_ProductsGroup}"
+                                           columns="1">
+                        <apex:outputPanel >
+                            <table class="green-table full-width" id="">
+                                <!--
+                                <tr>
+                                    <td><apex:inputField id="include_product"
+                                                         value="{!negoScope.Incl_NewProduct__c}" /> <apex:outputLabel title="{!$ObjectType.Sup_sup_NegoScope__c.fields.Incl_NewProduct__c.inlineHelpText}"
+                                                                                                                      value="{!$ObjectType.Sup_sup_NegoScope__c.fields.Incl_NewProduct__c.Label}"
+                                                                                                                      for="include_product" /></td>
+                                    <td>
+                                        <button id="all_include_product"
+                                                style="padding: 5px 10px 5px 10px;" class="btn">Select
+                                            highlighted options only</button>
+                                    </td>
+                                </tr>
+                                -- >
+                            </table>
+                            <table class="green-table full-width" id="product-table"
+                                   data-page-size="50">
+                                <thead>
+                                    <tr>
+                                        <th data-sort-ignore="true">Include / Exclude</th>
+                                        <th data-type="text" data-sort-initial="ascending">{!$Label.LBL_Products}</th>
+                                        <th data-type="text" data-sort-initial="ascending">{!$Label.LBL_Department}</th>
+                                        <th data-type="text" data-sort-initial="ascending">{!$Label.LBL_Section}</th>
+                                        <th data-type="text" data-sort-initial="ascending">{!$Label.LBL_Brand}</th>
+                                        <th data-type="text" data-sort-initial="ascending">{!$Label.LBL_Status}</th>
+                                        
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <apex:repeat value="{!listPGWrapper}" var="pgWrapper">
+                                        <tr class="pg pg-{!pgWrapper.pg.Brand__c}"
+                                            id="{!pgWrapper.pg.Brand__c}">
+                                            <td><apex:inputCheckbox value="{!pgWrapper.selected}"
+                                                                    id="selectedBrand" /></td>
+                                            <td><apex:outputLink target="_blank"
+                                                                 value="/{!pgWrapper.pg.Id}">
+                                                <apex:outputText value="{!pgWrapper.pg.Name}"
+                                                                 styleClass="brandName" />
+                                                </apex:outputLink></td>
+                                            <td class="dep-{!pgWrapper.pg.Department__c}"><apex:outputLink target="_blank" value="/{!pgWrapper.pg.Department__c}">
+                                                <apex:outputField value="{!pgWrapper.pg.Department__c}"
+                                                                 styleClass="brandName" />
+                                                </apex:outputLink></td>
+                                            <td class="sec-{!pgWrapper.pg.Section__c}"><apex:outputLink target="_blank" value="/{!pgWrapper.pg.Section__c}">
+                                                <apex:outputField value="{!pgWrapper.pg.Section__c}"
+                                                                 styleClass="brandName" />
+                                                </apex:outputLink></td>
+                                            <td><apex:outputLink target="_blank"
+                                                                 value="/{!pgWrapper.pg.Brand__c}">
+                                                <apex:outputField value="{!pgWrapper.pg.Brand__c}"
+                                                                 styleClass="brandName" />
+                                                </apex:outputLink></td>
+                                            <td><apex:outputText value="{!pgWrapper.pg.Status__c}"
+                                                                 styleClass="brandName" /></td>
+                                            
+                                        </tr>
+                                    </apex:repeat>
+                                </tbody>
+                            </table>
+                        </apex:outputPanel>
+                        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:outputPanel-->
+            
+            <!-- addresses and contacts section  -->
+            <apex:outputPanel id="contactspanel"
+                              rendered="{!isContactShow == true}">
+                <apex:outputPanel >
+                    <apex:actionStatus id="loadingStatusContact">
+                        <apex:facet name="start">
+                            <img src="/img/loading.gif" />
+                        </apex:facet>
+                    </apex:actionStatus>
+                    <apex:pageBlockSection title="Addresses & contacts" columns="2">
+                        
+                        <apex:inputField styleClass="allhecheckobx"
+                                         value="{!negoScope.Admin_Address_External_Synchro__c}">
+                            <apex:actionSupport event="onchange"
+                                                action="{!setAdminAddressFromSupplier}" reRender="formNegoScope"
+                                                status="loadingStatusContact" oncomplete="afterReRender();" />
+                        </apex:inputField>
+                        
+                        <apex:inputField styleClass="allhecheckobx"
+                                         value="{!negoScope.Acc_Address_External_Synchro__c}">
+                            <apex:actionSupport event="onchange"
+                                                action="{!setAccountAddressFromSupplier}"
+                                                reRender="formNegoScope" status="loadingStatusContact"
+                                                oncomplete="afterReRender();" />
+                        </apex:inputField>
+                        <apex:inputField value="{!negoScope.Admin_Raison__c}" />
+                        <apex:inputField value="{!negoScope.Acc_Raison__c}" />
+                        <apex:outputText value="" style="padding:10px" />
+                        <apex:outputText value="" style="padding:10px" />
+                        <apex:inputField value="{!negoScope.Admin_Phone1__c}" />
+                        <apex:inputField value="{!negoScope.Acc_Phone1__c}" />
+                        <apex:inputField value="{!negoScope.Admin_Phone2__c}" />
+                        <apex:inputField value="{!negoScope.Acc_Phone2__c}" />
+                        <apex:inputField value="{!negoScope.Admin_Fax__c}" />
+                        <apex:inputField value="{!negoScope.Acc_Fax__c}" />
+                        <apex:outputText value="" style="padding:10px" />
+                        <apex:outputText value="" style="padding:10px" />
+                        <apex:inputField value="{!negoScope.Admin_Address1__c}" />
+                        <apex:inputField value="{!negoScope.Acc_Address1__c}" />
+                        <apex:inputField value="{!negoScope.Admin_Address2__c}" />
+                        <apex:inputField value="{!negoScope.Acc_Address2__c}" />
+                        <apex:inputField value="{!negoScope.Admin_PostCode__c}" />
+                        <apex:inputField value="{!negoScope.Acc_PostCode__c}" />
+                        <apex:inputField value="{!negoScope.Admin_City__c}" />
+                        <apex:inputField value="{!negoScope.Acc_City__c}" />
+                        <apex:inputField value="{!negoScope.Admin_Country__c}" />
+                        <apex:inputField value="{!negoScope.Acc_Country__c}" />
+                        <apex:outputText value="" style="padding:10px" />
+                        <apex:outputText value="" style="padding:10px" />
+                        
+                        <apex:inputField value="{!negoScope.Admin_Contact__c}" />
+                        <apex:inputField value="{!negoScope.Acc_Contact__c}" />
+                        <div></div>
+                        <apex:inputField value="{!negoScope.Accounting_Code__c}" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            
+            <apex:pageBlockButtons >
+                <apex:commandButton value="{!$Label.Save}" action="{!saveNegoScope}"
+                                    id="saveButton" status="saveNegoScopeStatus"
+                                    reRender="messages,formNegoScope"
+                                    oncomplete="afterReRender();" />
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" />
+                <apex:actionStatus id="saveNegoScopeStatus">
+                    <apex:facet name="start">
+                        <img src="/img/loading.gif" />
+                    </apex:facet>
+                </apex:actionStatus>
+            </apex:pageBlockButtons>
+            
+        </apex:pageBlock>
+        <apex:actionFunction name="onChangeSupplier" action="{!onChangeSupplier}" reRender="formNegoScope" oncomplete="afterReRender();" />
+        <!--apex:actionFunction name="refreshElementTree" action="{!init}" reRender="elementstree,selected_elements" /-->
+    </apex:form>
+    <script>
+    $(document).ready(function() {
+        $('.footable').trigger('footable_resize'); //fire re-size of footable
+        afterReRender('');
+        // refreshElementTree();
+    });
+    var checkedBrandId = [];
+    var checkSecDepId = [];
+    function afterReRender() {
+        processHighlight();
+        $("#all_include_product").click(function() {
+            event.preventDefault();
+            $("[id*='pgTable'] input").prop("checked", false);
+            $("td.highlighted input").prop("checked", true);
+            $("[id*='saveButton']").attr("disabled", "disabled");
+            $("[id*='saveButton']").addClass("btnDisabled");
+            selectAllHighlighted();
+        });
+    }
+    function enableSaveButton() {
+        $("[id*='saveButton']").removeAttr("disabled");
+        $("[id*='saveButton']").removeClass("btnDisabled");
+    }
+    /**
+    * @description
+    * remove all highlights
+    * highlight pg of selected brands
+    * A-if all_brand_checkbox is checked and all_he_checkbox is checked, highlight all pg
+    * B-if all_he_checkbox is NOT checked
+    *	0-if root included highlight all pg
+    * 	1-push departments of choice 'included' into array includedDepartments
+    * 	2-push departments of choice 'excluded' into array excludedDepartments
+    * 	3-push sections of choice 'included' or blank into array includedSections
+    * 	4-push sections of choice 'excluded' into array excludedSections
+    * 	5-loop over arrays to add or remove highlight
+    * 	6-if all_brand_checkbox is NOT checked, remove highlight from unselected brands
+    * C-if all_brand_checkbox is NOT checked and all_he_checkbox is checked, add highlight to selected brands
+    * 
+    **/    
+    function processHighlight() {
+        
+        $('.pg').removeClass('highlighted');
+        var includedDepartments = [];
+        var excludedDepartments = [];
+        var includedSections = [];
+        var excludedSections = [];
+        
+        var rootIncluded = false;
+        
+        var strutureElementTableObj = $('#selected-structure-element-table tr'); //structure element table
+        var brandTableInputCheckbox = $("[id*='brandTable'] input"); //brand table
+        
+        if ($('input.allbrandcheckbox').prop('checked') == true && $('input.allhecheckobx').prop('checked') == true) {
+            $('.pg').addClass('highlighted');
+            return;
+        }
+        
+        if ($('input.allhecheckobx').prop('checked') == false) {
+            strutureElementTableObj.each(function() { // loop on Structure element table
+                if ($(this).attr('id') != null) {
+                    var elemId = $(this).attr('id').split("-");
+                    if(elemId[2] == 0) { // all department is included (root)
+                        $('.pg').addClass('highlighted'); 
+                        rootIncluded = true;
+                    }
+                    if (elemId[2] == 1) { //department element
+                        if (elemId[0] == 'Exclude') {
+                            excludedDepartments.push(elemId[1]);
+                        } else {
+                            includedDepartments.push(elemId[1]);
+                        }
+                    }
+                    if (elemId[2] == 2) { //section element
+                        if (elemId[0] == 'Exclude') {
+                            excludedSections.push(elemId[1]);
+                            console.log('exclude section');
+                        } else {
+                            includedSections.push(elemId[1]);
+                            console.log('include section');
+                        }
+                    }
+                }
+            });
+            for (var depIndex = 0; depIndex < includedDepartments.length; depIndex++) {
+                $('.dep-' + includedDepartments[depIndex]).addClass('highlighted');
+            }
+            for (var depIndex = 0; depIndex < excludedDepartments.length; depIndex++) {
+                $('.dep-' + excludedDepartments[depIndex]).removeClass('highlighted');
+            }
+            for (var secIndex = 0; secIndex < includedSections.length; secIndex++) {
+                $('.sec-' + includedSections[secIndex]).addClass('highlighted');
+            }  
+            for(var secIndex = 0; secIndex < excludedSections.length; secIndex++) {
+                $('.sec-' + excludedSections[secIndex]).removeClass('highlighted');
+            }
+            if ($('input.allbrandcheckbox').prop('checked') == false) {
+                brandTableInputCheckbox.each(function() {
+                    if ($(this).prop('checked') == false) {
+                        var brandId = $(this).parent().prop('title');
+                        $('.brand-' + brandId).removeClass('highlighted');
+                    }
+                });
+            }
+            return;
+        }
+        
+        if ($('input.allbrandcheckbox').prop('checked') == false && $('input.allhecheckobx').prop('checked') == true) {
+            brandTableInputCheckbox.each(function() {
+                if ($(this).prop('checked') == true) {
+                    var brandId = $(this).parent().prop('title');
+                    $('.brand-' + brandId).addClass('highlighted');
+                }
+            });
+            return
+        }
+    }
+    </script>
+</apex:page>

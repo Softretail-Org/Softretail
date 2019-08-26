@@ -1,0 +1,1143 @@
+<apex:page id="thePage" standardcontroller="NegoTemplate__c" extensions="NegoTemplateEditorController" 
+           showHeader="true" sidebar="false" tabstyle="NegoTemplate__c" lightningStylesheets="true">
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}" />
+    <apex:includeScript value="{!URLFOR($Resource.ckEditor,'/ckeditor/ckeditor.js')}"/>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"/>
+    <script>
+    $j = jQuery.noConflict();
+    bind = function() {
+        var CKEDITOR_BASEPATH = "{!URLFOR($Resource.ckEditor,'ckeditor/')}";
+        CKEDITOR.editorConfig = function(config) {
+            config.height = '300';
+            // Define changes to default configuration here. For example:
+            config.defaultLanguage = 'en';
+            config.enterMode = CKEDITOR.ENTER_BR;
+            config.shiftEnterMode = CKEDITOR.ENTER_P;
+            config.allowedContent = true;
+            config.FormatSource = false;
+            config.FormatOutput = false;
+            config.removePlugins = 'fixed, autogrow';
+            CKEDITOR.dtd.$removeEmpty['span'] = false;
+            config.extraPlugins = 'codemirror';
+            config.uploadUrl = '/uploader/upload.php';
+            config.toolbar = [
+                ['Source', '-', 'Preview', '-', 'Maximize', '-', 'ShowBlocks', '-', 'Templates'],
+                ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Print'],
+                ['Undo', 'Redo', '-', 'Find', 'Replace'],
+                ['Image', 'Table', 'Link', 'PageBreak'],
+                '/', ['Styles', 'Format', 'Font', 'FontSize'],
+                ['TextColor', 'BGColor'],
+                ['Bold', 'Italic', 'Underline', 'Strike', 'RemoveFormat', '-', ],
+                 ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
+                 ['JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', 'lineheight']
+                ];
+                };
+                
+                if (!document.getElementsByClassName) {
+                document.getElementsByClassName = function(cn) {
+                var rx = new RegExp("(?:^|\\s)" + cn + "(?:$|\\s)");
+                var allT = document.getElementsByTagName("*"),
+                allCN = [],
+                ac = "",
+                i = 0,
+                a;
+            while (a = allT[i = i + 1]) {
+                ac = a.className;
+                if (ac && ac.indexOf(cn) !== -1) {
+                    if (ac === cn) {
+                        allCN[allCN.length] = a;
+                        continue;
+                    }
+                    rx.test(ac) ? (allCN[allCN.length] = a) : 0;
+                }
+            }
+            return allCN;
+        }
+    }
+    
+    if (document.getElementsByClassName) {
+        var e = document.getElementsByClassName('ckeditor1');
+        for (var i = 0; i < e.length; i++) {
+                var editor1 = CKEDITOR.replace(e[i]);
+        }
+      }
+    }
+    
+    windowonload = function() {
+        bind();
+    }
+    
+    addEvent(window, 'load', function() {
+        windowonload()
+    });  
+    
+    function addEvent(element, event, fn) {
+        if (element.addEventListener)
+            element.addEventListener(event, fn, false);
+        else if (element.attachEvent)
+            element.attachEvent('on' + event, fn);
+    }
+    
+    </script>
+    <apex:pageMessages id="messages" />
+    <apex:sectionHeader title="Nego Template" subtitle="{!IF(NegoTemplate__c.id==null, 'New Document Template', NegoTemplate__c.Name)}"/>
+    <apex:form id="theForm">
+        <apex:actionFunction name="loadNextSelectList"  action="{!refreshInsertFieldPopup}" rerender="popupInsertField"
+                             status="globalloading" oncomplete="wrapField();removeUnusedColumn();">
+            <apex:param name="fieldToInsert" assignTo="{!fieldToInsert}" value="" />
+        </apex:actionFunction>
+        <apex:actionFunction name="loadNextRelatedList"  action="{!refreshInsertRelatedListPopup}" rerender="selectionList"
+                             status="globalloading" oncomplete="removeUnusedColumnRelated();">
+            <apex:param name="fieldToInsert" assignTo="{!fieldToInsert}" value="" />
+        </apex:actionFunction>
+        <apex:pageBlock id="pageBlock" title="Nego Template" mode="edit">
+            <apex:actionStatus id="globalloading">
+                <apex:facet name="start">
+                    <div class="loading-overlay">
+                        <div class="loader-img"></div>
+                        <div class="loading-block">{!$Label.Loading}</div>
+                    </div>
+                </apex:facet>
+            </apex:actionStatus>
+            
+            <apex:actionStatus id="status">
+                <apex:facet name="start">
+                    <img src="/img/loading.gif"/>
+                </apex:facet>
+            </apex:actionStatus>
+            <apex:pageBlockButtons >
+                <apex:commandButton value="{!$Label.Save_Close}" action="{!Save}"/>
+                <apex:commandButton value="{!$Label.Save}" action="{!QuickSave}" status="status" rendered="{!NegoTemplate__c.id != null}"/>
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}"/>
+                <apex:commandButton value="{!$Label.Insert_Merge_Field}"  rendered="{!NegoTemplate__c.id!=null}" reRender="popupInsertField" status="globalloading">
+                    <apex:param assignTo="{!popupInsertField}" name="popupInsertField" value="true"/>
+                </apex:commandButton>
+                <apex:commandButton value="{!$Label.Insert_Related_List}" rendered="{!NegoTemplate__c.id!=null}" oncomplete="clearSelectColumns();" reRender="popupInsertRelatedList" status="globalloading" >
+                    <apex:param assignTo="{!popupInsertRelatedList}" name="popupInsertRelatedList" value="true"/>
+                </apex:commandButton>
+            </apex:pageBlockButtons>
+            
+            <!-- Information -->
+            <apex:pageBlockSection id="informationSection" title="{!$Label.Informations}" collapsible="false" columns="2" >
+                <apex:inputField value="{!NegoTemplate__c.Name}" styleClass="selectRelation" />
+                <apex:inputField value="{!NegoTemplate__c.IsActive__c}" />
+                <apex:SelectList disabled="{!NegoTemplate__c.Id != null}" value="{!NegoTemplate__c.ObjectType__c}" size="1" required="true" styleclass="selectRelation"><!--disabled="{!editMode}"-->
+                    <apex:selectOptions value="{!ObjectTypes}" />
+                    <apex:actionSupport event="onchange" rerender="fields, informationSection" status="globalloading" />
+                </apex:SelectList>
+                <apex:inputField value="{!NegoTemplate__c.Different_First_Page_Header_Footer__c}" rendered="false" />
+                <apex:inputField value="{!NegoTemplate__c.Template_Format__c}" required="true" styleClass="selectRelation" />
+                <apex:SelectList value="{!NegoTemplate__c.Filter_Api_Name__c}" size="1" >
+                    <apex:selectOptions value="{!FilterFieldOptions}" />
+                    <apex:actionSupport event="onchange" rerender="informationSection" status="globalloading" />
+                </apex:SelectList>
+                <apex:pageBlockSectionItem />
+                <apex:SelectList value="{!NegoTemplate__c.Filter_Value__c}" size="1" rendered="{!NegoTemplate__c.Filter_Api_Name__c != ''}" >
+                    <apex:selectOptions value="{!FilterValueOptions}" />
+                </apex:SelectList>
+                <apex:pageBlockSectionItem rendered="{!NegoTemplate__c.Filter_Api_Name__c == ''}"/>
+                <apex:inputField value="{!NegoTemplate__c.Description__c}" />
+            </apex:pageBlockSection>
+
+            <!-- Tabs -->
+            <apex:pageBlockSection columns="1" collapsible="false" title="Template Design" rendered="{!NegoTemplate__c.id != null}">
+                <apex:tabPanel switchType="client" selectedTab="bodyEditorTab" id="mainTabPanel" width="100%">
+                    <!-- Template Body Editor -->
+                    <apex:tab label="{!$Label.Body}" name="bodyEditorTab" id="body_editor_tab" >
+                        <apex:pageBlockSection id="pageBlockSectionBodyEditor" title="Body Editor" collapsible="false" columns="1">
+                            <apex:outputPanel Id="isCurrent">
+                               <apex:inputTextarea id="bodyEditor" value="{!NegoTemplate__c.Body__c}" styleClass="ckeditor1"/>
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                    </apex:tab>
+                    <!-- Template Header Editor -->
+                    <apex:tab label="{!$Label.Headers} (beta)" name="HeaderEditorTab" id="header_editor_tab" > <!--no support yet -->
+                        <apex:pageBlockSection id="pageBlockSectionFirstPageHeaderEditor" title="First Page Header Editor" columns="1">
+                            <apex:outputPanel Id="isCurrent">
+                                <apex:inputTextarea id="firstPageHeaderEditor"
+                                                    value="{!NegoTemplate__c.First_Page_Header__c}" styleClass="ckeditor1" />
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection id="pageBlockSectionRemainingPagesHeaderEditor" title="Remaining Pages Header Editor"
+                                               rendered="false" columns="1"> <!--!NegoTemplate__c.Different_First_Page_Header_Footer__c-->
+                            <apex:outputPanel Id="isCurrent">
+                                <apex:inputTextarea id="remainingPagesHeaderEditor"
+                                                    value="{!NegoTemplate__c.Remaining_Pages_Header__c}" styleClass="ckeditor1" />
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                    </apex:tab>
+                    <!-- Template Footer Editor-->
+                    <apex:tab label="{!$Label.Footers} (beta)" name="FooterEditorTab" id="footer_editor_tab" > <!--no support yet -->
+                        <apex:pageBlockSection id="pageBlockSectionFirstPageFooterEditor" title="First Page Footer Editor" columns="1">
+                            <apex:outputPanel Id="isCurrent">
+                                <apex:inputTextarea id="firstPageFooterEditor"
+                                                    value="{!NegoTemplate__c.First_Page_Footer__c}" styleClass="ckeditor1" />
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection id="pageBlockSectionRemainingPagesFooterEditor" title="Remaining Pages Footer Editor"
+                                               rendered="false" columns="1"> <!-- rendered="{!NegoTemplate__c.Different_First_Page_Header_Footer__c}" -->
+                            <apex:outputPanel Id="isCurrent">
+                                <apex:inputTextarea id="remainingPagesFooterEditor" value="{!NegoTemplate__c.Remaining_Pages_Footer__c}" styleClass="ckeditor1" />2
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                    </apex:tab>
+                    <!--Page Settings-->
+                    <apex:tab label="{!$Label.Page_Settings}" name="PageSettingsTab" id="page_settings_tab" >
+                        <apex:pageBlockSection columns="2" >
+                            <apex:inputField value="{!NegoTemplate__c.Measurement_Unit__c}"/>
+                            <apex:inputField value="{!NegoTemplate__c.Display_Page_Numbers__c}" />
+                            <apex:inputField id="pageSize" value="{!NegoTemplate__c.Page_Size__c}" onChange="showHideDimensionSettings(this);" />
+                            <apex:inputField value="{!NegoTemplate__c.Page_Margin_Top__c}"/>
+                            <apex:inputField value="{!NegoTemplate__c.Orientation__c}"/>
+                            <apex:inputField value="{!NegoTemplate__c.Page_Margin_Right__c}"/>
+                            <apex:inputField id="pageHeight" value="{!NegoTemplate__c.Page_Height__c}"/>
+                            <apex:inputField value="{!NegoTemplate__c.Page_Margin_Bottom__c}"/>
+                            <apex:inputField id="pageWidth" value="{!NegoTemplate__c.Page_Width__c}"/>
+                            <apex:inputField value="{!NegoTemplate__c.Page_Margin_Left__c}"/>
+                            <apex:inputField id="templateActionInputField" value="{!NegoTemplate__c.Action_Unique_Name__c}" html-disabled="true" >
+                                <apex:commandButton id="browseActoin" value="{!$Label.browse}" status="globalloading" reRender="popupBrowseAction">
+                                    <apex:param name="popupBrowseAction" value="true" assignTo="{!popupBrowseAction}" />
+                                </apex:commandButton>
+                                <apex:commandButton id="clearAction" value="{!$Label.Clear}" reRender="templateActionInputField" onclick="clearField(this);" />
+                            </apex:inputField>
+                            <apex:inputField value="{!NegoTemplate__c.Header_Margin__c}"/>
+                            <apex:inputField id="orderFieldInputField" value="{!NegoTemplate__c.Mass_Print_Order_by_Field__c}"
+                                             html-disabled="true" style="width: 250px;">
+                                <apex:commandButton id="browseOrderField" action="{!resetFieldsSelectLists}" value="{!$Label.browse}" status="globalloading" reRender="popupInsertField">
+                                    <apex:param name="popupInsertField" value="true" assignTo="{!popupInsertField}"/>
+                                    <apex:param name="popupInsertField" value="true" assignTo="{!popupBrowseFields}"/>
+                                </apex:commandButton>
+                                <apex:commandButton id="clearOrderField" value="{!$Label.Clear}" reRender="orderFieldInputField" onclick="clearField(this);" />
+                            </apex:inputField>
+                            <apex:inputField value="{!NegoTemplate__c.Footer_Margin__c}"/>
+                            <!-- TODO:Add Watermark Field-->
+                        </apex:pageBlockSection>
+                    </apex:tab>
+                    <!--Document Settings-->
+                    <apex:tab label="Document Settings" name="DocumentSettingsTab" id="document_settings_tab">
+                        <apex:pageBlockSection columns="2">
+                            <apex:inputField value="{!NegoTemplate__c.Attachment_Name__c}" />
+                        </apex:pageBlockSection>
+                    </apex:tab>
+                    <!--Mailing Setting-->
+                    <apex:tab label="{!$Label.Email_Settings}" name="EmailSettingsTab" id="email_Settings_tab" >
+                        <apex:pageBlockSection columns="1">
+                            <apex:inputField value="{!NegoTemplate__c.Send_Email_When_Printing__c}" />
+                            <!-- <apex:outputText value="{!$ObjectType.NegoTemplate__c.fields.Send_Email_When_Printing__c.InlineHelpText}" /> -->
+                            <apex:inputField value="{!NegoTemplate__c.Sender_Display_Name__c}" />
+                            <!-- <apex:outputText value="{!$ObjectType.NegoTemplate__c.fields.Sender_Display_Name__c.InlineHelpText}" /> -->
+                            <apex:inputField value="{!NegoTemplate__c.Document_Recipient__c}" />
+                            <!--<apex:outputText value="{!$ObjectType.NegoTemplate__c.fields.Document_Recipient__c.InlineHelpText}" /> -->
+                            <apex:inputField value="{!NegoTemplate__c.Document_Recipient_Cc__c}" />
+                            <!-- <apex:outputText value="{!$ObjectType.NegoTemplate__c.fields.Document_Recipient_Cc__c.InlineHelpText}" /> -->
+                            <apex:inputField value="{!NegoTemplate__c.Email_Subject__c}" />
+                            <apex:inputTextarea value="{!NegoTemplate__c.Email_Body__c}" styleClass="ckeditor1" />
+                        </apex:pageBlockSection>
+                    </apex:tab>
+                    <!--Generate Mass Print Visualforce code -->
+                    <apex:tab label="{!$Label.Visualforce_Code_for_Mass_Print_Page}" name="GenerateCodeTab" id="generate_Code_tab" >
+                        <apex:pageBlockSection columns="1" collapsible="false" >
+                            <apex:inputTextarea value="{!generatedVisualforceCode}" style="font-family:courier; font-size:12;width:100%;"
+                                                id="visualforceCodeTextArea" rows="25" />
+                        </apex:pageBlockSection>
+                    </apex:tab>
+                </apex:tabPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <!-- popup insert field -->
+        <apex:outputPanel id="popupInsertField">
+            <apex:outputPanel styleClass="overlay" layout="block" rendered="{!popupInsertField}" >
+                <apex:outputPanel styleClass="popup2" layout="block" rendered="{!popupInsertField}"  >
+                    <apex:pageBlock title="Insert Field" >
+                        <apex:pageBlockSection columns="3" >
+                            <apex:repeat value="{!selectLists}" var="list">
+                               <apex:panelGrid styleClass="repeatSelectList list-{!list.index}">
+                                <apex:pageBlockSection id="headerObject" title="{!list.refrencedSObjectApiName}" collapsible="false" >
+                                    <apex:selectList styleClass="repeatSelectList list-{!list.index}" id="selectList" size="12"
+                                                     onchange="fieldSelected(this);" 
+                                                     multiselect="false" required="false" rendered="true">
+                                        <apex:selectOptions value="{!list.fields}"/>
+                                    </apex:selectList>
+                                </apex:pageBlockSection>
+                               </apex:panelGrid>
+                            </apex:repeat>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection columns="1">
+                            <apex:pageBlockSectionItem rendered="{!!popupBrowseFields}">
+                                <apex:outputLabel value="This field's value contains HTML, Rich Text, or images" for="rich" styleClass="rich"/>
+                                <apex:inputCheckbox styleClass="rich" id="rich"
+                                                value="{!richValueFlag}" rendered="true"
+                                                onchange="richChanged()" />
+                            </apex:pageBlockSectionItem>
+                            
+                            <apex:pageBlockSectionItem rendered="{!!popupBrowseFields}">
+                                <apex:outputLabel value="Choose Number Format" for="numberFormat" styleClass="numberFormat" />
+                                <apex:selectList styleClass="numberFormat" id="numberFormat"
+                                                 size="1" onchange="changeFormat(this);">
+                                    <apex:selectOptions value="{!numberFormats}" />
+                                </apex:selectList>
+                            </apex:pageBlockSectionItem>
+                            
+                            <apex:pageBlockSectionItem rendered="{!!popupBrowseFields}">
+                                <apex:outputLabel value="Choose Date Format" for="dateFormat" styleClass="dateFormat" />
+                                <apex:selectList styleClass="dateFormat" id="dateFormat"
+                                                 size="1" onchange="changeFormat(this);">
+                                    <apex:selectOptions value="{!dateFormats}" />
+                                </apex:selectList>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection columns="1" rendered="true" >
+                            <apex:outputText value="The following will be inserted to your template" rendered="{!!popupBrowseFields}" />
+                            <apex:outputText value="The following field will be used to order documents" rendered="{!popupBrowseFields}" />
+                            <apex:inputText id="fieldToken" styleClass="fieldToken" disabled="true" style="width: 100%;" />
+                        </apex:pageBlockSection>
+                        <apex:pageBlockButtons location="bottom" >
+                            <apex:commandButton value="Insert" action="{!cancelPopup}" rerender="popupInsertField"
+                                                status="globalloading" oncomplete="insert();" rendered="{!!popupBrowseFields}" />
+                            <apex:commandButton value="Ok" action="{!hidePopup}" status="globalloading" rendered="{!popupBrowseFields}"
+                                                reRender="popupInsertField" onclick="selectOrderField();" />
+                            <apex:commandButton value="Cancel" action="{!cancelPopup}" rerender="popupInsertField"
+                                                status="globalloading" />
+                        </apex:pageBlockButtons>
+                    </apex:pageBlock>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- end popup insert field -->
+        
+        <!-- popup insert related list -->
+        <apex:pageBlock >
+        <apex:outputPanel id="popupInsertRelatedList">
+            <div id="popupInsertRelatedList">
+            <apex:outputPanel styleClass="overlay" layout="block" rendered="{!popupInsertRelatedList}" >
+                <apex:outputPanel styleClass="popup2" layout="block" rendered="{!popupInsertRelatedList}" >
+                    <apex:pageBlock >
+                        <apex:tabPanel switchType="client" selectedTab="" id="popupInsertRelatedListTabPanel" width="100%">
+                            <!-- selecting a related list and it's field-->
+                            <apex:tab label="Select Data Columns" >
+                                <apex:pageBlock >
+                                    <apex:pageBlockSection title="Step 1: Select a Related List" columns="2">
+                                        <apex:pageBlockSectionItem >
+                                            <apex:outputLabel value="Select child relationship" for="childRelationshipSelectList" />
+                                            <apex:selectList id="childRelationshipSelectList" size="1" multiselect="false"
+                                                             value="{!selectedChildRelationship}">
+                                                <apex:actionSupport event="onchange" action="{!resetChildRelationshipFields}"
+                                                                    rerender="RelatedListFieldsPanel" status="globalloading" oncomplete="clearSelectColumns();"/>
+                                                <apex:selectOptions value="{!childRelationships}" />
+                                            </apex:selectList>
+                                        </apex:pageBlockSectionItem>
+                                    </apex:pageBlockSection>
+                                  <apex:pageBlockSection title="Step 2: Choose Table Columns">
+                                   <apex:pageBlockSection columns="2" id="RelatedListFieldsPanel">
+                                    <apex:pageBlockSection columns="2" id="selectionList">
+                                            <apex:repeat value="{!relatedListSelectLists}" var="list">
+                                                <apex:panelGrid styleClass="relatedList l-{!list.index}">
+                                                    <apex:pageBlockSection title="{!list.refrencedSObjectApiName}">
+                                                     <apex:selectList id="selectList" size="12" onchange="selectRelatedListField(this);"
+                                                                     multiselect="false" required="false" rendered="true" styleClass="relatedList l-{!list.index}">
+                                                        <apex:selectOptions value="{!list.fields}"/>
+                                                    </apex:selectList>
+                                                   </apex:pageBlockSection>
+                                                 </apex:panelGrid>
+                                            </apex:repeat>
+                                        </apex:pageBlockSection>
+                                    <apex:pageBlockSection columns="3">
+                                           <apex:outputPanel >
+                                               <apex:pageBlockSection columns="1">
+                                                   <apex:outputText >Add</apex:outputText>
+                                               </apex:pageBlockSection>
+                                               <apex:pageBlockSection columns="1">
+                                                   <apex:commandButton value=">" onclick="addToColumns();" reRender="nothing" />
+                                               </apex:pageBlockSection>
+                                               <apex:pageBlockSection columns="1">
+                                                   <apex:outputText >Remove</apex:outputText>
+                                               </apex:pageBlockSection>
+                                               <apex:pageBlockSection columns="1">
+                                                   <apex:commandButton value="<" onclick="removeFromColumns();" reRender="nothing" />
+                                               </apex:pageBlockSection>
+                                           </apex:outputPanel>
+                                        <apex:outputPanel >
+                                            <apex:selectList id="selectedColumnsList" style="width:400px;overflow-x:scroll;" size="12" styleClass="selectedColumnsList"
+                                                             onchange="selectRelatedListColumn(this);" />
+                                        </apex:outputPanel>
+                                        <apex:outputPanel >
+                                            <apex:commandButton value="up" onclick="moveUpSelectedColumnsList();" reRender="nothing" /><br/><br/>
+                                            <apex:commandButton value="down" onclick="moveDownSelectedColumnsList();" reRender="nothing" />
+                                        </apex:outputPanel>
+                                      </apex:pageBlockSection>
+                                    </apex:pageBlockSection>
+                                  </apex:pageBlockSection>
+                                </apex:pageBlock>
+                            </apex:tab>
+                            <apex:tab label="Format Data Columns" >
+                                <!-- format columns, set prefix, postfix, formatting numbers ... -->
+                                <apex:pageBlockSection columns="2" >
+                                    <apex:outputPanel >
+                                        <apex:selectList style="width: 100%;" size="12" styleClass="selectedColumnsList" onchange="setInputValues(this);" />
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="dataFormatPanel" >
+                                        <apex:pageBlockSection columns="1" >
+                                            <apex:inputText styleClass="columnHeader" label="Header Text (column Header)" style="width: 100%;"
+                                                            onchange="onFormatChanged(this);"  />
+                                            <apex:inputText styleClass="mappedTo" label="Data Mapped To" style="width: 100%;"
+                                                            onchange="onFormatChanged(this);" />
+                                            <apex:inputCheckbox styleClass="containsRichText" label="Data Contains Rich Text or HTML"
+                                                                onchange="onFormatChanged(this);" />
+                                            <apex:inputText styleClass="prefix" label="Prefix Text" style="width: 100%;"
+                                                            onchange="onFormatChanged(this);" />
+                                            <apex:inputText styleClass="postfix" label="Postfix Text"  style="width: 100%;"
+                                                            onchange="onFormatChanged(this);" />
+                                            <apex:inputText styleClass="nullValue" label="Text to Display if Data is NUll" style="width: 100%;"
+                                                            onchange="onFormatChanged(this);" />
+                                            <apex:inputCheckbox styleClass="startNewRow" label="Start a New Row"
+                                                                onchange="onFormatChanged(this);" />
+                                            <apex:inputText styleClass="colspan" label="Number of Columns to span (colspan)" style="width: 100%;"
+                                                            onchange="onFormatChanged(this);" />
+                                            <apex:selectList styleClass="formatNumber" label="Format Number" size="1" style="width: 100%;"
+                                                             onchange="onFormatChanged(this);" >
+                                                <apex:selectOptions value="{!numberFormats}" />
+                                            </apex:selectList>
+                                            <apex:selectList styleClass="formatDate" label="Format Date" size="1" style="width: 100%;"
+                                                             onchange="onFormatChanged(this);">
+                                                <apex:selectOptions value="{!dateFormats}" />
+                                            </apex:selectList>
+                                        </apex:pageBlockSection>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSection>
+                            </apex:tab> 
+                            <apex:tab label="Filter and Sort Data" >
+                                <!-- SOQL where clause, row limit order -->
+                                <apex:pageBlockSection columns="1" >
+                                    <apex:inputText styleClass="sql" style="width: 100%;" label="Include a Filter/ SOQL WHERE clause (e.g. CreatedDate = THIS_YEAR)" onchange="onFormatSortingChange(this);"/>
+                                    <apex:inputText styleClass="maximum" style="width: 100%;" label="Maximum number of rows returned/ SOQL LIMIT (e.g. 20)" onchange="onFormatSortingChange(this);"/>
+                                    <apex:inputText styleClass="sortby" style="width: 100%;" label="Sort by column(s)/ SOQL ORDER BY clause (e.g. CreatedBy.name, CreatedDate Desc)" onchange="onFormatSortingChange(this);" />
+                                </apex:pageBlockSection>
+                            </apex:tab> 
+                            <apex:tab label="Formatting & Style" >
+                                <apex:pageBlockSection columns="2" title="Choose a column to change style">
+                                     <apex:outputPanel >
+                                        <apex:selectList style="width: 100%;" size="12" styleClass="selectedColumnsList" onchange="getFieldName(this);"/>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="cssStyling">
+                                        <apex:pageBlockSection columns="1">
+                                            <apex:selectList label="font-family (e.g. times, courier, arial):" multiselect="false" size="1" styleClass="fontFamily" onchange="onCssChange(this);">
+                                                <apex:selectOption itemValue="Arial"></apex:selectOption>
+                                                <apex:selectOption itemValue="Verdana"></apex:selectOption>
+                                                <apex:selectOption itemValue="times"></apex:selectOption>
+                                                <apex:selectOption itemValue="Tahoma"></apex:selectOption>
+                                                <apex:selectOption itemValue="Lucida sans unicode"></apex:selectOption>
+                                                <apex:selectOption itemValue="Courier new"></apex:selectOption>
+                                                <apex:selectOption itemValue="Georgia"></apex:selectOption>
+                                                <apex:selectOption itemValue="Trebuchet Ms"></apex:selectOption>
+                                            </apex:selectList>
+                                            <apex:inputText label="font-size (use points):" styleClass="fontSize" onchange="onCssChange(this);"/>
+                                            <apex:inputText label="font-weight (e.g. normal, bold, bolder):" styleClass="fontWeight" onchange="onCssChange(this);"/>
+                                            <apex:inputText label="text-align (e.g. left, center, right):" styleClass="textAlign" onchange="onCssChange(this);"/>
+                                            <apex:inputText label="width (if using %, all column widths should total 100%): " styleClass="widthPercent" onchange="onCssChange(this);"/>
+                                        </apex:pageBlockSection>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSection>
+                             </apex:tab> <!-- css related options and styling -->
+                            <apex:tab label="Advanced">
+                                <!-- html source -->
+                                <apex:inputTextarea rows="30" label="HTML Source" style="width: 100%;" id="htmlSource"/>
+                            </apex:tab> 
+                        </apex:tabPanel>
+                        <apex:pageBlockButtons location="bottom" >
+                            <apex:commandButton value="Insert" action="{!cancelPopup}" rerender="popupInsertRelatedList"
+                                                status="globalloading" oncomplete="insertRelated()"/>
+                            <apex:commandButton value="Cancel" action="{!cancelPopup}" rerender="popupInsertRelatedList"
+                                                status="globalloading" oncomplete="clearSelectColumns();"/>
+                        </apex:pageBlockButtons>
+                    </apex:pageBlock>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            </div>
+        </apex:outputPanel>
+      </apex:pageBlock>
+        <!--end popup insert related list -->
+        
+        <!-- popup browse approvale processes -->
+        <apex:outputPanel id="popupBrowseAction" >
+            <apex:outputPanel styleClass="overlay" layout="block" rendered="{!popupBrowseAction}" >
+                <apex:outputPanel styleClass="popup2" style="width: 70%;" layout="block" rendered="{!popupBrowseAction}" >
+                    <apex:pageBlock >
+                        <apex:pageBlockTable value="{!actionsWrapperList}" var="item" >
+                            <apex:column >
+                                <apex:inputCheckbox id="looped" value="{!item.isSelected}"
+                                                    required="true" onclick="chooseAction(this)" />
+                            </apex:column>
+                            <apex:column headerValue="Name" value="{!item.name}"/>
+                            <apex:column headerValue="Developer Name" value="{!item.developerName}"/>
+                            <apex:column headerValue="Description" value="{!item.description}"/>
+                        </apex:pageBlockTable>
+                        <apex:pageBlockButtons location="bottom" >
+                            <apex:commandButton value="Ok"  action="{!hidePopup}" reRender="popupBrowseAction, templateActionInputField"
+                                                status="globalloading" />
+                            <apex:commandButton value="Cancel" action="{!cancelPopup}" reRender="popupBrowseAction"
+                                                status="globalloading" />
+                        </apex:pageBlockButtons>
+                    </apex:pageBlock>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- end popup browse approvale processes -->
+        
+        <!-- popup browse fields 
+        <apex:outputPanel id="popupBrowseFields" rendered="false" >
+            <apex:outputPanel styleClass="overlay" layout="block" rendered="{!popupBrowseFields}" >
+                <apex:outputPanel styleClass="popup2" style="width: 70%;" layout="block" rendered="{!popupBrowseFields}" >
+                    <apex:pageBlock >
+                        <apex:pageBlockSection >
+                            <apex:repeat value="{!OrderFieldListWrapperList}" var="item" >
+                                <apex:selectList value="{!fieldToInsert}" size="20">
+                                    <apex:selectOptions value="{!item.fieldsList}" />
+                                    <apex:actionSupport action="{!refreshOrderFieldsLists}" event="onchange"
+                                                        reRender="popupBrowseFields" status="globalloading" />
+                                </apex:selectList>
+                            </apex:repeat>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockButtons location="bottom" >
+                            <apex:commandButton value="Ok" action="{!hidePopup}" status="globalloading" />
+                            <apex:commandButton value="Cancel" action="{!cancelPopup}" status="globalloading" />
+                        </apex:pageBlockButtons>
+                    </apex:pageBlock>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>-->
+        <!-- end popup browse fields -->
+        <script>        
+             
+        $j = jQuery.noConflict();
+        $j(document).ready(function() {
+            var pageSize = $j("[id*=pageSize]");
+            showHideDimensionSettings(pageSize);
+        });
+        var focusedTextArea;
+        /***************/
+        var field;
+        var rich = false;
+        var formatted = false;
+        var format = "";
+        var token;  
+        var indexOfColumn;/*to get index of column selected*/
+        var classOfColumn;/*to know if selected field is reference ,Date,Number,currency..*/
+        function wrapField () {
+            if (rich) {
+                token = "{{\{\!" + field + "\}}}";
+            } else {
+                var temp = field;
+                if (formatted) {
+                    temp = field + " " + format;
+                }
+                token = "{\{\!" + temp + "\}}";
+            }
+            $j(".fieldToken").val(token);
+            formatted =false;
+        }
+        
+        function changeFormat(e) {
+            formatted = true;
+            format = e.options[e.selectedIndex].value;
+            wrapField();
+            
+        }
+        
+        function richChanged() {
+            rich = !rich;
+            wrapField();
+        }
+        
+        function fieldSelected(e) {
+            
+            var className = $j(e).attr('class');
+            var index = parseInt(className.split('-')[1]);
+            console.log(index);
+            $j('.repeatSelectList').css("display","none");
+             for (var i = 0; i <= index; i++) {
+                $j(".list-" + i).css("display","inline");
+            }
+            
+            $j('.rich').css("display", "none");
+            $j('.numberFormat').css("display", "none");
+            $j('.dateFormat').css("display", "none");
+            var value = e.options[e.selectedIndex].value;
+            var res = value.split(":");
+            field = res[0];          
+            if (res[1] == "rich") {
+                $j('.rich').css("display", "inline");
+            }
+            if (res[1] == "number") {
+                $j('.numberFormat').css("display", "inline");
+                formatted = true;
+                format = $j('.numberFormat option:selected').text();
+            }
+            if (res[1] == "date") {
+                $j('.dateFormat').css("display", "inline");
+                formatted = true;
+                format = $j('.dateFormat option:selected').text();
+            }
+            if(res[1] == "reference") {
+                loadNextSelectList(value);/*to display look up data of field*/
+                index += 1;
+                $j(".list-" + index).css("display","inline");
+            }           
+            wrapField();
+            indexOfColumn = index;
+            classOfColumn = res[1];
+            removeUnusedColumn();
+        }
+       
+        //this function is to remove the unused column in the field selection
+        function removeUnusedColumn(){
+            var i = indexOfColumn;
+            var k = 1;
+            /*if the selected field is referenced */
+            if(classOfColumn == "reference")
+                while($j(".list-" +(i+k))[0] != undefined){
+                    $j(".list-" +(i+k)).contents().unwrap().remove();
+                    k++;
+                }
+        }
+        //remove the unused column from selected related list
+        function removeUnusedColumnRelated(){
+            var i = indexOfColumn;
+            var k = 1;
+            if(classOfColumn == "reference") {
+                while($j(".l-" +(i+k))[0] != undefined) {
+                    $j(".l-" +(i+k)).contents().unwrap().remove();
+                    k++;
+                }
+            }
+        }
+        
+        /***************/
+        var selectedRelatedListField = "";
+        var selectedRelatedListColumn = "";
+        var selectedRelatedListColumns = new Array();/*list of the selected related list*/
+        var listOfHtmlCode = new Array();/*array for the html code generated*/
+        var mapOfFilter =new Map();/*map to set the filter in the tab filter and sort*/
+        var mapOfCssStyle = new Map();/*map to set the css style in the tab formatting and style*/
+        var listOptionLabelName = new Array();/*list of selected list to display by label name not the api name*/
+        var labelOptionName = "";/*lable name of the selected field*/
+        var xmlcode = "";/*string variable to set the code of related list*/
+        var fieldSelectedForStyle = "";
+        var tableNumber = "";/*to get the number of table selected from Formatting & style tab*/
+        /*four array to set style for header,footer,rowEvent,rowOdd: in the last tab*/
+        var styleHeaderList = new Array();
+        styleHeaderList.push("text-align:center;font-weight:bold;border:solid black 1px;color:#FFFFFF;background-color:#000000;");
+        styleHeaderList.push("text-align:center;font-weight:bold;border-top:solid black 1px;border-bottom:solid black 1px;");
+        styleHeaderList.push("text-align:center;font-weight:bold;border:solid black 1px;color:#FFFFFF;background-color:#000000;");
+        styleHeaderList.push("text-align:center;font-weight:bold;border:solid black 1px;");
+        styleHeaderList.push("text-align:center;font-weight:bold;border:solid black 1px;color:#FFFFFF;background-color:#000000;");
+        styleHeaderList.push("{text-align:center;font-weight:bold;color:#FFFFFF;background-color:#000000;");
+        
+        var styleFooterList = new Array();
+        styleFooterList.push("text-align:right;font-weight:bold;border:solid black 1px; height: 30px");
+        
+        var styleRowEvenList = new Array();
+        styleRowEvenList.push("border:solid black 1px;");
+        styleRowEvenList.push(" ");
+        styleRowEvenList.push("border-top:solid black 1px;border-bottom:solid black 1px;");
+        styleRowEvenList.push("border:solid black 1px;");
+        styleRowEvenList.push("border-top:solid black 1px;border-bottom:solid black 1px;");
+        styleRowEvenList.push("background-color:#a7a7a7;");
+        
+        var styleRowOddList = new Array();
+        styleRowOddList.push("background-color:#cdcdcd;background-color:#a8a8a8;border:solid black 1px;");
+        styleRowOddList.push("background-color:#cdcdcd;");
+        styleRowOddList.push("border-top:solid black 1px;border-bottom:solid black 1px;");
+        styleRowOddList.push("background-color:#cdcdcd;border:solid black 1px;");
+        styleRowOddList.push("background-color:#cdcdcd;border-top:solid black 1px;border-bottom:solid black 1px;");
+        styleRowOddList.push("background-color:#dadada;");
+        // TODO generate UNIQUE Table ID
+        var counterTemplate = randomIntFromInterval(200,300);
+        // function to get the list of related list of relationchip
+        function selectRelatedListField(e) {
+            var className = $j(e).attr('class');
+            var indexOfRelated = parseInt(className.split('-')[1]);
+            $j('.relatedList').css("display","none");
+            for (var i = 0; i <= indexOfRelated; i++) {
+                $j(".l-" + i).css("display","inline");
+                
+            }
+            var value = e.options[e.selectedIndex].value;
+            var res = value.split(":");
+            selectedRelatedListField = res[0];
+            labelOptionName = e.options[e.selectedIndex].text;
+            if(res[1] == "reference") {
+                loadNextRelatedList(value);
+                indexOfRelated += 1;
+                $j(".l-" + indexOfRelated).css("display","inline");
+            }
+            indexOfColumn = indexOfRelated;
+            classOfColumn = res[1];
+        }
+        //empty the value of field after close popup
+        function clearSelectColumns(){
+            selectedRelatedListColumns.splice(0, selectedRelatedListColumns.length);
+            $j("[id*=htmlSource]").val("");
+            $j('.fontSize').val("");
+            $j('.fontWeight').val("");
+            $j('.textAlign').val("");
+            $j('.widthPercent').val("");
+            listOfHtmlCode.empty();
+        }
+        //add a column to the related list to display
+        function addToColumns() {
+            selectedRelatedListColumns.push(selectedRelatedListField);
+            listOptionLabelName.push(labelOptionName);
+            load();
+            loadHtml();
+        }
+        
+        function selectRelatedListColumn(e) {
+            selectedRelatedListColumn = e.options[e.selectedIndex].value;
+        }
+        //function to remove a field from displaying
+        function removeFromColumns() {
+            var index = selectedRelatedListColumns.indexOf(selectedRelatedListColumn);
+            selectedRelatedListColumns.splice(index, 1);
+            listOptionLabelName.splice(index,1);
+            load();
+            loadHtml();
+        }
+        
+        function moveUpSelectedColumnsList() {
+            var oldIndex = selectedRelatedListColumns.indexOf(selectedRelatedListColumn);
+            selectedRelatedListColumns = array_move(selectedRelatedListColumns,oldIndex, oldIndex - 1);
+            listOptionLabelName = array_move(listOptionLabelName,oldIndex,oldIndex -1);
+            load();
+            loadHtml();
+        }
+        
+        function moveDownSelectedColumnsList() {
+            var oldIndex = selectedRelatedListColumns.indexOf(selectedRelatedListColumn);
+            selectedRelatedListColumns = array_move(selectedRelatedListColumns,oldIndex, oldIndex + 1);
+            listOptionLabelName = array_move(listOptionLabelName,oldIndex,oldIndex +1);
+            load();
+            loadHtml();
+        }
+        
+        function array_move(arr, old_index, new_index) {
+            while (old_index < 0) {
+                old_index += arr.length;
+            }
+            while (new_index < 0) {
+                new_index += arr.length;
+            }
+            if (new_index >= arr.length) {
+                var k = new_index - arr.length + 1;
+            }
+            arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+            return arr; // for testing purposes
+        }
+        
+        var columnsMap = new Map();
+        var formattingAttributes =  [
+            "noTableMarkup",
+            "columnHeader",
+            "mappedTo",
+            "containsRichText",
+            "prefix","postfix",
+            "nullValue",
+            "startNewRow",
+            "colspan",
+            "formatNumber",
+            "formatDate",
+        ];
+        
+        function setInputValues(e) {
+            selectedRelatedListColumn = e.options[e.selectedIndex].value;
+            var formatting = columnsMap.get(selectedRelatedListColumn);
+            for (var i = 0; i < formattingAttributes.length; i++) {
+                var attribute = formattingAttributes[i];
+                var inputField = $j('.dataFormatPanel').find('.' + attribute);
+                if (attribute == "noTableMarkup" || attribute == "containsRichText" || attribute == "startNewRow") {
+                    if (formatting[attribute] == false) {
+                        inputField.removeAttr("checked");
+                    } else {
+                        inputField.attr("checked", formatting[attribute]);
+                    }
+                } else {
+                    inputField.val(formatting[attribute]);
+                }
+            }
+            
+        }
+        
+        function onFormatChanged(e) {
+            var formatting = columnsMap.get(selectedRelatedListColumn);
+            var attribute = e.className;
+            var val = e.value;
+            if (attribute == "noTableMarkup" || attribute == "containsRichText" || attribute == "startNewRow") {
+                console.log(formatting[attribute]);
+                formatting[attribute] = !formatting[attribute];
+                console.log(formatting[attribute]);
+                loadHtml();
+            } else {
+                formatting[attribute] = val;
+                loadHtml();
+            }
+        }
+        /***************/        
+        function load() {
+            var list = $j(".selectedColumnsList");
+            list.empty();
+            for (var i = 0; i < selectedRelatedListColumns.length; i++) {
+                list.append($j('<option/>', {
+                    value: selectedRelatedListColumns[i],
+                    text : selectedRelatedListColumns[i]
+                }));
+            }
+            loadMap();
+        }
+        
+        function loadMap() {
+            
+            var list = $j(".selectedColumnsList");
+            for (var i = 0; i < selectedRelatedListColumns.length; i++) {
+                var res = selectedRelatedListColumns[i].split(".");
+                var header = res[res.length - 1];
+                var formatting = {
+                    noTableMarkup: false,
+                    columnHeader: header,
+                    mappedTo: "",
+                    containsRichText: false, 
+                    prefix: "",
+                    postfix: "",
+                    nullValue: "",
+                    startNewRow: false,
+                    colspan: "",
+                    formatNumber: "",
+                    formatDate: "",
+                };
+                columnsMap.set(selectedRelatedListColumns[i], formatting);
+            }
+        }
+       
+        function chooseAction(cb) {
+            enableDisable(cb);
+        }
+        
+        function enableDisable(cb) {
+            $j("input:checkbox[id*=looped]").prop("checked", false); 
+            $j(cb).prop("checked", true);
+        }
+        
+        function clearField(e) {
+            var elementId = $j(e).attr('id');
+            if (elementId.includes('Action')) {
+                $j('[id*="templateActionInputField"]').val("");
+            }
+            if(elementId.includes('Order')) {
+                $j('[id*="orderFieldInputField"]').val("");
+
+            }
+            $j('[id*="browse"]').val("browse");
+            $j('[id*="clear"]').val("clear");
+            
+        }
+        
+        //load the html code in the editor tab
+         function loadHtml(){
+            var a = "<!";
+            var b = "--"
+            var c = ">";
+            var openComment = a + b ;
+            var closeComment =b + c;
+            var splitedValue = "";
+            var fontFamilyVar = "";
+            var fontSizeVar = "";
+            var fontWeightVar = "";
+            var textAlignVar = "";
+            var widthPercVar = "";
+            var cssCode = '<style type="text/css">\n';
+            cssCode += 'table.table'+counterTemplate+'{border:solid black 1px; border-collapse:collapse; border-spacing:0px;font-family:Arial Unicode MS,Arial,Helvetica,sans-serif; font-size:10pt; width:100%}\n';
+            switch(tableNumber){
+                case "1":cssCode += ".table"+counterTemplate+"header {"+styleHeaderList[0]+"}\n";
+                    cssCode += ".table"+counterTemplate+"footer {"+styleFooterList[0]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowEven {"+styleRowEvenList[0]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowOdd {"+styleRowOddList[0]+"}\n";
+                    break;
+                case "2":cssCode += ".table"+counterTemplate+"header {"+styleHeaderList[1]+"}\n";
+                    cssCode += ".table"+counterTemplate+"footer {"+styleFooterList[0]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowEven {"+styleRowEvenList[1]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowOdd {"+styleRowOddList[1]+"}\n";
+                    break;
+                case "3":cssCode += ".table"+counterTemplate+"header {"+styleHeaderList[2]+"}\n";
+                    cssCode += ".table"+counterTemplate+"footer {"+styleFooterList[0]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowEven {"+styleRowEvenList[2]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowOdd {"+styleRowOddList[2]+"}\n";
+                    break;
+                case "4":cssCode += ".table"+counterTemplate+"header {"+styleHeaderList[3]+"}\n";
+                    cssCode += ".table"+counterTemplate+"footer {"+styleFooterList[0]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowEven {"+styleRowEvenList[3]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowOdd {"+styleRowOddList[3]+"}\n";
+                    break;
+                case "5":cssCode += ".table"+counterTemplate+"header {"+styleHeaderList[4]+"}\n";
+                    cssCode += ".table"+counterTemplate+"footer {"+styleFooterList[0]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowEven {"+styleRowEvenList[4]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowOdd {"+styleRowOddList[4]+"}\n";
+                    break;
+                case "6":cssCode += ".table"+counterTemplate+"header {"+styleHeaderList[5]+"}\n";
+                    cssCode += ".table"+counterTemplate+"footer {"+styleFooterList[0]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowEven {"+styleRowEvenList[5]+"}\n";
+                    cssCode += ".table"+counterTemplate+"RowOdd {"+styleRowOddList[5]+"}\n";
+                    break;
+                default:cssCode += ".table"+counterTemplate+"header {}\n";
+                    cssCode += ".table"+counterTemplate+"footer {}\n";
+                    cssCode += ".table"+counterTemplate+"RowEven {}\n";
+                    cssCode += ".table"+counterTemplate+"RowOdd {}\n";
+                    break;
+            }
+            
+            for (var j = 0; j < selectedRelatedListColumns.length; j++){
+                fontFamilyVar = mapOfCssStyle.get("fontFamily"+j);
+                fontSizeVar =  mapOfCssStyle.get("fontSize"+j);
+                fontWeightVar =  mapOfCssStyle.get("fontWeight"+j);
+                textAlignVar = mapOfCssStyle.get("textAlign"+j);
+                widthPercVar = mapOfCssStyle.get("widthPercent"+j);
+                cssCode += ".table"+counterTemplate+"col"+j+"{";
+                if(typeof fontFamilyVar != "undefined")
+                    cssCode += "font-family:"+fontFamilyVar+"; ";
+                if(typeof fontSizeVar != "undefined")
+                    cssCode += "font-size:"+fontSizeVar+"; ";
+                if(typeof fontWeightVar != "undefined")
+                    cssCode += "font-weight:"+fontWeightVar+"; ";
+                if(typeof textAlignVar != "undefined")
+                    cssCode += "text-align:"+textAlignVar+"; ";
+                if(typeof widthPercVar != "undefined")
+                    cssCode += "width:"+widthPercVar+"%; ";
+             cssCode += "}\n";
+            }
+                
+            cssCode +="</style>";
+            listOfHtmlCode = $j("[id*=htmlSource]");
+            listOfHtmlCode.empty();
+            xmlcode = cssCode;
+            xmlcode += '<table class="table'+counterTemplate+'" border="1"><tr>\n';
+          
+            for (var i = 0; i < listOptionLabelName.length; i++) {
+                    xmlcode += '<th class="table'+counterTemplate+'header">';
+                    xmlcode += listOptionLabelName[i];
+                    xmlcode += "</th>\n";
+            }
+            xmlcode += "</tr>\n";
+            xmlcode += openComment;
+            xmlcode += "{{";
+            xmlcode += "!\n";
+            xmlcode += "<lineitems><class>table"+counterTemplate+"</class>\n";
+            xmlcode += "<listname>"+selectedRelatedListColumns[0].split(".")[0]+"</listname>\n";
+            for(var k = 0; k < selectedRelatedListColumns.length; k++){
+                xmlcode += "<column ";
+                if(selectedRelatedListColumns.length == 1){
+                    if(columnsMap.get(selectedRelatedListColumns[k])["startNewRow"])
+                        xmlcode += 'newrow="true" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["containsRichText"])
+                        xmlcode += 'type="rtf" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["nullValue"] != "")
+                        xmlcode += 'nullpostfix="'+columnsMap.get(selectedRelatedListColumns[k])["nullValue"]+'" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["prefix"] != "")
+                        xmlcode += 'prefix="'+columnsMap.get(selectedRelatedListColumns[k])["prefix"]+'" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["postfix"] != "")
+                        xmlcode += 'postfix="'+columnsMap.get(selectedRelatedListColumns[k])["postfix"]+'" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["colspan"] != "")
+                        xmlcode += 'colspan="'+columnsMap.get(selectedRelatedListColumns[k])["colspan"]+'" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["formatNumber"] != "")
+                        xmlcode += 'format-number="'+columnsMap.get(selectedRelatedListColumns[k])["formatNumber"]+'" ';
+                    xmlcode += ">";
+                    splitedValue =  selectedRelatedListColumns[k].split(".");
+                    if(splitedValue.length == 2)
+                        xmlcode += splitedValue[1];
+                    else
+                        xmlcode +=  splitedValue[splitedValue.length-2]+"."+splitedValue[splitedValue.length-1];
+                      xmlcode += "</column>\n";
+                }
+                else{
+                    if(columnsMap.get(selectedRelatedListColumns[k])["startNewRow"])
+                        xmlcode += 'newrow="true" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["containsRichText"])
+                        xmlcode += 'type="rtf" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["nullValue"] != "")
+                        xmlcode += 'nullpostfix="'+columnsMap.get(selectedRelatedListColumns[k])["nullValue"]+'" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["prefix"] != "")
+                        xmlcode += 'prefix="'+columnsMap.get(selectedRelatedListColumns[k])["prefix"]+'" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["postfix"] != "")
+                        xmlcode += 'postfix="'+columnsMap.get(selectedRelatedListColumns[k])["postfix"]+'" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["colspan"] != "")
+                        xmlcode += 'colspan="'+columnsMap.get(selectedRelatedListColumns[k])["colspan"]+'" ';
+                    if(columnsMap.get(selectedRelatedListColumns[k])["formatNumber"] != "")
+                        xmlcode += 'format-number="'+columnsMap.get(selectedRelatedListColumns[k])["formatNumber"]+'" ';
+                    xmlcode += ">";
+                     splitedValue =  selectedRelatedListColumns[k].split(".");
+                    if(splitedValue.length == 2)
+                        xmlcode += splitedValue[1];
+                    else
+                        xmlcode +=  splitedValue[splitedValue.length-2]+"."+splitedValue[splitedValue.length-1];
+                    xmlcode += "</column>\n";
+                }
+            }
+            if(typeof mapOfFilter.get("SQLSort") != "undefined")
+                xmlcode += "<where>"+mapOfFilter.get("SQLSort")+"</where>\n";
+            if(typeof mapOfFilter.get("maximum") != "undefined")
+                xmlcode += "<limit>"+mapOfFilter.get("maximum")+"</limit>\n";
+            if(typeof mapOfFilter.get("sortby") != "undefined")
+                xmlcode += "<orderby>"+mapOfFilter.get("sortby")+"</orderby>\n";
+
+
+            xmlcode += "</lineitems>\n";
+            xmlcode += "}}"
+            xmlcode += closeComment+"\n";
+            xmlcode += "</table>";
+            listOfHtmlCode.val(xmlcode);
+        }
+        
+        //insert the field in the body editor
+        function insert() {
+            var CKEDITOR   = window.CKEDITOR;
+            for ( var i in CKEDITOR.instances ){
+                var currentInstance = i;
+                break;
+            }
+            var oEditor   = CKEDITOR.instances[currentInstance];
+            oEditor.focus();
+            oEditor.insertHtml(token);
+        }
+        
+        //insert the related list in the body editor
+        function insertRelated(){
+            var CKEDITOR   = window.CKEDITOR;
+            for ( var i in CKEDITOR.instances ){
+                var currentInstance = i;
+                break;
+            }
+            var oEditor   = CKEDITOR.instances[currentInstance];
+            var allData = CKEDITOR.instances[currentInstance].getData();
+            allData += listOfHtmlCode.val();
+            oEditor.setData(allData);
+            counterTemplate++;//increment the template id number.
+        }
+        
+        //get the value of sql,maximum and sortby to set it in the html code editor
+        function onFormatSortingChange(e){
+            var nameOfClass = e.className;
+            switch(nameOfClass){
+                case "sql": mapOfFilter.set("SQLSort",e.value);
+                   break;
+                   case "maximum": mapOfFilter.set("maximum",e.value);
+                   break;
+                   case "sortby": mapOfFilter.set("sortby",e.value);
+                   break;
+                   default :break;
+                  
+           }
+               loadHtml();
+        }
+        
+        //changing style of the selected field
+        function onCssChange(e) {
+            var nameClass = e.className;
+            for(var l = 0; l < selectedRelatedListColumns.length; l++) {
+                if(fieldSelectedForStyle.includes(selectedRelatedListColumns[l]))
+                    nameClass = nameClass+l;
+            }
+            if(nameClass.includes("fontFamily")) {
+                mapOfCssStyle.set(nameClass,e.value);
+            } else if(nameClass.includes("fontSize")) {
+                mapOfCssStyle.set(nameClass,e.value);
+            } else if(nameClass.includes("fontWeight")) {
+                mapOfCssStyle.set(nameClass,e.value);
+            } else if(nameClass.includes("textAlign")) {
+                mapOfCssStyle.set(nameClass,e.value);
+            } else if(nameClass.includes("widthPercent")) {
+                mapOfCssStyle.set(nameClass,e.value);
+            }
+            loadHtml();
+        }
+        
+        //get the field select value for changing style
+        function getFieldName(e) {
+            fieldSelectedForStyle = e.options[e.selectedIndex].value;
+        }
+        
+        //this function is to generate random number to assign of table
+        function randomIntFromInterval(min,max) {
+            return Math.floor(Math.random()*(max-min+1)+min);
+        }
+        
+        //this function is to change header,footer,rowodd,roweven table style
+        function callChangeStyle(e) {
+            changeStyle();
+            var nameOfClass = e.className;
+            switch(nameOfClass){
+                case "img1":tableNumber = "1";
+                    break;
+                case "img2":tableNumber = "2";
+                    break;
+                case "img3":tableNumber = "3";
+                    break;
+                case "img4":tableNumber = "4";
+                    break;
+                case "img5":tableNumber = "5";
+                    break;
+                case "img6":tableNumber = "6";
+                    break;
+                default:break;
+            }
+            loadHtml();
+        }
+        function showHideDimensionSettings(e) {
+            var pageSize = $j(e).val();
+            console.log(pageSize);
+            if (pageSize == null || pageSize == "") {
+                $j("[id*=pageWidth]").removeAttr("disabled");
+                $j("[id*=pageHeight]").removeAttr("disabled");
+            } else {
+                $j("[id*=pageWidth]").attr("disabled", "true");
+                $j("[id*=pageHeight]").attr("disabled", "true");
+            }
+        }
+        
+        function selectOrderField() {
+            var temp =  field.split(".");
+            temp.splice(0,1);
+            var orderField = temp.join(".");
+            // alert(orderField);
+            $j("input[type='text'][id*=orderFieldInputField]").val(orderField);
+        }
+        </script>
+        
+        <style>
+        .overlay {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: rgba(0, 0, 0, 0.5);
+                transition: opacity 500ms;
+                z-index: 1000;
+                visibility: visible;
+                opacity: 1;
+                overflow: auto;
+            }
+            .popup2 {
+                margin: 15% auto;
+                padding: 5px;
+                width: 80%;
+                position: relative;
+                transition: all 5s ease-in-out;
+            }
+            .rich {
+                display: none;
+            }
+            .numberFormat {
+                display: none;
+            }
+            .dateFormat {
+                display: none;
+            }            
+        </style>
+    </apex:form>
+</apex:page>

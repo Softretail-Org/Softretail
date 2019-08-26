@@ -1,0 +1,397 @@
+/**
+ * Batchable class used to scan rebate payment group
+ * Case Criteria: (Status__c <> \'Synchronized\' AND Status__c <> \'Synchronized without Condition\')
+ *             OR (Status__c = \'Synchronized without Condition\' AND CreatedDate > :selectedDate)
+ * INTEGRITY CONTROL:
+ * a- Check Mandatory fields
+ * b- Check Warning fields
+ * DATA MAPPING:
+ * 1- Supplier Control : Check If Supplier not exists OR Supplier Code is not in Group Contract OR not linked to a BU Supplier
+ * 2- Contract Control: Check if Contract not exists OR contract code is not in group contract OR not linked to a BU contract
+ * 3- Conditions Control: Check if Condition not exists OR condition line is not in group contract detail or not linked to a BU contract line
+ **/ 
+global with sharing class GroupRebatePaymentScanBatch implements Database.Batchable<SObject>, Database.Stateful {
+    
+    private NegoptimBatch nb;
+    private String query;
+    public final Date selectedDate;
+    public static Map<String, string> rebatePaymentGroupFieldNameLabels;
+    public final Boolean doRebateGroupSynchro;
+    public final List<String> rebateGroupIds;
+    
+    /* Constructor */
+    public GroupRebatePaymentScanBatch(String startedFrom, Boolean doSynchro, List<Id> ids, Date d){
+        
+        this.nb = new NegoptimBatch('GroupRebatePaymentScanBatch', NegoptimBatch.BatchType.Stateful, startedFrom);
+        selectedDate = d;
+        doRebateGroupSynchro = doSynchro;
+        rebateGroupIds = ids;
+        
+        String q = 'SELECT Id, Name, Fiscal_Year__c, Origin_Condition_Line__c, Origin_Contract_Number__c, Origin_Supplier_Code__c, ';
+        q += 'Payment_Date__c, Payment_Line_Number__c, Payment_Number__c, Payment_Reconciliation_Date__c, Payment_Transfer_Date__c, ';  
+        q += 'Payment_Term__c, Detail_Integration_Status__c, Payment_Batch_Number__c, Condition_Reference__c, Contract_Reference__c, ';
+        q += 'Supplier__c, Supplier__r.Code__c, Action_Done__c, Action_ToDo__c, Last_Scan_Date__c, Status__c, Temp_Exclusion__c, ';
+        q += 'Amount_wo_Tax__c, Amount_w_Tax__c, Payment_Sign__c, Origin_Stock_Owner__c, Stock_Owner__c ';
+        q += 'FROM Rebate_Payment_Group__c ';
+        q += 'WHERE Temp_Exclusion__c = FALSE '; 
+        q += 'AND ((Status__c <> \'Synchronized\' AND Status__c <> \'Synchronized without Condition\')';
+        q += selectedDate != null ? ' OR (Status__c = \'Synchronized without Condition\' AND CreatedDate > :selectedDate))' : ')';
+        if(ids != null && ids.size() > 0) {
+            q += ' AND Id IN (\'' + String.join(ids, '\',\'') +'\') ';
+        }
+        // Set the final variable.
+        query = q;
+        // push inputs to log
+        nb.logParameter('doRebateGroupSynchro', this.doRebateGroupSynchro);
+        nb.logParameter('selectedDate', this.selectedDate);
+        nb.logParameter('rebateGroupIds', rebateGroupIds);
+        nb.logParameter('query', this.query);
+    }
+    /* Start method implementation.*/
+    public Database.QueryLocator start(Database.BatchableContext bc) {
+        return Database.getQueryLocator(query);
+    }
+    /* Execute method implementation.*/
+    public void execute(Database.BatchableContext bc, List<Rebate_Payment_Group__c> scope) {
+        /* 1. Prepare Declaration. */
+        Set<String> originSupplierCodeSet = new Set<String>();
+        Set<String> originContractNumberSet = new Set<String>();
+        Set<String> originConditionLineSet = new Set<String>();
+        // List of Origin supplier code
+        Set<String> originStockOwnerSet = new Set<String>();
+        // Map<Origin_Stock_owner__c, Orga_BU__c DataBase>.
+        Map<String, Orga_BU__c> originStockOwnerMap = new Map<String, Orga_BU__c>();
+        // Map<Origin Supplier Code, Contract_Group__c>
+        Map<String, Contract_Group__c> supContractGroupMap = new Map<String, Contract_Group__c>();
+        // Map<Origin Contract Number, Contract_Group__c>
+        Map<String, Contract_Group__c> originContractNumberMap = new Map<String, Contract_Group__c>();
+        // Map between key = (Origin Contract Number + Origin Condition Number) and group contract detail
+        Map<String, Contract_Group_Detail__c> originConditionLineMap = new Map<String, Contract_Group_Detail__c>();
+        // List of rebate payment to Update.
+        List<Rebate_Payment_Group__c> rebatePaymentGroupList = new List<Rebate_Payment_Group__c>();
+        // List of wrapper rebate payment group
+        List<WrapperRebatePaymentGroupLine> wRebatePaymentGroupList = new List<WrapperRebatePaymentGroupLine>();
+        // Describe all fields for Rebate_Payment_Group__c.
+        rebatePaymentGroupFieldNameLabels = NegoptimHelper.GetMandatoryFieldLabels(Rebate_Payment_Group__c.SObjectType);
+
+        Savepoint sp = Database.setSavepoint();
+        try {
+            // check security on read rebate group fields
+            String[] rebateGroupAccessFields = new String[] { 'Id', 'Name', NegoptimHelper.normalizeAPIName('Fiscal_Year__c'),
+                NegoptimHelper.normalizeAPIName('Origin_Condition_Line__c'), NegoptimHelper.normalizeAPIName('Origin_Contract_Number__c'),
+                NegoptimHelper.normalizeAPIName('Origin_Supplier_Code__c'), NegoptimHelper.normalizeAPIName('Payment_Date__c'),
+                NegoptimHelper.normalizeAPIName('Payment_Line_Number__c'), NegoptimHelper.normalizeAPIName('Payment_Number__c'),
+                NegoptimHelper.normalizeAPIName('Payment_Reconciliation_Date__c'), NegoptimHelper.normalizeAPIName('Payment_Transfer_Date__c'),
+                NegoptimHelper.normalizeAPIName('Payment_Term__c'), NegoptimHelper.normalizeAPIName('Detail_Integration_Status__c'),
+                NegoptimHelper.normalizeAPIName('Payment_Batch_Number__c'), NegoptimHelper.normalizeAPIName('Condition_Reference__c'),
+                NegoptimHelper.normalizeAPIName('Contract_Reference__c'), NegoptimHelper.normalizeAPIName('Supplier__c'),
+                NegoptimHelper.normalizeAPIName('Action_Done__c'), NegoptimHelper.normalizeAPIName('Action_ToDo__c'),
+                NegoptimHelper.normalizeAPIName('Last_Scan_Date__c'), NegoptimHelper.normalizeAPIName('Status__c'),
+                NegoptimHelper.normalizeAPIName('Temp_Exclusion__c'), NegoptimHelper.normalizeAPIName('Amount_wo_Tax__c'),
+                NegoptimHelper.normalizeAPIName('Amount_w_Tax__c'), NegoptimHelper.normalizeAPIName('Payment_Sign__c'),
+                NegoptimHelper.normalizeAPIName('Origin_Stock_Owner__c'), NegoptimHelper.normalizeAPIName('Stock_Owner__c')};
+            
+            // check security on read contract group fields
+            String[] contractGroupAccessFields = new String[] {'Id', NegoptimHelper.normalizeAPIName('Contract_Number__c'),
+                NegoptimHelper.normalizeAPIName('Supplier__c'), NegoptimHelper.normalizeAPIName('Origin_Supplier_Code__c'),
+                NegoptimHelper.normalizeAPIName('Contract_linked__c')};
+            
+            // check security on read condition group fields
+            String[] conditionGroupAccessFields = new String[] {'Id', NegoptimHelper.normalizeAPIName('Origin_Disc_Code2__c'),
+                NegoptimHelper.normalizeAPIName('Condition_Linked__c')};
+            
+            /* 2. Prepare Load Data. */
+            for(Rebate_Payment_Group__c item : scope) {
+                // Fill supplier code list
+                if(String.IsNotBlank(item.Origin_Supplier_Code__c)){
+                    originSupplierCodeSet.add(item.Origin_Supplier_Code__c);
+                }
+                // Fill origine contract number list
+                if(String.IsNotBlank(item.Origin_Contract_Number__c)){
+                    originContractNumberSet.add(item.Origin_Contract_Number__c);
+                }
+                // Fill origine condition number list
+                if(String.IsNotBlank(item.Origin_Condition_Line__c)){
+                    if(String.ValueOf(item.Origin_Condition_Line__c).isNumeric()){
+                        originConditionLineSet.add(String.valueOf(Integer.valueof(item.Origin_Condition_Line__c)));
+                    }
+                    else{
+                        originConditionLineSet.add(item.Origin_Condition_Line__c);
+                    }
+                }
+                // Fill all stock owner code
+                if(String.isNotBlank(item.Origin_Stock_owner__c)) {
+                    originStockOwnerSet.add(item.Origin_Stock_owner__c);
+                } else {
+                    originStockOwnerSet.add(null);
+                }
+            }            
+            
+            if(NegoptimHelper.checkAccessibility(Contract_Group__c.SObjectType, contractGroupAccessFields) &&
+               NegoptimHelper.checkAccessibility(Contract_Group_Detail__c.SObjectType, conditionGroupAccessFields))
+            {
+                for(Contract_Group__c item : [SELECT Id, Name, Contract_Number__c, Supplier__c, Origin_Supplier_Code__c, Supplier__r.Code__c, Contract_linked__c,
+                                              (SELECT Id, Name, Origin_Disc_Code2__c, Condition_Linked__c FROM Group_Contract_Details__r)
+                                              FROM Contract_Group__c
+                                              WHERE (Origin_Supplier_Code__c IN :originSupplierCodeSet OR Contract_Number__c IN :originContractNumberSet)
+                                              AND Status__c <> 'New'
+                                              ORDER BY End_date__c DESC])
+                {
+                    if(originSupplierCodeSet.contains(item.Origin_Supplier_Code__c) && !supContractGroupMap.containsKey(item.Origin_Supplier_Code__c)) {
+                        supContractGroupMap.put(item.Origin_Supplier_Code__c, item);
+                    }
+                    if(originContractNumberSet.contains(item.Contract_Number__c)) {
+                        // Fill contracts group
+                        if(!originContractNumberMap.containsKey(item.Contract_Number__c)){
+                            originContractNumberMap.put(item.Contract_Number__c, item);
+                        }
+                        // Fill conditions related to contract group              
+                        for(Contract_Group_Detail__c condition : item.Group_Contract_Details__r){
+                            if(String.IsNotBlank(condition.Origin_Disc_Code2__c)){
+                                String originDiscCode = String.ValueOf(condition.Origin_Disc_Code2__c).isNumeric() ? 
+                                    String.valueOf(Integer.valueof(condition.Origin_Disc_Code2__c)) : condition.Origin_Disc_Code2__c;
+                                if(originConditionLineSet.contains(originDiscCode)){
+                                    String key = item.Contract_Number__c + originDiscCode;
+                                    if(!originConditionLineMap.containsKey(key)){                        
+                                        originConditionLineMap.put(key, condition);
+                                    }                        
+                                }
+                            }
+                        }
+                    }
+                }
+            }            
+            // Get all stock owner
+            if(!originStockOwnerSet.isEmpty()) {
+                // Single Instance of BusinessUnitHelper
+                BusinessUnitHelper buHelper = BusinessUnitHelper.getInstance(null, null);
+                originStockOwnerMap = buHelper.getBUByExtIds(originStockOwnerSet, 'Warehouse');
+            }
+            
+            /* 3. Prepare Scan Process. */
+            if(NegoptimHelper.checkAccessibility(Rebate_Payment_Group__c.SObjectType, rebateGroupAccessFields) &&
+               NegoptimHelper.checkAccessibility(Contract_Group__c.SObjectType, contractGroupAccessFields) &&
+               NegoptimHelper.checkAccessibility(Contract_Group_Detail__c.SObjectType, conditionGroupAccessFields))
+            {
+                for(Rebate_Payment_Group__c item : scope) {
+                    WrapperRebatePaymentGroupLine wline = new WrapperRebatePaymentGroupLine(item);
+                    // INTEGRITY CONTROL: a- Check Mandatory fields
+                    wline.CheckMandatoryFields();
+                    if(!wline.scanIsValid) {
+                        // Error
+                    }
+                    // INTEGRITY CONTROL: b- Check Warning fields
+                    wline.CheckWarningFields();
+                    // DATA MAPPING : Check Supplier, Contract Group and Contract Group Detail
+                    if(supContractGroupMap.containsKey(item.Origin_Supplier_Code__c)) {
+                        wline.refSuppLierCG = supContractGroupMap.get(item.Origin_Supplier_Code__c);
+                    }
+                    if(originContractNumberMap.containsKey(item.Origin_Contract_Number__c)) {
+                        wline.refContractGroup = originContractNumberMap.get(item.Origin_Contract_Number__c);
+                    }
+                    if(wline.refContractGroup != null && item.Origin_Condition_Line__c != null) {
+                        String originConditionLine = String.ValueOf(item.Origin_Condition_Line__c).isNumeric() ? 
+                            String.valueOf(Integer.valueof(item.Origin_Condition_Line__c)) : item.Origin_Condition_Line__c;
+                        String key = item.Origin_Contract_Number__c + originConditionLine;
+                        if(originConditionLineMap.containsKey(key)){
+                            wline.refContractGroupDetail = originConditionLineMap.get(key);
+                        }
+                    }
+                    // get stock owner
+                    if(originStockOwnerMap.containsKey(item.Origin_Stock_owner__c)) {
+                        wline.refStockOwner = originStockOwnerMap.get(item.Origin_Stock_owner__c);
+                    }
+                    // Scan Rebate Payment Group
+                    wline.scanRebatePaymentGroup();
+                    // Fill Scan Results
+                    if(!wline.scanIsValid) {
+                        wline.rebateGroup.Status__c = 'Rejected';
+                    }
+                    else{
+                        wline.rebateGroup.Status__c = 'Validated';
+                    }
+                    wline.rebateGroup.Error_desc__c = wline.errorDescMessage;
+                    wline.rebateGroup.Warning_Desc__c = wline.warningDescMessage;
+                    wline.rebateGroup.Action_ToDo__c = wline.actionToDoMessage;
+                    wline.rebateGroup.Action_done__c = wline.actionDoneMessage;
+                    wline.rebateGroup.Last_Scan_Date__c = System.now();
+                    wRebatePaymentGroupList.add(wline);
+                }
+            }
+            // check security on update rebate group fields
+            String[] rebateGroupUpdateFields = new String[] { NegoptimHelper.normalizeAPIName('Status__c'),
+                NegoptimHelper.normalizeAPIName('Supplier__c'), NegoptimHelper.normalizeAPIName('Contract_Reference__c'),
+                NegoptimHelper.normalizeAPIName('Condition_Reference__c'), NegoptimHelper.normalizeAPIName('Error_desc__c'),
+                NegoptimHelper.normalizeAPIName('Warning_Desc__c'), NegoptimHelper.normalizeAPIName('Action_ToDo__c'),
+                NegoptimHelper.normalizeAPIName('Action_done__c'), NegoptimHelper.normalizeAPIName('Last_Scan_Date__c'),
+                NegoptimHelper.normalizeAPIName('Stock_Owner__c')};
+            
+            if(NegoptimHelper.checkUpdatibility(Rebate_Payment_Group__c.SObjectType, rebateGroupUpdateFields)){
+                for (WrapperRebatePaymentGroupLine item : wRebatePaymentGroupList) {                
+                    rebatePaymentGroupList.add(item.rebateGroup);
+                }
+                // Update rebate payment group
+                if(rebatePaymentGroupList != null && rebatePaymentGroupList.size() > 0) {
+                    List<Database.SaveResult> results = Database.update(rebatePaymentGroupList, false);
+                    nb.logResults(results, rebatePaymentGroupList);
+                }
+            }
+        }
+        catch(DmlException e) {
+            Database.rollback(sp);
+            nb.logError('Exception: ' + e.getDmlMessage(0) + ' - ' + e.getLineNumber());
+        }
+        catch (Exception e) {
+            Database.rollback(sp);
+            nb.logError('Exception: ' + e.getMessage() + ' - ' + e.getLineNumber());
+        }
+        nb.incrementBatchIndex();
+    }
+    
+    // Finish method.
+    public void finish(Database.BatchableContext bc) {
+        if(doRebateGroupSynchro) {
+            Database.executeBatch(new GroupRebatePaymentSynchroBatch('GroupRebatePaymentScanBatch', rebateGroupIds));            
+        }
+        // Get the Job.
+        String customSubject = nb.getBatchName() + ': ' + nb.getAsyncApexJob(bc).Status;
+        nb.sendEmail(bc, null, customSubject);
+    }
+    
+    /* Wrapper Class for Rebate Payment Group Line */
+    public class WrapperRebatePaymentGroupLine {
+        Rebate_Payment_Group__c rebateGroup {get; set;}
+        Contract_Group__c refSuppLierCG {get; set;}
+        Contract_Group__c refContractGroup {get; set;}
+        Contract_Group_Detail__c refContractGroupDetail {get; set;}
+        Orga_BU__c refStockOwner {get; set;}
+        String supplierCode {get; set;}
+        Boolean scanIsValid {get; set;}
+        String errorDescMessage {get; set;}
+        String warningDescMessage {get; set;}
+        String actionToDoMessage {get; set;}
+        String actionDoneMessage {get; set;}
+        public WrapperRebatePaymentGroupLine(Rebate_Payment_Group__c rebate) {
+            rebateGroup = rebate;
+            refSuppLierCG = null;
+            refContractGroup = null;
+            refContractGroupDetail = null;
+            refStockOwner = null;
+            supplierCode = null;
+            scanIsValid = true;
+            errorDescMessage = '';
+            warningDescMessage = '';
+            actionToDoMessage = '';
+            actionDoneMessage = '';
+        }
+        // scan rebate payment group
+        public void scanRebatePaymentGroup(){
+            // DATA MAPPING: 1- Supplier Control :
+            // Check If Supplier not exists OR Supplier Code is not in Group Contract OR not linked to a Supplier)
+            if(rebateGroup.Supplier__c == null){
+                if(String.IsNotBlank(rebateGroup.Origin_Supplier_Code__c)){
+                    if(this.refSuppLierCG == null){
+                        this.actionToDoMessage = string.format(Label.MSG_Supplier_code_Not_Exist, new String[]{ rebateGroup.Origin_Supplier_Code__c }) + '\n';
+                        this.scanIsValid = false;
+                    }
+                    else if(this.refSuppLierCG != null && String.IsBlank(this.refSuppLierCG.Supplier__c)){
+                        this.actionToDoMessage += string.format(Label.MSG_Supplier_Not_Linked_BU_Supplier, new String[]{ rebateGroup.Origin_Supplier_Code__c }) + '\n';
+                        this.scanIsValid = false;
+                    }
+                    else{
+                        rebateGroup.Supplier__c = this.refSuppLierCG.Supplier__c;
+                        this.supplierCode = this.refSuppLierCG.Supplier__r.Code__c;
+                        this.actionDoneMessage = string.format(Label.MSG_Supplier_BU_Linked_To_Supplier_Code, new String[]{ this.refSuppLierCG.Supplier__r.Code__c, rebateGroup.Origin_Supplier_Code__c }) + '\n';
+                    }
+                }
+            }
+            else{
+                this.supplierCode = rebateGroup.Supplier__r.Code__c;
+            }
+            // DATA MAPPING: 2- Contract Control:
+            // Check if Contract not exists OR contract code is not in group contract OR not linked to a BU contract
+            if(this.scanIsValid && rebateGroup.Contract_reference__c == null){
+                if(String.IsNotBlank(rebateGroup.Origin_Contract_Number__c)){
+                    if(this.refContractGroup == null){
+                        this.actionToDoMessage += string.format(Label.MSG_Contract_Code_Not_Exist, new String[]{ rebateGroup.Origin_Contract_Number__c }) + '\n';
+                    }
+                    else if(this.refContractGroup != null && this.refContractGroup.Supplier__r.Code__c != this.supplierCode){
+                        this.actionToDoMessage += string.format(Label.MSG_Contract_Code_Exist_Supplier_Code_Not_Matching, new String[]{ rebateGroup.Origin_Contract_Number__c, supplierCode }) + '\n';
+                        this.scanIsValid = False;
+                    }
+                    else if(this.refContractGroup != null && String.IsBlank(refContractGroup.Contract_linked__c)){
+                        this.actionToDoMessage += string.format(Label.MSG_Contract_Not_Linked_To_BU_Contract, new String[]{ rebateGroup.Origin_Contract_Number__c }) + '\n';
+                    }
+                    else{
+                        rebateGroup.Contract_reference__c = this.refContractGroup.Id;
+                        this.actionDoneMessage += Label.MSG_Contract_Linked_Automatically + '\n';
+                    }
+                }
+            }
+            // DATA MAPPING: 3- Conditions Control:
+            // Check if Condition not exists OR condition line is not in group contract detail or not linked to a BU contract line
+            if(this.scanIsValid && rebateGroup.Condition_reference__c == null){
+                if(String.IsNotBlank(rebateGroup.Origin_Condition_Line__c)){
+                    if(this.refContractGroupDetail == null){
+                        this.actionToDoMessage += string.format(Label.MSG_Contract_Line_Not_Exist, new String[]{ rebateGroup.Origin_Condition_Line__c }) + '\n';
+                    }
+                    else if(this.refContractGroupDetail != null && String.IsBlank(refContractGroupDetail.Condition_Linked__c)){
+                        this.actionToDoMessage += string.format(Label.MSG_Contract_Line_Not_Linked_To_BU_Contract_Line, new String[]{ rebateGroup.Origin_Condition_Line__c }) + '\n';
+                    }
+                    else{
+                        rebateGroup.Condition_reference__c = this.refContractGroupDetail.Id;
+                        this.actionDoneMessage += Label.MSG_Contract_Line_Linked_Automatically + '\n';
+                    }
+                }
+            }
+            // check stock owner
+            if(this.rebateGroup.Stock_owner__c == null) {
+                if(this.refStockOwner == null) {
+                    this.scanIsValid = false;
+                    this.actionToDoMessage += Label.MSG_Stock_Owner_Not_Found + '\n';
+                } else {
+                    this.rebateGroup.Stock_Owner__c = this.refStockOwner.Id;
+                }
+            }
+        }
+        // Check Mandatory Fields
+        public void CheckMandatoryFields() {
+            if(rebateGroup.Fiscal_Year__c == null || rebateGroup.Origin_Condition_Line__c == null ||
+               rebateGroup.Origin_Contract_Number__c == null || rebateGroup.Origin_Supplier_Code__c == null || 
+               rebateGroup.Payment_Date__c == null || rebateGroup.Payment_Line_Number__c == null || 
+               rebateGroup.Payment_Number__c == null || rebateGroup.Payment_Reconciliation_Date__c == null || 
+               rebateGroup.Payment_Transfer_Date__c == null || rebateGroup.Payment_Term__c == null || 
+               rebateGroup.Detail_Integration_Status__c == null || rebateGroup.Payment_Batch_Number__c == null)
+            {
+                if(rebateGroup.Fiscal_Year__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Fiscal_Year__c') }) + '\n';
+                if(rebateGroup.Origin_Condition_Line__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Origin_Condition_Line__c') }) + '\n';               
+                if(rebateGroup.Origin_Contract_Number__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Origin_Contract_Number__c') }) + '\n';                
+                if(rebateGroup.Origin_Supplier_Code__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Origin_Supplier_Code__c') }) + '\n';               
+                if(rebateGroup.Payment_Date__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Payment_Date__c') }) + '\n';
+                if(rebateGroup.Payment_Line_Number__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Payment_Line_Number__c') }) + '\n';
+                if(rebateGroup.Payment_Number__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Payment_Number__c') }) + '\n';
+                if(rebateGroup.Payment_Reconciliation_Date__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Payment_Reconciliation_Date__c') }) + '\n';
+                if(rebateGroup.Payment_Transfer_Date__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Payment_Transfer_Date__c') }) + '\n';
+                if(rebateGroup.Payment_Term__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Payment_Term__c') }) + '\n';
+                if(rebateGroup.Detail_Integration_Status__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Detail_Integration_Status__c') }) + '\n';
+                if(rebateGroup.Payment_Batch_Number__c == null) this.errorDescMessage += string.format(Label.MSG_MandatoryFields, new String[]{ rebatePaymentGroupFieldNameLabels.get('Payment_Batch_Number__c') }) + '\n';
+                this.scanIsValid = false;
+            }
+        }
+        // Check Warning fields
+        public void CheckWarningFields() {
+            // INTEGRITY CONTROL: b- Check Warning fields
+            if(rebateGroup.Payment_Batch_Number__c == NULL){
+                this.warningDescMessage += Label.MSG_Invoice_Chrono_Not_Exist + '\n';
+            }
+            if((rebateGroup.Payment_Sign__c == '-' && (rebateGroup.Amount_wo_Tax__c > 0 || rebateGroup.Amount_w_Tax__c > 0)) ||
+               (rebateGroup.Payment_Sign__c == '+' && (rebateGroup.Amount_wo_Tax__c < 0 || rebateGroup.Amount_w_Tax__c < 0))){
+                   this.warningDescMessage += Label.MSG_Invoice_Amount_Not_Have_Sign_Document_Type + '\n';
+               }
+            if((rebateGroup.Amount_wo_Tax__c > 0 && rebateGroup.Amount_w_Tax__c < 0) || 
+               (rebateGroup.Amount_wo_Tax__c < 0 && rebateGroup.Amount_w_Tax__c > 0)){
+                   this.warningDescMessage += Label.MSG_Amount_WTax_WoTax_Not_Have_Same_Sign;
+               }
+        }
+    }
+}

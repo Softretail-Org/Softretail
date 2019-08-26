@@ -1,0 +1,42 @@
+<apex:page id="thePage" controller="NegoTemplateCreateController" tabstyle="NegoTemplate__c">
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }" /> 
+    
+    <apex:sectionHeader title="Nego Template" subtitle="Create"/>
+    <apex:form id="theForm">
+        <apex:pageBlock id="pageBlock" title="{!sObjectType}">
+            <apex:actionStatus id="loadingStatus">
+                <apex:facet name="start">
+                    <img src="/img/loading.gif" />
+                </apex:facet>
+            </apex:actionStatus>
+            <apex:pageBlockButtons >
+                <apex:commandButton id="btnSave" value="Save" action="{!save}"/>
+                <apex:commandButton id="btnCancel" value="Cancel" action="{!Cancel}"/>
+                <!--<apex:commandButton id="btnEmail" value="Email" action="{!showEmailPopup}" status="loadingStatus" reRender="theForm"/>-->
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockSection columns="2" showHeader="false">
+                <apex:pageBlockSectionItem labelTitle="Templates">
+                    <apex:outputLabel value="Select Template" />
+                    <apex:selectCheckboxes label="Select Template" value="{!selectedTemplates}" layout="pageDirection">
+                        <apex:actionSupport event="onchange" rerender="theForm,selectedTemplates" status="loadingStatus" action="{!showSelectedTemplates}"/>
+                        <apex:selectOptions value="{!optionsValue}"></apex:selectOptions>
+                    </apex:selectCheckboxes>
+                </apex:pageBlockSectionItem>
+                <apex:pageblockSectionItem id="selectedTemplates">
+                    <apex:outputPanel >
+                        <ul>
+                            <apex:repeat value="{!selectedTemplatesMap}" var="item">
+                                <li>
+                                    <apex:commandLink value="{!selectedTemplatesMap[item]}" target="_blank" action="{!Preview}" >
+                                        <apex:param name="templateId" value="{!item}" assignTo="{!templateId}" />
+                                    </apex:commandLink>
+                                </li>
+                            </apex:repeat> 
+                        </ul>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

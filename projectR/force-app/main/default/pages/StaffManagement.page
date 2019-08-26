@@ -1,0 +1,355 @@
+<apex:page controller="StaffManagementController" tabStyle="Staff_Mng__tab">
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }" />
+    <apex:sectionHeader title="{!$Label.LBL_StaffManagementTitle}" subtitle="{!$Label.LBL_StaffManagementTitleSub}"/>
+    <apex:actionStatus id="globalloading">
+        <apex:facet name="start">
+            <div class="loading-overlay">
+                <div class="loader-img"></div>
+                <div class="loading-block">{!$Label.Loading}</div>
+            </div>
+        </apex:facet>
+    </apex:actionStatus>
+	<apex:form id="form">
+		<apex:pageMessages id="errors"/>
+		<apex:panelGrid Id="panelGrid1" columnClasses="panelGridWidth" styleClass="panelGridCenter" columns="1">
+			<apex:pageBlock title="{!$Label.LBL_User_Structure}">
+				<apex:pageblockButtons >
+					<apex:commandButton value="{!$Label.LBL_First_Page}" action="{!firstBtn}" disabled="{!prv}" reRender="panelGrid1" status="status"/>
+				 	<apex:commandButton value="◄{!$Label.LBL_Previous}" action="{!prvBtn}" disabled="{!prv}" reRender="panelGrid1" status="status"/>
+				 	<apex:commandButton value="{!$Label.LBL_Next}►" action="{!nxtBtn}" disabled="{!nxt}" reRender="panelGrid1" status="status"/>
+				 	<apex:commandButton value="{!$Label.LBL_Last_Page}" action="{!lstBtn}" disabled="{!nxt}" reRender="panelGrid1" status="status"
+				 	/>
+				</apex:pageblockButtons>
+				<apex:pageBlockSection collapsible="false" columns="2">
+ 					<apex:pageBlockSectionItem >
+						<apex:outputLabel value="{!$Label.LBL_Full_Name}"/>
+	 					<apex:outputPanel >
+	 						<apex:inputtext value="{!fullNameValue}" label="{!$Label.LBL_Full_Name}" required="false"/>
+	 						<apex:commandButton value="{!$Label.LBL_Search}" action="{!searchUser}" reRender="panelGrid1, errors" status="status">
+			      	 			<apex:param value="Name" name="name" assignTo="{!searchParam}"/>
+					      	</apex:commandButton>
+ 						</apex:outputPanel>
+ 					</apex:pageBlockSectionItem>
+						<apex:pageBlockSectionItem >
+						<apex:outputLabel value="{!$Label.LBL_Add_Multiple_Users}"/>
+						<apex:commandButton value="New" reRender="errors"
+									onClick="window.open('/ui/setup/user/AddMultipleUsers')"/>
+ 					</apex:pageBlockSectionItem>
+				</apex:pageBlockSection>
+				<apex:actionStatus id="status">
+					<apex:facet name="start">
+						<img src="/img/loading.gif"/>
+					</apex:facet>
+				</apex:actionStatus>
+				<apex:pageBlockSection collapsible="false" columns="1">
+						<apex:pageBlockTable value="{!IF(isINIT==TRUE,users,sUsers)}" var="u"
+					        				columnsWidth="25%,25%,25%,25%">
+					        <apex:column headervalue="{!$ObjectType.User.fields.Name.Label}">
+	                            <apex:facet name="header">
+	                                <apex:commandLink action="{!sorting}"
+	                                    value="{!$ObjectType.User.fields.Name.Label}{!IF(isASC1==TRUE,'▲','▼')}" reRender="panelGrid1" status="status">
+	                                    <apex:param value="{!IF(isASC1==TRUE,'TRUE','FALSE')}" name="sort" assignTo="{!isASC1}"/>
+	                                    <apex:param value="Name" name="name" assignTo="{!sortField}"/>
+	                                </apex:commandLink>
+	                            </apex:facet>
+						        <span>
+						        	<apex:outputLink value="/{!u.Id}" target="_blank">
+										<apex:outputText value="{!u.Name}"/>
+									</apex:outputLink>
+								</span>
+				            </apex:column>
+				            <apex:column headervalue="{!$Label.LBL_Role}" value="{!u.UserRole.Name}">
+	                            <apex:facet name="header">
+	                                <apex:commandLink action="{!sorting}"
+	                                    value="{!$Label.LBL_Role}{!IF(isASC2==TRUE,'▲','▼')}" reRender="panelGrid1" status="status">
+	                                    <apex:param value="{!IF(isASC2==TRUE,'TRUE','FALSE')}" name="sort" assignTo="{!isASC2}"/>
+	                                    <apex:param value="UserRoleId" name="role" assignTo="{!sortField}"/>
+	                                </apex:commandLink>
+	                            </apex:facet>
+				            </apex:column>
+				            <apex:column headervalue="{!$Label.LBL_Profile}" value="{!u.Profile.Name}">
+	                            <apex:facet name="header">
+	                                <apex:commandLink action="{!sorting}"
+	                                    value="{!$Label.LBL_Profile}{!IF(isASC3==TRUE,'▲','▼')}" reRender="panelGrid1" status="status">
+	                                    <apex:param value="{!IF(isASC3==TRUE,'TRUE','FALSE')}" name="sort" assignTo="{!isASC3}"/>
+	                                    <apex:param value="ProfileId" name="role" assignTo="{!sortField}"/>
+	                                </apex:commandLink>
+	                            </apex:facet>
+				            </apex:column>
+				            <apex:column headervalue="{!$Label.LBL_Last_connection}" value="{!u.LastLoginDate}">
+	                            <apex:facet name="header">
+	                                <apex:commandLink action="{!sorting}"
+	                                    value="{!$Label.LBL_Last_connection}{!IF(isASC4==TRUE,'▲','▼')}" reRender="panelGrid1" status="status">
+	                                    <apex:param value="{!IF(isASC4==TRUE,'TRUE','FALSE')}" name="sort" assignTo="{!isASC4}"/>
+	                                    <apex:param value="LastLoginDate" name="role" assignTo="{!sortField}"/>
+	                                </apex:commandLink>
+	                            </apex:facet>
+				            </apex:column>
+					    </apex:pageBlockTable>
+					<apex:pageBlockSection collapsible="false" columns="2">
+						<apex:pageBlockSectionItem >
+							<apex:outputLabel value="{!$Label.LBL_Display_records_per_page}"/>
+							<apex:outputPanel >
+								<apex:selectList value="{!record}" size="1">
+							   	<apex:selectOption itemLabel="1" itemValue="1"></apex:selectOption>
+							   	<apex:selectOption itemLabel="2" itemValue="2"></apex:selectOption>
+							   	<apex:selectOption itemLabel="5" itemValue="5"></apex:selectOption>
+							   	<apex:selectOption itemLabel="10" itemValue="10"></apex:selectOption>
+							   	<apex:selectOption itemLabel="20" itemValue="20"></apex:selectOption>
+							   	<apex:selectOption itemLabel="50" itemValue="50"></apex:selectOption>
+							   	<apex:actionSupport event="onchange" reRender="panelGrid1" action="{!displayRecordsPerPage}" status="status"/>
+						  		</apex:selectList>
+							</apex:outputPanel>
+						</apex:pageBlockSectionItem>
+						<apex:pageBlockSectionItem >
+							<apex:outputLabel value="{!$Label.LBL_Total_number_of_records}"/>
+							<apex:outputLabel value="{!total}"/>
+						</apex:pageBlockSectionItem>
+					</apex:pageBlockSection>
+				</apex:pageBlockSection>
+			</apex:pageBlock>
+		</apex:panelGrid>
+		<apex:panelGrid Id="panelGrid2" columnClasses="panelGridWidth" styleClass="panelGridCenter" columns="1">
+			<apex:pageBlock title="{!$Label.LBL_Role_Structure}">
+				<!-- First Block -->
+				<apex:pageBlock Id="block1">
+					<apex:pageBlockSection collapsible="false" columns="1">
+						<apex:pageBlockTable value="{!hierarchy}" var="item"
+										columnsWidth="13%,3%,7%,7%,7%,7%,7%,7%,7%,7%,7%,7%,7%,7%">
+							<apex:column headervalue="{!$Label.LBL_Role}" value="{!item.userRole.Name}"/>
+							<apex:column headervalue="{!$Label.LBL_Level}" value="{!item.level}" styleClass="rightAlign"/>
+							<apex:column headervalue="# {!$Label.LBL_Contract} {!$Label.LBL_FACT}" value="{!item.contractCountH}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+							<apex:column headervalue="# {!$Label.LBL_NS} {!$Label.LBL_FACT}" value="{!item.NSCountH}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+							<apex:column headervalue="{!$Label.LBL_Total_TO} {!$Label.LBL_FACT}" value="{!item.sTotalTOH}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+							<apex:column headervalue="% {!$Label.LBL_Contract} {!$Label.LBL_FACT}" value="{!item.sContractPercentageH}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+							<apex:column headervalue="% {!$Label.LBL_NS} {!$Label.LBL_FACT}" value="{!item.sNSPercentageH}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+							<apex:column headervalue="% {!$Label.LBL_TO} {!$Label.LBL_FACT}" value="{!item.sTOPercentageH}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+							<apex:column headervalue="# {!$Label.LBL_Contract} {!$Label.LBL_SIM}" value="{!item.ContractCountSimH}"
+												styleClass="rightAlign" style="background-color:#FFDAFF;"/>
+							<apex:column headervalue="# {!$Label.LBL_NS} {!$Label.LBL_SIM}" value="{!item.NSCountSimH}"
+												styleClass="rightAlign" style="background-color:#FFDAFF;"/>
+							<apex:column headervalue="{!$Label.LBL_Total_TO} {!$Label.LBL_SIM}" value="{!item.sTotalTOSimH}"
+												styleClass="rightAlign" style="background-color:#FFDAFF;"/>
+							<apex:column headervalue="% {!$Label.LBL_Contract} {!$Label.LBL_SIM}" value="{!item.sContractPercentageSimH}"
+												styleClass="rightAlign" style="background-color:#FFDAFF;"/>
+							<apex:column headervalue="% {!$Label.LBL_NS} {!$Label.LBL_SIM}" value="{!item.sNSPercentageSimH}"
+												styleClass="rightAlign" style="background-color:#FFDAFF;"/>
+							<apex:column headervalue="% {!$Label.LBL_TO} {!$Label.LBL_SIM}" value="{!item.sTOPercentageSimH}"
+												styleClass="rightAlign" style="background-color:#FFDAFF;"/>
+						</apex:pageBlockTable>
+					</apex:pageBlockSection>
+				</apex:pageBlock>
+				<!-- <apex:pageBlock>
+					<apex:pageBlockSection collapsible="false" columns="1">
+						<apex:pageBlockTable value="{!negoAct}" var="item">
+							<apex:column headervalue="Role" value="{!item.roleName}"/>
+							<apex:column headervalue="Level" value="{!item.level}"/>
+							<apex:column headervalue="# Contract" value="{!item.contractCountH}"/>
+							<apex:column headervalue="# NS" value="{!item.NSCountH}"/>
+							<apex:column headervalue="Total TO" value="{!item.totalTOH}"/>
+							<apex:column headervalue="% Contract" value="{!item.contractPercentageH}"/>
+							<apex:column headervalue="% NS" value="{!item.NSPercentageH}"/>
+							<apex:column headervalue="% TO" value="{!item.TOPercentageH}"/>
+							<apex:column headervalue="# Contract" value="{!item.ContractCountSimH}"/>
+							<apex:column headervalue="# NS" value="{!item.NSCountSimH}"/>
+							<apex:column headervalue="Total TO" value="{!item.totalTOSimH}"/>
+							<apex:column headervalue="% Contract" value="{!item.contractPercentageSimH}"/>
+							<apex:column headervalue="% NS" value="{!item.NSPercentageSimH}"/>
+							<apex:column headervalue="% TO" value="{!item.TOPercentageSimH}"/>
+						</apex:pageBlockTable>
+					</apex:pageBlockSection>
+				</apex:pageBlock>-->
+				<!-- Second Block -->
+				<apex:pageBlock >
+					<!-- <apex:pageblockButtons>
+						<apex:commandButton Id="saveBtn" value="Submit" action="{!submit}" reRender="panelGrid2"/>
+				 	</apex:pageblockButtons> -->
+					<apex:repeat value="{!wRoles}" var="item">
+				  		<apex:pageBlockSection collapsible="false" columns="3" rendered="{!item.wUsers.size>0}">
+								<apex:outputText value="{!item.roleName}" style="font-weight: bold;"/>
+								<apex:outputPanel >
+									<apex:commandLink value="{!$Label.LBL_Contract_Detail}" action="{!showPopup}" rerender="popup" status="status2">
+										<apex:param value="{!item.userRoleId}" name="userRoleId" assignTo="{!roleId}"/>
+									</apex:commandLink>
+								<apex:actionStatus id="status2">
+									<apex:facet name="start">
+										<img src="/img/loading.gif"/>
+									</apex:facet>
+								</apex:actionStatus>
+								</apex:outputPanel>
+							<!--<apex:outputPanel>
+								<apex:outputLabel value="Role Level: " style="font-weight: bold;"/>
+							</apex:outputPanel> -->
+						</apex:pageBlockSection>
+						<apex:pageBlockSection collapsible="false" columns="1">
+							<apex:pageBlockTable value="{!item.wUsers}" var="u" rendered="{!item.wUsers.size>0}"
+										columnsWidth="16%,7%,7%,7%,7%,7%,7%,7%,7%,7%,7%,7%,7%">
+								<apex:column headervalue="User" value="{!u.user.Name}"/>
+								<apex:column headervalue="# {!$Label.LBL_Contract} {!$Label.LBL_FACT}" value="{!u.contractCount}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+								<apex:column headervalue="# {!$Label.LBL_NS} {!$Label.LBL_FACT}" value="{!u.NSCount}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+								<apex:column headervalue="{!$Label.LBL_Total_TO} {!$Label.LBL_FACT}" value="{!u.sTotalTO}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+								<apex:column headervalue="% {!$Label.LBL_Contract} {!$Label.LBL_FACT}" value="{!u.sContractPercentage}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+								<apex:column headervalue="% {!$Label.LBL_NS} {!$Label.LBL_FACT}" value="{!u.sNSPercentage}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+								<apex:column headervalue="% {!$Label.LBL_TO} {!$Label.LBL_FACT}" value="{!u.sTOPercentage}"
+												styleClass="rightAlign" style="background-color:#E4FFFF;"/>
+								<apex:column headervalue="# {!$Label.LBL_Contract} {!$Label.LBL_SIM}" style="background-color:#FFDAFF;" styleClass="rightAlign">
+									<apex:inputtext value="{!u.contractCountSim}" onkeypress="return ignoreEnterKey(event);"
+													style="width:50px" styleClass="rightAlign"/>
+								</apex:column>
+								<apex:column headervalue="# {!$Label.LBL_NS} {!$Label.LBL_SIM}" style="background-color:#FFDAFF;" styleClass="rightAlign">
+									<apex:inputtext value="{!u.NSCountSim}" onkeypress="return ignoreEnterKey(event);" style="width:50px" styleClass="rightAlign"/>
+								</apex:column>
+								<apex:column headervalue="{!$Label.LBL_Total_TO} {!$Label.LBL_SIM}" style="background-color:#FFDAFF;" styleClass="rightAlign">
+									<apex:inputtext value="{!u.TotalTOSim}" onkeypress="return ignoreEnterKey(event);" style="width:50px" styleClass="rightAlign"/>
+								</apex:column>
+								<apex:column headervalue="% {!$Label.LBL_Contract} {!$Label.LBL_SIM}" value="{!u.sContractPercentageSim}"
+											styleClass="rightAlign" style="background-color:#FFDAFF;"/>
+								<apex:column headervalue="% {!$Label.LBL_NS} {!$Label.LBL_SIM}" value="{!u.sNSPercentageSim}"
+											styleClass="rightAlign" style="background-color:#FFDAFF;"/>
+								<apex:column headervalue="% {!$Label.LBL_TO} {!$Label.LBL_SIM}" value="{!u.sTOPercentageSim}"
+											styleClass="rightAlign" style="background-color:#FFDAFF;"/>
+							</apex:pageBlockTable>
+						</apex:pageBlockSection>
+						<hr/>
+					</apex:repeat>
+				</apex:pageBlock>
+			</apex:pageBlock>
+		</apex:panelGrid>
+		<apex:outputPanel id="popup">
+            <apex:outputPanel styleClass="overlay" layout="block" rendered="{!displayPopUp}">
+                <apex:outputPanel id="custPopupId" styleClass="popup" style="width: 50%;"
+                                  layout="block" rendered="{!displayPopUp}">
+	                
+	                <apex:pageBlock title="{!wRoleDetails.roleName}" mode="edit" rendered="{!hasContractDetails}">
+	                	<apex:outputLabel value="{!wRoleDetails.roleName}"/>
+	                	
+	                	<apex:pageBlockSection collapsible="false" columns="1">
+				                <apex:inputField value="{!NegoS.OwnerId}" required="False"/>
+		                </apex:pageBlockSection>
+		                
+		                <apex:repeat value="{!wRoleDetails}" var="item">
+			                <apex:repeat value="{!item.wUserDetails}" var="wUserDetail">
+			                	<apex:pageBlockSection title="{!wUserDetail.userName}" collapsible="false" columns="1"
+			                	rendered="{!wUserDetail.wOwnerDetails.size != 0}">
+			                		<apex:pageBlockTable id="table" value="{!wUserDetail.wOwnerDetails}" var="wOwnerDetail"
+			                								style="{!IF(wUserDetail.wOwnerDetails.size == 0, 'display:none;','')}">
+			                			<apex:column >
+			                			<apex:inputCheckbox value="{!wOwnerDetail.isSelected}"/>
+									    </apex:column>
+									    <apex:column headervalue="{!$Label.LBL_NS}">
+			                				<span>
+												<apex:outputLink value="/{!wOwnerDetail.NSId}" target="_blank">
+													<apex:outputText value="{!wOwnerDetail.NSName}"/>
+												</apex:outputLink>
+											</span>
+			                			</apex:column>
+			                			<apex:column headervalue="{!$Label.LBL_Contract}">
+			                				<span>
+												<apex:outputLink value="/{!wOwnerDetail.cId}" target="_blank">
+													<apex:outputText value="{!wOwnerDetail.cName}"/>
+												</apex:outputLink>
+											</span>
+			                			</apex:column>
+			                			<apex:column headervalue="{!$Label.LBL_Total_TO}" value="{!wOwnerDetail.sCTO}" styleClass="rightAlign"/>
+			                			
+			                		</apex:pageBlockTable>
+			                	</apex:pageBlockSection>
+		                	</apex:repeat>
+		                </apex:repeat>
+		                
+		                <apex:pageblockButtons location="bottom">
+			                <apex:commandButton value="{!$Label.LBL_Change}" action="{!changeOwner}" reRender="popup, panelGrid2"/>
+	                		<apex:commandButton value="{!$Label.Cancel}" action="{!closePopup}" reRender="popup, panelGrid2"/>	
+		                </apex:pageblockButtons>
+	                </apex:pageBlock>
+
+		            <apex:pageBlock title="{!$Label.LBL_Change_Owner}" rendered="{!NOT(hasContractDetails)}">
+		            	<apex:pageMessages id="errorMessage"/>
+		            	<apex:outputLabel value="{!$Label.MSG_No_details_to_show}" rendered="{!NOT(hasContractDetails)}"/>
+		            	<apex:commandButton value="{!$Label.Cancel}" action="{!closePopup}" reRender="popup, panelGrid2"/>
+		            </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>
+            </apex:outputPanel>
+		<apex:actionFunction name="callSubmit" action="{!submit}" reRender="panelGrid2" status="globalloading"/>
+	</apex:form>
+	
+	<script type='text/javascript'>
+		function ignoreEnterKey(ev) {
+		   	if ((window.event&&window.event.keyCode==13) || e.which==13) {
+        		callSubmit();
+        		return false;
+    		} else {
+    			return true;
+ 			};
+		 }
+	</script>
+	
+	<style type="text/css">
+        .overlay {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            transition: opacity 500ms;
+            z-index: 1000;
+            visibility: visible;
+            opacity: 1;
+            overflow: auto;
+        }
+        
+        .popup {
+            margin: 70px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 5px;
+            width: 30%;
+            position: relative;
+            transition: all 5s ease-in-out;
+        }
+        
+        .popup h2 {
+            margin-top: 0;
+            color: #333;
+            font-family: Tahoma, Arial, sans-serif;
+        }
+        
+        .popup .close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            transition: all 200ms;
+            font-size: 30px;
+            font-weight: bold;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .popup .close:hover {
+            color: #06D85F;
+        }
+        
+        .popup .content {
+            max-height: 30%;
+            overflow: auto;
+        }
+        .rightAlign {
+        text-align:right;
+        }
+	   .panelGridWidth {width:50%}
+	   .panelGridCenter {margin:0 auto; width:100%;}
+	</style>
+</apex:page>

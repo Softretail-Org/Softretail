@@ -1,0 +1,57 @@
+<template>
+        
+        <style>
+                .test {
+                    max-width: 10px !important;
+                    width: 10px !important;
+                    height: 10px !important;
+                    }
+                    .test:hover {
+                    max-width: none !important;
+                    width: 400px !important;
+                    height: 400px !important;
+                    z-index: 5;
+                    position: absolute;
+                    left: 0;
+                    top: -25px;
+                    -webkit-transition: all 0.1s ease-in-out;
+                    -moz-transition: all 0.1s ease-in-out;
+                    -o-transition: all 0.1s ease-in-out;
+                    transition: all 0.1s ease-in-out;
+                    }
+                    img {
+                    max-width: none !important;
+                    width: 5px !important;
+                    height: 5px !important;
+                    }
+                    img:hover {
+                    max-width: none !important;
+                    width: 200px !important;
+                    height: 200px !important;
+                    z-index: 5;
+                    position: absolute;
+                    left: 0;
+                    
+                    -webkit-transition: all 1s ease-in-out;
+                    -moz-transition: all 1s ease-in-out;
+                    -o-transition: all 1s ease-in-out;
+                    transition: all 1s ease-in-out;
+                    }
+                    p {
+                        max-width: 32px !important;
+                        width: 32px !important;
+                        height: 32px !important;
+                    }
+        </style>
+        <template  if:false={attrB} >
+    <div style="text-align: center; width:32px;height:32px">
+        <lightning-formatted-rich-text class="test" value={attrA} > 
+                
+        </lightning-formatted-rich-text>
+        
+    </div>
+    </template>
+    <template if:true={attrB}>
+        <lightning-icon icon-name={attrA}></lightning-icon>
+    </template>
+</template>

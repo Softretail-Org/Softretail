@@ -1,0 +1,1865 @@
+<apex:page id="thePage" standardController="Assortment_BU__c" extensions="AssortmentBUMatrixController" lightningStylesheets="false" sidebar="false">
+    <!-- FULL VERSION -->
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}" />
+    
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js" />
+    <apex:includeScript value="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.js" />
+    
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/dist/jquery.fancytree-all-deps.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/dist/modules/jquery.fancytree.filter.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/src/jquery.fancytree.table.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/src/jquery.fancytree.gridnav.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.fancytree, 'fancytree/dist/skin-win8/ui.fancytree.min.css')}"/>
+    
+    <apex:includeScript value="{!URLFOR($Resource.Assets, 'assets/js/app.js')}" />
+    
+    <apex:pageMessages id="message"/>
+    <apex:include pageName="AssortmentBUMatrixSectionHeader"/>
+    <apex:form Id="theForm">
+        <apex:actionStatus id="globalloading">
+            <apex:facet name="start">
+                <div class="loading-overlay">
+                    <div class="loader-img"></div>
+                    <div class="loading-block">{!$Label.Loading}</div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        <!-- search based on filters -->
+        <apex:actionFunction action="{!search}"
+                             name="search" rerender="theForm, messages"
+                             status="globalloading" oncomplete="afterRerender();">
+            <apex:param name="clientSatus" value="" assignTo="{!clientStatus}"/>
+            <!--apex:param name="IsReferenceProduct" value="" assignTo="{!product.IsReferenceProduct__c}"/-->
+            <apex:param name="IsRennovation" value="" assignTo="{!product.IsRenovation__c}"/>
+            <apex:param name="isStopProducts" value="" assignTo="{!isStopProducts}"/>
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="saveAndSearch" action="{!saveAndSearch}" status="globalloading" reRender="theForm, messages" oncomplete="afterRerender(true);" />
+        
+        <!-- Assortment Details BLOCK -->
+        <apex:outputPanel styleClass="totalContainer" rendered="{!hasDetails}">
+            <apex:pageBlock id="blockOfTotals" title="{!$Label.LBL_Totals}">
+                <div id="dataGridDiv">
+                    <apex:pageblocksection Id="dataGridBlock" showheader="true"
+                                           collapsible="false" columns="1" rendered="{!hasDetails}">
+                        <apex:outputPanel StyleClass="grid-total-container" layout="block">
+                            <apex:outputPanel >
+                                <!-- Tree Section -->
+                                <table id="treegrid">
+                                    <thead>
+                                        <tr>
+                                            <th style="display:none;"></th>
+                                            <th style="display:none;"></th>
+                                            <th style="min-width:200px;"></th>
+                                            <apex:repeat value="{!totalFields}" var="field" >
+                                                <th>{!$ObjectType.Assortment_Detail__c.fields[field].Label}</th>
+                                            </apex:repeat>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style="text-align:center;">
+                                            <td style="display:none;"></td>
+                                            <td style="display:none;"></td>
+                                            <td style="text-align:left;"></td>
+                                           <apex:repeat value="{!totalFields}" var="field" >
+                                                <td></td>
+                                            </apex:repeat>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </apex:pageblocksection>
+                </div>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        <!-- --------------------------------------------------------------------------------------------- Assortment Details BLOCK -->
+        <apex:pageBlock Id="AssortDetailSection" title="{!IF(AND(Assortment_BU__c.Id!=Null,hasDetails),Assortment_BU__c.BU_source__r.Name, 'Assortment Details')}"  >
+            <apex:actionStatus id="searchloading">
+                <apex:facet name="start">
+                    <img src="/img/loading.gif" />
+                </apex:facet>
+            </apex:actionStatus>
+            
+            <!-- --------------------------------------------------  Save/Cancel block. -->
+            <apex:pageBlockButtons location="top" style="float:right" >
+                <!-- legend -->
+                <div class="legend-items">
+                    <div>
+                        <span class="lengend-square renoIcon" onclick="search('{!clientStatus}', false, {!!product.IsRenovation__c}, {!isStopproducts});"></span>
+                        <span class="legend-label">{!$Label.Rennovation}</span>
+                        <span class="lengend-square stopIcon" onclick="search('{!clientStatus}', false, {!product.IsRenovation__c}, {!!isStopproducts});"></span>
+                        <span class="legend-label">{!$Label.Stop}</span>
+                        <span class="lengend-square switchIcon {!IF(false == true, 'selected', '')}"
+                              onclick="search('{!clientStatus}', false, {!product.IsRenovation__c}, {!isStopproducts});"></span>
+                        <span class="legend-label">{!$Label.Switch}</span>
+                        <!-- colored squares -->
+                        <apex:repeat value="{!clientStatusesPickList}" var="clientStatusVal">
+                            <span class="lengend-square highlight-{!clientStatusVal.value} {!IF(CONTAINS(clientStatus, clientStatusVal.value), 'selected', '')}"
+                                  onclick="search('{!IF(CONTAINS(clientStatus,clientStatusVal.value),
+                                           SUBSTITUTE(clientStatus, clientStatusVal.value, ''),
+                                           clientStatus & '-' & clientStatusVal.value)}', false, {!product.IsRenovation__c}, {!isStopproducts});">
+                            </span>
+                            <span class="legend-label">{!clientStatusVal.Label}</span>
+                        </apex:repeat>
+                    </div>
+                </div>
+                <apex:commandButton value="{!$Label.Save}" action="{!save}"
+                                    status="globalloading" reRender="theForm, messages" rendered="{!AND(hasDetails, !readOnly)}"
+                                    oncomplete="afterRerender(true);" />
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}"
+                                    rendered="true" />
+                <apex:commandButton value="{!$Label.LBL_Send}" action="{!showPopup}"
+                                    style="background-color: #1f744b; color:#FFF !important;"
+                                    reRender="popupGenerateExcelForm, messages" status="globalloading" rendered="{!hasDetails}">
+                    <apex:param name="popupGenerateExcel" assignTo="{!popupGenerateExcel}" value="true" />
+                </apex:commandButton>
+                <apex:commandButton value="{!$Label.LBL_Export_Details}"
+                                    action="{!generateExcel}"
+                                    style="background-color: #1f744b; color:#FFF !important;" rendered="{!hasDetails}"/>
+            </apex:pageBlockButtons>
+            <!-- --------------------------------------------------  Filter -->
+            <apex:actionFunction action="{!getAssortmentDetails}" name="getAssortmentDetails" rerender="theForm, message"
+                                 status="globalloading" oncomplete="afterRerender();" />
+            
+            <apex:pageBlockSection id="filterSection"
+                                   title="{!$Label.LBL_Filter}" collapsible="true" columns="2">
+                <apex:inputField onkeypress="enterPress(event)"
+                                 value="{!product.Category__c}" label=" "
+                                 html-placeholder="{!$ObjectType.Assortment_Detail__c.fields.Category__c.Label}" />
+                <apex:inputCheckbox label="{!$Label.LBL_Show_History}" value="{!isShowHistory}" id="showHistory"
+                                    onchange="search();" />
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel ></apex:outputLabel>
+                    <apex:panelGroup >
+                        <apex:inputText onkeypress="enterPress(event)"
+                                        value="{!productSearch}" label=" "
+                                        html-placeholder="{!$Label.LBL_Search}" />
+                        <apex:commandButton value="{!$Label.LBL_Search}"
+                                            action="{!search}" rerender="theForm, messages"
+                                            status="globalloading" oncomplete="afterRerender();" />
+                        <apex:commandButton Id="resetBtn" value="{!$Label.LBL_Reset}"
+                                            action="{!resetFilters}" rerender="theForm, messages"
+                                            status="globalloading" oncomplete="afterRerender();" />
+                    </apex:panelGroup>
+                </apex:pageBlockSectionItem>
+                <apex:inputCheckbox label="{!$Label.LBL_Include_Nb_Of_Store}" value="{!includeStores}" id="includeStores" onchange="calculateClusterTotals()" />
+                <apex:inputCheckbox label="{!$Label.LBL_Show_Total}" id="showTotal" styleClass="showTotalClass" onchange="showHideTotals();" selected="true"/>
+                <apex:inputCheckbox label="{!$Label.LBL_Show_SubTotal}" id="showSubTotal" styleClass="showSubTotalClass" onchange="showHideSubTotals()" selected="true"/>
+                <apex:inputCheckbox label="{!$Label.LBL_Hide_Blank_Status}" id="hideBlankStatus" value="{!hideBlankStatus}" onchange="search();"/>
+                <apex:inputCheckbox label="{!$Label.LBL_Include_All_Status}" id="includeAllStatus" value="{!includeAllStatus}" onchange="promptToSave();"/>
+            </apex:pageBlockSection>
+            <div data-container="body" id="dataGridDiv" class="{!IF($User.UIThemeDisplayed == 'Theme4d','dataGridDivLightning', 'dataGridDivClassic')} grid-container" rendered="{!hasDetails}">
+                <table id="dataGridBlock" class="list tg" cellpadding="0" cellspacing="0" style="table-layout: fixed">
+                    
+                    <col class="cola" style="width: 80px;"/>
+                    <col class="cola" style="width: 270px;"/>
+                    <col style="width: 94px;"/>
+                    <col style="width: 60px;"/>
+                    <col style="width: 66px;"/>
+                    <col style="width: 95px;"/>
+                    
+                    <thead>
+                        <tr>
+                            <th width="80" style="left:0px; z-index:1002; border-right: 1px solid #e3deb8 !important; border-left: 1px solid #e3deb8!important;" rowspan="2" class="header header-background">{!$ObjectType.Assortment_Detail__c.fields.Category__c.Label}</th>
+                            <th width="600" style="left:{!IF($User.UIThemeDisplayed == 'Theme4d','80px;','80px;')} z-index:1005;" colspan="5" class="header header-background">Description</th>
+                            <apex:outputPanel layout="none" rendered="{!ISBLANK(typeURL)}">
+                                <th class="border-col"></th>
+                                <th width="1000" colspan="13" class="header header-background-In">In</th>
+                            </apex:outputPanel>
+                            <th class="border-col"></th>
+                            <th width="1400" colspan="18" class="header header-background-Out">
+                                <span style="text-align: center;">OUT</span>
+                            </th>
+                            <apex:outputPanel layout="none" rendered="{!ISBLANK(typeURL)}">
+                                <th class="border-col"></th>
+                                <th width="1000" colspan="9" class="header header-background-In">In</th>
+                            </apex:outputPanel>
+                            <th class="border-col"></th>
+                            <th width="1400" colspan="17" class="header header-background-Out">Out</th>
+                        </tr>
+                        <tr>
+                            <th style="left:{!IF($User.UIThemeDisplayed == 'Theme4d','80px;','80px;')} z-index:1005;" class="header header-background">{!$ObjectType.Product2.fields.Name.Label}</th>
+                            <th style="left:{!IF($User.UIThemeDisplayed == 'Theme4d','350px;','350px;')} z-index:1005; " class="header header-background">{!$ObjectType.Product2.fields.Product_EAN__c.Label}</th>
+                            <th style="left:{!IF($User.UIThemeDisplayed == 'Theme4d','444px;','444px;')} z-index:1005;" class="header header-background">{!$ObjectType.Product2.fields.UVC_Pack__c.Label}</th>
+                            <th style="left:{!IF($User.UIThemeDisplayed == 'Theme4d','504px;','504px;')} z-index:1005; " class="header header-background">{!$ObjectType.Product2.fields.VIP__c.Label}</th>
+                            <th style="left:{!IF($User.UIThemeDisplayed == 'Theme4d','570px;','570px;')} z-index:1005;" class="header header-background">{!$ObjectType.Assortment_Detail__c.fields.Movement_Date__c.Label}</th>
+                            
+                            <!-- IN 1 -->
+                            <apex:outputPanel layout="none" rendered="{!ISBLANK(typeURL)}">
+                                <th class="border-col"></th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Ref_Corp_Clust1__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Ref_Corp_Clust2__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Ref_Corp_Clust3__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Ref_Corp_Clust4__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Ref_Corp_Clust5__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Ref_Corp_Clust6__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Corp_Status__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Corp_Clust1__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Corp_Clust2__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Corp_Clust3__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Corp_Clust4__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Corp_Clust5__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Corp_Clust6__c.Label}</th>
+                            </apex:outputPanel>
+                            <!-- OUT 1 -->
+                            <th class="border-col"></th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_Ass__c.Label}</th>
+                            <!--th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_Clust1__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_Clust2__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_Clust3__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_Clust4__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_Clust5__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_Clust6__c.Label}</th-->
+                             <apex:repeat value="{!categoryBUClustersMap[wAssortmentDetailList[0].categoryId]}" var="buCluster">
+                                    <th class="header header-background-Out">
+                                        <apex:outputLink value="/{!buCluster.orgaBU.Id}" target="_blank">
+                                            {!buCluster.orgaBU.Name}
+                                        </apex:outputLink>
+                                    </th>
+                                </apex:repeat>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_ProductNumber__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Client_Status__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Client_Ass__c.Label}</th>
+                            <!--th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Client_Clust1__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Client_Clust2__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Client_Clust3__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Client_Clust4__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Client_Clust5__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Client_Clust6__c.Label}</th-->
+                                <apex:repeat value="{!categoryBUClustersMap[wAssortmentDetailList[0].categoryId]}" var="buCluster">
+                                    <th class="header header-background-Out">
+                                        <apex:outputLink value="/{!buCluster.orgaBU.Id}" target="_blank">
+                                            {!buCluster.orgaBU.Name}
+                                        </apex:outputLink>
+                                    </th>
+                                </apex:repeat>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.New_Client_ProductNumber__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Key_Note__c.Label}</th>
+                            <!-- IN 2 -->
+                            <apex:outputPanel layout="none" rendered="{!ISBLANK(typeURL)}">
+                                <th class="border-col"></th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Ref_Corp_WD_MarketBased__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Reg_Unit_Cost__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Ref_Corp_Quantity_YE__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Ref_Corp_SellIn_YE__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.Ref_Corp_PCB__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.New_Corp_WD_MarketBased__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.New_Corp_Unit_Cost__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.New_Corp_Quantity_YE__c.Label}</th>
+                                <th class="header header-background-In">{!$ObjectType.Assortment_Detail__c.fields.New_Corp_SellIn_YE__c.Label}</th>
+                            </apex:outputPanel>
+                            <!-- OUT 2  -->
+                            <th class="border-col"></th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_ND_ClientBased__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_WD_MarketBased__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_ProductNumber_Net__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Reg_Unit_Cost__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_Quantity_YE__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_SellIn_YE__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Ref_Client_PCB__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.New_Client_ND_ClientBased__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.New_Client_WD_MarketBased__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.New_Client_ProductNumber_Net__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.New_Client_Unit_Cost__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.New_Client_Quantity_YE__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.New_Client_SellIn_YE__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.New_Client_PCB__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Release_Date__c.Label}</th>
+                            <th class="header header-background-Out">{!$ObjectType.Assortment_Detail__c.fields.Key_Note_for_Supply__c.Label}</th>
+                            <th class="header header-background-Out">Rapport</th>
+                        </tr>
+                        
+                        <!-- Header, third line. -->
+                        <!--total fiels-->
+                    </thead>
+                    
+                    <tbody>
+                        <apex:repeat id="myRepeatHeader" value="{!wAssortmentDetailList}" var="detail">         
+                            <apex:variable var="count" value="{!1}"/>
+                            <apex:variable value="{!counts[detail.categoryId]}" var="categoryCountMap" />
+                            <apex:variable value="{!sums[detail.categoryId]}" var="categorySumMap" />
+                            
+                            <apex:repeat id="contactDetails" value="{!detail.assortmentDetails}" var="item">
+                                <tr>
+                                    <apex:outputPanel layout="none" rendered="{!count==1}">
+                                        <td rowspan="{!(detail.assortmentDetails.size)}" style="z-index:1001; background: #f7fafc; position:sticky; left:0; border-left: 1px solid #e3deb8!important; border-right: 1px solid #e3deb8 !important;">
+                                            <apex:outputLink value="/{!detail.categoryId}" target="_blank">
+                                                <apex:outputText value="{!detail.categoryName}"/>
+                                            </apex:outputLink>
+                                        </td>
+                                    </apex:outputPanel>
+                                    
+                                    
+                                    <td class="{!IF(item.Version__c != NULL, 'text-center productName', 'text-center productName')}"
+                                        style="z-index: 1; overflow: hidden; text-overflow: ellipsis; background: #f7fafc; position:sticky; left:{!IF($User.UIThemeDisplayed == 'Theme4d','80px;','80px;')} {!IF(item.Version__c!=null, 'background-color:#FFF' , '')}">
+                                        <apex:outputText value="{!$Label.Version}{!item.Version__c}: " rendered="{!!ISNULL(item.Version__c)}" />
+                                        <apex:outputField style="" value="{!item.Product__c}"/>
+                                        <apex:commandLink rendered="{!AND(false, ISNULL(item.Version__c))}"
+                                                          rerender="popupswitchProduct" status="globalloading" oncomplete="positionPopup(this);" title="Switch">
+                                            <span class="switchIcon">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                     xmlns:xlink="http://www.w3.org/1999/xlink"
+                                                     style="width: 10px;height: 10px;float: right;transform: rotate(90deg);" aria-hidden="true">
+                                                    <use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/action-sprite/svg/symbols.svg#user_activation')}"></use>
+                                                </svg>
+                                                <apex:param name="popupswitchProduct" assignTo="{!popupswitchProduct}" value="true" />
+                                                <apex:param name="assortmentDetailId" assignTo="{!assortmentDetailId}" value="{!item.Id}" />
+                                                <apex:param name="assortmentDetailCategory" assignTo="{!assortmentDetailCategory}" value="{!item.Category__c}" />
+                                                <apex:param name="productName" assignTo="{!productName}" value="{!item.Product__r.Name}" />
+                                            </span>
+                                        </apex:commandLink>
+                                    </td>
+                                    <td style="z-index: 1; overflow: hidden; text-overflow: ellipsis; background: #f7fafc; position:sticky; left:{!IF($User.UIThemeDisplayed == 'Theme4d','350px;','350px;')} {!IF(item.Version__c!=null, 'background-color:#FFF' , '')}">
+                                        <apex:outputField value="{!item.Product__r.Product_EAN__c}"/>
+                                    </td>
+                                    <td style="z-index: 1; background: #f7fafc; position:sticky; left:{!IF($User.UIThemeDisplayed == 'Theme4d','444px;','444px;')} {!IF(item.Version__c!=null, 'background-color:#FFF' , '')}">
+                                        <apex:outputField value="{!item.Product__r.UVC_Pack__c}"/>
+                                    </td>
+                                    <td style="z-index: 1; background: #f7fafc; position:sticky; left:{!IF($User.UIThemeDisplayed == 'Theme4d','504px;','504px;')} {!IF(item.Version__c!=null, 'background-color:#FFF' , '')}">
+                                        <apex:outputField value="{!item.Product__r.VIP__c}"/>
+                                    </td>
+                                    <td style="z-index: 1; background: #f7fafc; position:sticky; left:{!IF($User.UIThemeDisplayed == 'Theme4d','570px;','570px;')} {!IF(item.Version__c!=null, 'background-color:#FFF' , '')}">
+                                        <apex:inputField value="{!item.Movement_Date__c}" styleClass="preventEnterKey" showDatePicker="true" onchange="setReleaseDate(this);" />
+                                    </td>
+                                    <!-- IN 1 --> 
+                                    <apex:outputPanel layout="none" rendered="{!ISBLANK(typeURL)}" >
+                                        <td class="border-col"></td>
+                                        <td class="ref-in {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Corp_Clust1__c}"/></td>
+                                        <td class="ref-in {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Corp_Clust2__c}"/></td>
+                                        <td class="ref-in {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Corp_Clust3__c}"/></td>
+                                        <td class="ref-in {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Corp_Clust4__c}"/></td>
+                                        <td class="ref-in {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Corp_Clust5__c}"/></td>
+                                        <td class="ref-in {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Corp_Clust6__c}"/></td>
+                                        <td class="ref-in {!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField style="width: 65px;" value="{!item.Corp_Status__c}" rendered="{!item.Version__c == null}" />
+                                            <apex:outputField style="width: 65px;" value="{!item.Corp_Status__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField value="{!item.Corp_Clust1__c}" styleClass="toggle corpClust1" onclick="toggleCheckboxes(this, '{!item.Id}', 'corpClust', '1');" rendered="{!item.Version__c == null}"/>
+                                            <apex:outputField value="{!item.Corp_Clust1__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField value="{!item.Corp_Clust2__c}" styleClass="toggle corpClust2" onclick="toggleCheckboxes(this, '{!item.Id}', 'corpClust', '2');" rendered="{!item.Version__c == null}"/>
+                                            <apex:outputField value="{!item.Corp_Clust2__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField value="{!item.Corp_Clust3__c}" styleClass="toggle corpClust3" onclick="toggleCheckboxes(this, '{!item.Id}', 'corpClust', '3');" rendered="{!item.Version__c == null}"/>
+                                            <apex:outputField value="{!item.Corp_Clust3__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField value="{!item.Corp_Clust4__c}" styleClass="toggle corpClust4" onclick="toggleCheckboxes(this, '{!item.Id}', 'corpClust', '4');" rendered="{!item.Version__c == null}"/>
+                                            <apex:outputField value="{!item.Corp_Clust4__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField value="{!item.Corp_Clust5__c}" styleClass="toggle corpClust5" onclick="toggleCheckboxes(this, '{!item.Id}', 'corpClust', '5');" rendered="{!item.Version__c == null}"/>
+                                            <apex:outputField value="{!item.Corp_Clust5__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField value="{!item.Corp_Clust6__c}" styleClass="toggle corpClust6" onclick="toggleCheckboxes(this, '{!item.Id}', 'corpClust', '6');" rendered="{!item.Version__c == null}"/>
+                                            <apex:outputField value="{!item.Corp_Clust6__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                    </apex:outputPanel>
+                                    <!---- OUT 1 -->
+                                    <td class="border-col"></td>
+                                    <td class="{!item.Id} ref-out {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Client_Ass__c}"/></td>
+                                    <!--td class="toggleStatus {!item.Id} ref-out {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Client_Clust1__c}"/></td>
+                                    <td class="toggleStatus {!item.Id} ref-out {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Client_Clust2__c}"/></td>
+                                    <td class="toggleStatus {!item.Id} ref-out {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Client_Clust3__c}"/></td>
+                                    <td class="toggleStatus {!item.Id} ref-out {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Client_Clust4__c}"/></td>
+                                    <td class="toggleStatus {!item.Id} ref-out {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Client_Clust5__c}"/></td>
+                                    <td class="toggleStatus {!item.Id} ref-out {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Client_Clust6__c}"/></td-->
+                                    <apex:repeat value="{!categoryBUClustersMap[detail.categoryId]}" var="buCluster">
+                                        <td class="toggleStatus {!item.Id} ref-out {!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:outputField value="{!item['Ref_Client_Clust'&TEXT(buCluster.stratIndex+1) &'__c']}"/>
+                                        </td>
+                                    </apex:repeat>
+                                    
+                                    <td class="{!item.Id} ref-out {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Client_ProductNumber__c}"/></td>
+                                    <td class="{!item.Id} clientStatus_col {!item.Id}_Client_Status__col {!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField Id="clientStatus" style="width: 65px;" StyleClass="clientStatus {!item.Id}_Client_Status__c" value="{!item.Client_Status__c}" rendered="{!item.Version__c == null}" onchange="toggleCheckboxes(this, '{!item.Id}', 'clientStatus'); handleClientStatusColors();"/>
+                                        <apex:outputField style="width: 65px;" StyleClass="clientStatus" value="{!item.Client_Status__c}" rendered="{!item.Version__c != null}"/>
+                                    </td>
+                                    <td class="toggleStatus {!item.Id} {!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField value="{!item.Client_Ass__c}" styleClass="{!item.Id}_Client_Ass__c" onchange="toggleCheckboxes(this, '{!item.Id}','clientAss')" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField value="{!item.Client_Ass__c}" rendered="{!item.Version__c != null}" />
+                                    </td>
+                                    <!--td class="toggleStatus {!item.Id} {!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField value="{!item.Client_Clust1__c}" styleClass="{!item.Id}_Client_Clust1__c" onclick="toggleCheckboxes(this, '{!item.Id}', 'clientClust',1);" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField value="{!item.Client_Clust1__c}" rendered="{!item.Version__c != null}" />
+                                    </td>
+                                    <td class="toggleStatus {!item.Id} {!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField value="{!item.Client_Clust2__c}" styleClass="{!item.Id}_Client_Clust2__c" onclick="toggleCheckboxes(this, '{!item.Id}', 'clientClust',2);" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField value="{!item.Client_Clust2__c}" rendered="{!item.Version__c != null}" />
+                                    </td>
+                                    <td class="toggleStatus {!item.Id} {!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField value="{!item.Client_Clust3__c}" styleClass="{!item.Id}_Client_Clust3__c" onclick="toggleCheckboxes(this, '{!item.Id}', 'clientClust',3);" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField value="{!item.Client_Clust3__c}" rendered="{!item.Version__c != null}" />
+                                    </td>
+                                    <td class="toggleStatus {!item.Id} {!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField value="{!item.Client_Clust4__c}" styleClass="{!item.Id}_Client_Clust4__c" onclick="toggleCheckboxes(this, '{!item.Id}', 'clientClust',4);" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField value="{!item.Client_Clust4__c}" rendered="{!item.Version__c != null}" />
+                                    </td>
+                                    <td class="toggleStatus {!item.Id} {!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField value="{!item.Client_Clust5__c}" styleClass="{!item.Id}_Client_Clust5__c" onclick="toggleCheckboxes(this, '{!item.Id}', 'clientClust',5);" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField value="{!item.Client_Clust5__c}" rendered="{!item.Version__c != null}" />
+                                    </td>
+                                    <td class="toggleStatus {!item.Id} {!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField value="{!item.Client_Clust6__c}" styleClass="{!item.Id}_Client_Clust6__c" onclick="toggleCheckboxes(this, '{!item.Id}', 'clientClust',6);" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField value="{!item.Client_Clust6__c}" rendered="{!item.Version__c != null}" />
+                                    </td-->
+                                    <apex:repeat value="{!categoryBUClustersMap[detail.categoryId]}" var="buCluster">
+                                        <td class="toggleStatus {!item.Id} {!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField value="{!item['Client_Clust'& TEXT(buCluster.stratIndex+1) &'__c']}" styleClass="{!item.Id+'_Client_Clust'&TEXT(buCluster.stratIndex+1)+'__c'}" onclick="toggleCheckboxes(this, '{!item.Id}', 'clientClust',{!buCluster.stratIndex+1});" rendered="{!item.Version__c == null}"/>
+                                            <apex:outputField value="{!item['Client_Clust'& TEXT(buCluster.stratIndex+1) &'__c']}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                    </apex:repeat>
+                                    <td class="toggleStatus {!item.Id} ref-out {!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.New_Client_ProductNumber__c}"/></td>
+                                    <td class="toggleStatus {!item.Id} {!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField style="width: 65px;" value="{!item.Key_Note__c}" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField style="width: 65px;" value="{!item.Key_Note__c}" rendered="{!item.Version__c != null}" />
+                                    </td>
+                                    <!-- IN 2 -->
+                                    <apex:outputPanel layout="none" rendered="{!ISBLANK(typeURL)}">
+                                        <td class="border-col"></td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField value="{!item.Ref_Corp_WD_MarketBased__c}" rendered="{!item.Version__c == null}"/>
+                                            <apex:outputField value="{!item.Ref_Corp_WD_MarketBased__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField style="width:70px;" value="{!item.Reg_Unit_Cost__c}" styleClass="preventEnterKey"/></td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Corp_Quantity_YE__c}"/></td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.Ref_Corp_SellIn_YE__c}"/></td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField value="{!item.Ref_Corp_PCB__c}" rendered="{!item.Version__c == null}"/>
+                                            <apex:outputField value="{!item.Ref_Corp_WD_MarketBased__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField style="width:70px;" value="{!item.New_Corp_WD_MarketBased__c}" styleClass="preventEnterKey {!item.Id}_New_Corp_WD_MarketBased__c" rendered="{!item.Version__c == null}" onchange="calculateTotal('New_Corp_WD_MarketBased__c' ,'{!item.Id}', '{!detail.categoryId}', '{!item.Assortment_BU__c}');"/>
+                                            <apex:outputField value="{!item.New_Corp_WD_MarketBased__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField style="width:70px;" value="{!item.New_Corp_Unit_Cost__c}" styleClass="preventEnterKey {!item.Id}_New_Corp_Unit_Cost__c" rendered="{!item.Version__c == null}" onchange="calculateTotal('New_Corp_Unit_Cost__c' ,'{!item.Id}', '{!detail.categoryId}', '{!item.Assortment_BU__c}');"/>
+                                            <apex:outputField value="{!item.New_Corp_Unit_Cost__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                            <apex:inputField style="width:70px;" value="{!item.New_Corp_Quantity_YE__c}" styleClass="preventEnterKey {!item.Id}_New_Corp_Quantity_YE__c" rendered="{!item.Version__c == null}"  onchange="calculateTotal('New_Corp_Quantity_YE__c' ,'{!item.Id}', '{!detail.categoryId}', '{!item.Assortment_BU__c}');"/>
+                                            <apex:outputField value="{!item.New_Corp_Quantity_YE__c}" rendered="{!item.Version__c != null}" />
+                                        </td>
+                                        <td class="{!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.New_Corp_SellIn_YE__c}"/></td>
+                                    </apex:outputPanel>
+                                    <!-- OUT 2 -->
+                                    <td class="border-col"></td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')} ref-out"><apex:outputField value="{!item.Ref_Client_ND_ClientBased__c}"/></td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')} ref-out"><apex:outputField value="{!item.Ref_Client_WD_MarketBased__c}"/></td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')} ref-out"><apex:outputField value="{!item.Ref_Client_ProductNumber_Net__c}"/></td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')} ref-out">
+                                        <apex:inputField style="width:70px;" value="{!item.Reg_Unit_Cost__c}" rendered="{!item.Version__c == null}" styleClass="{!item.Id}_Reg_Unit_Cost__c" onchange="calculateTotal('Reg_Unit_Cost__c' ,'{!item.Id}', '{!detail.categoryId}', '{!item.Assortment_BU__c}');"/>
+                                    </td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')} ref-out"><apex:outputField value="{!item.Ref_Client_Quantity_YE__c}"/></td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')} ref-out"><apex:outputField value="{!item.Ref_Client_SellIn_YE__c}"/></td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')} ref-out"><apex:outputField value="{!item.Ref_Client_PCB__c}"/></td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.New_Client_ND_ClientBased__c}"/></td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField style="width:70px;" value="{!item.New_Client_WD_MarketBased__c}" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField style="width:70px;" value="{!item.New_Client_WD_MarketBased__c}" rendered="{!item.Version__c != null}"/>
+                                    </td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.New_Client_ProductNumber_Net__c}"/>
+                                    </td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField style="width:70px;" value="{!item.New_Client_Unit_Cost__c}" rendered="{!item.Version__c == null}" styleClass="{!item.Id}_New_Client_Unit_Cost__c" onchange="calculateTotal('New_Client_Unit_Cost__c' ,'{!item.Id}', '{!detail.categoryId}', '{!item.Assortment_BU__c}');"/>
+                                        <apex:outputField style="width:70px;" value="{!item.New_Client_Unit_Cost__c}" rendered="{!item.Version__c != null}"/>
+                                    </td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField style="width:70px;" value="{!item.New_Client_Quantity_YE__c}" rendered="{!item.Version__c == null}" styleClass="{!item.Id}_New_Client_Quantity_YE__c" onchange="calculateTotal('New_Client_Quantity_YE__c' ,'{!item.Id}', '{!detail.categoryId}', '{!item.Assortment_BU__c}');"/>
+                                        <apex:outputField style="width:70px;" value="{!item.New_Client_Quantity_YE__c}" rendered="{!item.Version__c != null}"/>
+                                    </td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')}"><apex:outputField value="{!item.New_Client_SellIn_YE__c}"/></td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField style="width:65px;" value="{!item.New_Client_PCB__c}" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField style="width:65px;" value="{!item.New_Client_PCB__c}" rendered="{!item.Version__c != null}"/>
+                                    </td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField style="width:65px;" value="{!item.Release_Date__c}" styleClass="preventEnterKey release-date"
+                                                         id="release-date" showDatePicker="true" rendered="{!item.Version__c == null}"/>
+                                        <apex:outputField style="width:65px;" value="{!item.Release_Date__c}" rendered="{!item.Version__c != null}"/>
+                                    </td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')}">
+                                        <apex:inputField style="width:65px;" value="{!item.Key_Note_for_Supply__c}" rendered="{!item.Version__c == null}"/>
+                                    </td>
+                                    <td class="{!IF(item.Version__c!=null, 'history' , '')} ref-out" style="min-width:100px">
+                                        <apex:outputLink value="/lightning/r/Report/00O1v000007r8EUEAY/view?fv1={!item.Product__r.Name}" target="_blank">
+                                            <apex:outputText value="..."/>
+                                        </apex:outputLink>
+                                    </td>
+                                    <apex:variable var="count" value="{!count+1}"/>
+                                </tr>
+                            </apex:repeat>
+                            <!-- footer-->
+                            <tr class="footer">
+                                <!-- Footer - Category + Description -->
+                                <td class="freezeColumnsBorder" style="border-right: 2px solid #b9b594; position:sticky; left:0px; text-align:right;" colspan="6">{!detail.categoryName}</td>
+                                <!-- Footer - IN 1 -->
+                                <apex:outputPanel layout="none">
+                                    <td class="border-col"></td>
+                                    <td>{!categoryCountMap['Ref_Corp_Clust1__c']}</td>
+                                    <td>{!categoryCountMap['Ref_Corp_Clust2__c']}</td>
+                                    <td>{!categoryCountMap['Ref_Corp_Clust3__c']}</td>
+                                    <td>{!categoryCountMap['Ref_Corp_Clust4__c']}</td>
+                                    <td>{!categoryCountMap['Ref_Corp_Clust5__c']}</td>
+                                    <td>{!categoryCountMap['Ref_Corp_Clust6__c']}</td>
+                                    <td>-</td>
+                                    <td>{!categoryCountMap['Corp_Clust1__c']}</td>
+                                    <td>{!categoryCountMap['Corp_Clust2__c']}</td>
+                                    <td>{!categoryCountMap['Corp_Clust3__c']}</td>
+                                    <td>{!categoryCountMap['Corp_Clust4__c']}</td>
+                                    <td>{!categoryCountMap['Corp_Clust5__c']}</td>
+                                    <td>{!categoryCountMap['Corp_Clust6__c']}</td>
+                                </apex:outputPanel>
+                                <!-- Footer - OUT 1 -->
+                                <td class="border-col"></td>
+                                <td>{!categoryCountMap['Ref_Client_Ass__c']}</td>
+                                <td>{!categoryCountMap['Ref_Client_Clust1__c']}</td>
+                                <td>{!categoryCountMap['Ref_Client_Clust2__c']}</td>
+                                <td>{!categoryCountMap['Ref_Client_Clust3__c']}</td>
+                                <td>{!categoryCountMap['Ref_Client_Clust4__c']}</td>
+                                <td>{!categoryCountMap['Ref_Client_Clust5__c']}</td>
+                                <td>{!categoryCountMap['Ref_Client_Clust6__c']}</td>
+                                <td>{!categorySumMap['Ref_Client_ProductNumber__c']}</td>
+                                <td>-</td>
+                                <td>{!categoryCountMap['Client_Ass__c']}</td>
+                                <td>
+                                    <span class="visible_{!detail.categoryId}Client_Clust1__c">
+                                        {!categoryCountMap['Client_Clust1__c']}
+                                    </span>
+                                    <span class="{!detail.categoryId}Client_Clust1__c" style="display: none;">
+                                        {!categoryCountMap['Client_Clust1__c']}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="visible_{!detail.categoryId}Client_Clust2__c">
+                                        {!categoryCountMap['Client_Clust2__c']}
+                                    </span>
+                                    <span class="{!detail.categoryId}Client_Clust2__c" style="display: none;">
+                                        {!categoryCountMap['Client_Clust2__c']}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="visible_{!detail.categoryId}Client_Clust3__c">
+                                        {!categoryCountMap['Client_Clust3__c']}
+                                    </span>
+                                    <span class="{!detail.categoryId}Client_Clust3__c" style="display: none;">
+                                        {!categoryCountMap['Client_Clust3__c']}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="visible_{!detail.categoryId}Client_Clust4__c">
+                                        {!categoryCountMap['Client_Clust4__c']}
+                                    </span>
+                                    <span class="{!detail.categoryId}Client_Clust4__c" style="display: none;">
+                                        {!categoryCountMap['Client_Clust4__c']}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="visible_{!detail.categoryId}Client_Clust5__c">
+                                        {!categoryCountMap['Client_Clust5__c']}
+                                    </span>
+                                    <span class="{!detail.categoryId}Client_Clust5__c" style="display: none;">
+                                        {!categoryCountMap['Client_Clust5__c']}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="visible_{!detail.categoryId}Client_Clust6__c">
+                                        {!categoryCountMap['Client_Clust6__c']}
+                                    </span>
+                                    <span class="{!detail.categoryId}Client_Clust6__c" style="display: none;">
+                                        {!categoryCountMap['Client_Clust6__c']}
+                                    </span>
+                                </td>
+                                <td>{!categorySumMap['New_Client_ProductNumber__c']}</td>
+                                <td>-</td>
+                                <!-- Footer - IN 2 -->
+                                <apex:outputPanel layout="none">
+                                    <td class="border-col"></td>
+                                    <td>{!categorySumMap['Ref_Corp_WD_MarketBased__c']}</td>
+                                    <td>{!categorySumMap['Reg_Unit_Cost__c']}</td>
+                                    <td>{!categorySumMap['Ref_Corp_Quantity_YE__c']}</td>
+                                    <td>{!categorySumMap['Ref_Corp_SellIn_YE__c']}</td>
+                                    <td>-</td>
+                                    <td class="{!detail.categoryId}New_Corp_WD_MarketBased__c">
+                                        <span class="formatNumber-New_Corp_WD_MarketBased__c">
+                                            {!categorySumMap['New_Corp_WD_MarketBased__c']}
+                                        </span>
+                                    </td>
+                                    <td class="{!detail.categoryId}New_Corp_Unit_Cost__c">
+                                        <span class="formatNumber-New_Corp_Unit_Cost__c">
+                                            {!categorySumMap['New_Corp_Unit_Cost__c']}
+                                        </span>
+                                    </td>
+                                    <td class="{!detail.categoryId}New_Corp_Quantity_YE__c">
+                                        <span class="formatNumber-New_Corp_Quantity_YE__c">
+                                            {!categorySumMap['New_Corp_Quantity_YE__c']}
+                                        </span>
+                                    </td>
+                                    <td>{!categorySumMap['New_Corp_SellIn_YE__c']}</td>
+                                </apex:outputPanel>
+                                <!-- Footer - OUT 2 -->
+                                <td class="border-col"></td>
+                                <td>{!categorySumMap['Ref_Client_ND_ClientBased__c']} </td>
+                                <td>{!categorySumMap['Ref_Client_WD_MarketBased__c']}</td>
+                                <td>{!categorySumMap['Ref_Client_ProductNumber_Net__c']}</td>
+                                <td class="{!detail.categoryId}Reg_Unit_Cost__c">
+                                    <span class="formatNumber-Reg_Unit_Cost__c">
+                                    {!categorySumMap['Reg_Unit_Cost__c']}
+                                    </span>
+                                </td>
+                                <td>{!categorySumMap['Ref_Client_Quantity_YE__c']}</td>
+                                <td>{!categorySumMap['Ref_Client_Quantity_YE__c']}</td>
+                                <td>-</td>
+                                <td>{!categorySumMap['New_Client_ND_ClientBased__c']}</td>
+                                <td>{!categorySumMap['New_Client_WD_MarketBased__c']}</td>
+                                <td>{!categorySumMap['New_Client_ProductNumber_Net__c']}</td>
+                                <td class="{!detail.categoryId}New_Client_Unit_Cost__c">
+                                    <span class="formatNumber-New_Client_Unit_Cost__c">
+                                    {!categorySumMap['New_Client_Unit_Cost__c']}
+                                    </span>
+                                </td>
+                                <td class="{!detail.categoryId}New_Client_Quantity_YE__c">
+                                    <span class="formatNumber-New_Client_Quantity_YE__c">
+                                    {!categorySumMap['New_Client_Quantity_YE__c']}
+                                    </span>
+                                </td>
+                                <td>{!categorySumMap['New_Client_SellIn_YE__c']}</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <!-- -->
+                        </apex:repeat>
+                        <tr>
+                            <td>
+                                <input type="hidden"
+                                       name="clientStatus_serialized"
+                                       id="clientStatus_serialized"
+                                       value="{!clientStatus_serialized}" />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </apex:pageBlock>
+        
+        <!-- popup switch product -->
+        <apex:outputPanel id="popupswitchProduct" >
+            <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!popupswitchProduct}" />
+            <apex:outputPanel id="switchProductPopup" styleClass="uploadPopup" layout="block" rendered="{!popupswitchProduct}" >
+                <apex:pageBlock >
+                    <apex:pageBlockSection collapsible="false" title="{!productName}" columns="4">
+                        <apex:outputText >Switch?</apex:outputText>
+                        <apex:commandButton value="{!$Label.OK}" action="{!switchProduct}" reRender="theForm" status="switchStatus" oncomplete="afterRerender();">
+                            <apex:param name="popupswitchProduct" assignTo="{!popupswitchProduct}" value="false" />
+                        </apex:commandButton>
+                        <apex:commandButton value="{!$Label.Cancel}" reRender="popupswitchProduct" status="switchStatus" oncomplete="afterRerender();">
+                            <apex:param name="popupswitchProduct" assignTo="{!popupswitchProduct}" value="false" />
+                        </apex:commandButton>
+                        <apex:actionStatus id="switchStatus">
+                            <apex:facet name="start">
+                                <img src="/img/loading.gif" />
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:pageBlockSection>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>
+    </apex:form>
+    <apex:outputPanel id="jsTree">
+        <script>
+        var totalFields = JSON.parse('{!totalFields_serialized}');
+        var jsonCategoryTree = {!jsonCategoryTree};
+        var maxClusterCount = '{!maxClusterCount}'
+        </script>
+    </apex:outputPanel>
+    <script>
+    var clientStatus_initialMap; // Map of initial records positions and statuses in clusters
+    var clientStatus_map;
+    var gridFields = JSON.parse('{!JSENCODE(gridFields_serialized)}');
+    var fieldsToCountList = JSON.parse('{!JSENCODE(fieldsToCountList_serialized)}');
+    var fieldsToSumList = JSON.parse('{!JSENCODE(fieldsToSumList_serialized)}');
+    var categoryBUClustersMap = JSON.parse('{!JSENCODE(categoryBUClustersMap_serialized)}');
+    var assortmentDetailMap = new Map(); // Map of assortmentDetails from remote callback
+    var totalColumnsMap = new Map();
+    var assortmentYear = {!assortmentBU.Year__c};
+    var clientStatusToExcludeFromTotals = ['Probably deleted', 'Opportunity', ''];
+    negoptimApp = new App('{!locale}', '{!localeDecimalSeparator}');
+    var decimalSeparator = '{!localeDecimalSeparator}';
+    var isClassic = {!$User.UIThemeDisplayed == 'Theme2' || $User.UIThemeDisplayed == 'Theme3'};
+    
+    function getIncludeStores() {
+        return $('[id*=includeStores]')[0].checked;    
+    }
+    
+    function calculateClusterTotals() {
+        var categoryIds = Object.keys(categoryBUClustersMap);
+        for (var index = 0; index < categoryIds.length; index++) {
+            var categoryId = categoryIds[index];
+            for (var fieldIndex = 0; fieldIndex < fieldsToCountList.length; fieldIndex++) {
+                var fieldName = fieldsToCountList[fieldIndex];
+                var count = $('.' + categoryId + fieldName).text();
+                var nbStore = getNbStore(categoryId, fieldName);
+                $('.visible_' + categoryId + fieldName).text(stringToDecimal(count) * nbStore);
+                calculateParentTotalCount(categoryId, categoryId + fieldName, 0);
+            }
+        }
+    }
+    
+    function getNbStore(categoryId, fieldName) {
+        var nbStore = 1;
+        if ((fieldName.toLowerCase().startsWith('client_clust') || fieldName.toLowerCase().startsWith('ref_client_clust')) && fieldName.toLowerCase().endsWith('__c')) {
+            var temp = fieldName.replace('__c', '');
+            var stratIndex = parseInt(temp[temp.length - 1]) - 1;
+            var count = $('.' + categoryId + fieldName).text();
+            if (count != null && count != '' && typeof count !== 'undefined') {
+                if (getIncludeStores() && categoryBUClustersMap.hasOwnProperty(categoryId)
+                    && categoryBUClustersMap[categoryId].hasOwnProperty(stratIndex)) {
+                    nbStore = categoryBUClustersMap[categoryId][stratIndex].orgaBU.SiteOfSales_Number__c;
+                }
+            }
+        }
+        return nbStore;
+    }
+    
+    $(document).ready(function() {
+        rerenderLegendIcons();
+        $(".inputNoEnter").on('keypress', function(e) {
+            code = e.keyCode ? e.keyCode : e.which;
+            if (code.toString() == 13) {
+                e.preventDefault();
+            }
+        });
+        // expand and collapse tree to render all rows (to show after calculation arrows)
+        renderTotalsTree();
+        setFocusOnLoad();
+        handleClientStatusColors();
+        collapseFilterSection();
+        initClientStatusMap();
+        disableClustForDelete();
+        // hide totals on load
+        $('.showTotalClass')[0].checked = false;
+        showHideTotals();
+        $("img[id$='filterSection']").click(function() {
+            setTableDimensions();
+        });
+        window.onresize = function(event) {
+            setTableDimensions();
+        }
+        setTableDimensions();
+        calculateClusterTotals()
+        formatGridNumbers();
+    });
+    
+    function afterRerender(isAfterSave) {
+        isAfterSave = (typeof isAfterSave === 'undefined') ? false : isAfterSave;
+        rerenderLegendIcons();
+        renderTotalsTree();
+        if (isAfterSave) initClientStatusMap();
+        handleClientStatusColors();
+        collapseFilterSection();
+        showHideTotals();
+        showHideSubTotals();
+        if (!isAfterSave) refreshClientStatusMaps();
+        disableClustForDelete();
+        if (isAfterSave) {
+            for (const detail of assortmentDetailMap.values()) {
+                mapCalculationToView(detail);
+            }
+        }
+        setTableDimensions();
+        calculateClusterTotals()
+        formatGridNumbers();
+    }
+    
+    function formatGridNumbers() {
+        var formatNumberFields = $('[class*=formatNumber-]');
+        for (var i = 0; i < formatNumberFields.length; i++) {
+            var fieldName;
+            var classList = $(formatNumberFields[i]).attr('class').split(' ');
+            for (var j = 0; j < classList.length; j++)
+                if (classList[j].includes('formatNumber-'))
+                    fieldName = classList[j].split('-')[1];
+            
+            var formatedValue = formatNumber(parseFloat($(formatNumberFields[i]).text()), gridFields[fieldName].scale);
+            $(formatNumberFields[i]).text(formatedValue);
+        }
+    }
+    
+    function setTableDimensions() {
+        if (document.getElementsByClassName('grid-container') == undefined ) return;
+        // width
+        var bodyWidth = document.body.clientWidth;
+        var _97 = bodyWidth * 97 / 100;
+        var _95 = bodyWidth * 95 / 100;
+        document.getElementsByClassName('grid-container')[0].style.width = isClassic ? _97 : _95 + "px";
+        document.getElementsByClassName('grid-total-container')[0].style.width = isClassic ? _97 : _95 + "px";
+        // height
+        var window_h = window.innerHeight;
+        var body_h = document.body.clientHeight;
+        var delta_h = body_h - window_h;
+        var grid_h = document.getElementsByClassName('grid-container')[0].offsetHeight;
+        var new_grid_h = grid_h - delta_h;
+        document.getElementsByClassName('grid-container')[0].style.height = new_grid_h + "px";
+    }
+    
+    // expand and collapse tree to render all rows (to show after calculation arrows)
+    function renderTotalsTree() {
+        if (document.getElementById('treegrid') == undefined) return;
+        var i = 3;
+        for (var index = 0; index < totalFields.length; index++)
+            totalColumnsMap.set(totalFields[index], i++);
+        
+        // Attach the fancytree widget to an existing <div id="treegrid"> element
+        // and pass the tree options as an argument to the fancytree() function:
+        $("#treegrid").fancytree({
+            extensions: ["table", "filter", "gridnav"],
+            checkbox: false,
+            filter: {
+                // mode: "hide"
+            },
+            gridnav: {
+                // autofocusInput: true, // focus first embedded input if node gets activated
+                // handleCursorKeys: true,   // Allow UP/DOWN in inputs to move to prev/next node
+            },
+            table: {
+                indentation: 20,      // indent 20px per node level
+                nodeColumnIdx: 2,     // render the node title into the 2nd column
+                checkboxColumnIdx: 1  // render the checkboxes into the 1st column
+            },
+            source: jsonCategoryTree,
+            titlesTabbable: true,     // Add all node titles to TAB chain
+            lazyLoad: function(event, data) { },
+            renderColumns: function(event, data) {
+                var node = data.node, $tdList = $(node.tr).find(">td");
+                i = 3;
+                for (var index = 0; index < totalFields.length; index++) {
+                    var field = totalFields[index];
+                    if (node.data.counts[field] != null)
+                        $tdList.eq(i++).text(formatNumber(node.data.counts[field], 0));
+                    else if (node.data.sums[field] != null)
+                        $tdList.eq(i++).text(formatNumber(node.data.sums[field], 0));
+                }
+            }
+        });
+        
+        $("#treegrid").fancytree("getTree").expandAll();
+        $("#treegrid").fancytree("getTree").expandAll(false);
+    }
+    
+    function refreshClientStatusMaps() {
+        var clientStatus_serialized = $('[id*=clientStatus_serialized')[0].value;
+        clientStatus_map = JSON.parse(clientStatus_serialized);
+        var clientStatus_temp = JSON.parse(clientStatus_serialized);
+        
+        for (var key in clientStatus_temp) {
+            if (clientStatus_initialMap[key] == null)
+                clientStatus_initialMap[key] = clientStatus_temp[key];
+        }
+        
+    }
+    
+    function initClientStatusMap() {
+        var clientStatus_serialized = $('[id*=clientStatus_serialized')[0].value;
+        
+        var clientStatus_temp1 = JSON.parse(clientStatus_serialized);
+        var clientStatus_temp2 = JSON.parse(clientStatus_serialized);
+        
+        for (var key in clientStatus_initialMap) 
+            if (clientStatus_temp1[key] == null)
+                clientStatus_temp1[key] = clientStatus_initialMap[key];
+        for (var key in clientStatus_map) 
+            if (clientStatus_temp2[key] == null)
+                clientStatus_temp2[key] = clientStatus_map[key];
+        
+        clientStatus_initialMap = clientStatus_temp1;
+        clientStatus_map = clientStatus_temp2;
+    }
+    
+    function showAfterCalculationTotal() {
+        var afterCalculationTotals = $('table [id*=totalsGrid]').find('tbody').find('tr')[1];
+        $(afterCalculationTotals).css('visibility', '');
+    }
+    
+    function rerenderLegendIcons() {
+        // switch
+        var source = '';
+        source += '<svg xmlns="http://www.w3.org/2000/svg"';
+        source += 'xmlns:xlink="http://www.w3.org/1999/xlink"';
+        source += 'style="width: 10px;height: 10px;float: right;transform: rotate(90deg);" aria-hidden="true">';
+        source += '<use xlink:href="{!URLFOR($Asset.SLDS, "/assets/icons/action-sprite/svg/symbols.svg#user_activation")}"></use>';
+        source += '</svg>';
+        $('.switchIcon').html(source);
+        // stop
+        var source = '';
+        source += '<svg xmlns="http://www.w3.org/2000/svg"';
+        source += 'xmlns:xlink="http://www.w3.org/1999/xlink"';
+        source += 'style="width: 10px;height: 10px;float: right;transform: rotate(90deg);" aria-hidden="true">';
+        source += '<use xlink:href="{!URLFOR($Asset.SLDS, "/assets/icons/utility-sprite/svg/symbols.svg#stop")}"></use>';
+        source += '</svg>';
+        $('.stopIcon').html(source);
+        // renno
+        var source = '';
+        source += '<svg xmlns="http://www.w3.org/2000/svg"';
+        source += 'xmlns:xlink="http://www.w3.org/1999/xlink"';
+        source += 'style="width: 10px;height: 10px;float: right;transform: rotate(90deg);" aria-hidden="true">';
+        source += '<use xlink:href="{!URLFOR($Asset.SLDS, "/assets/icons/utility-sprite/svg/symbols.svg#refresh")}"></use>';
+        source += '</svg>';
+        $('.renoIcon').html(source);
+    }
+    
+    // remove focus from DatePicker
+    function setFocusOnLoad() {}
+    
+    function collapseFilterSection() {
+        $("div[id$='filterSection']").each(function(i, obj) {
+            var e = document.getElementById($(this).attr('id')).childNodes[0].childNodes[0];
+            if(e.className == 'hideListButton')
+                twistSection(e);
+        });
+    }
+    
+    function handleClientStatusColors() {
+        var clientStatusVal = '';
+        $('table tr .clientStatus_col').each(function() {
+            var element = $(this)[0].childNodes[0];
+            clientStatusVal = element.tagName.toLowerCase() === 'span' ? $(element).text() : $(element).val();
+            if (clientStatusVal != 1/* && clientStatusVal != ''*/) {
+                var clientStatusClass = $(this).attr('class').split(/\s+/);
+                var classId = '';
+                for(var i = 0; i < clientStatusClass.length;i++)
+                    if(clientStatusClass[i].match(/\_Client_Status__c/g))
+                        classId = clientStatusClass[i].split('_')[0];
+                var parentTR = $(this).parent().get(0);
+                var classes = $('.' + classId+'_Client_Status__col').attr('class');
+                var classList = classes.match((/highlight-\S+/g) || [] || (/catRow\S+/g));
+                if (classList != null) {
+                    for (var i = 0; i < classList.length; i++) {
+                        $('.' + classId).removeClass(classList[i]);
+                    }
+                }
+                if(clientStatusVal == 'Probably deleted')
+                    clientStatusVal = 'Probablydeleted';
+                
+                $('.' + classId).addClass('highlight-' + clientStatusVal);
+            }
+        });
+    }
+    
+    function setReleaseDate(rd) {
+        var fieldIdArray = rd.getAttribute('id').split(':');
+        fieldIdArray.splice(-1,1);
+        fieldIdArray.push('release-date');
+        var releaseDateFieldId = fieldIdArray.join('\\:');
+        var releaseDateField = $('[id*=' + releaseDateFieldId + "]").val(rd.value);
+    }
+    
+    function enterPress(e) {
+        if (e.keyCode == 13) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+            }
+            search();
+        }
+    }
+    
+    function disableClustForDelete() {
+        for (var detailId in clientStatus_map) {
+            var clientStatusWrapper = clientStatus_map[detailId];
+            var initialState_status = clientStatusWrapper['clientStatus'];
+            if (initialState_status == 'Delete') {
+                for (var i = 0; i < clientStatusWrapper['clientClusters'].length; i++)
+                    clientStatusWrapper['clientClusters'][i] = false;
+            }
+            mapDataToView(detailId, false);
+        }
+    }
+    
+    function toggleCheckboxes(element, detailId, field, startIndex) {
+        var initialClientStatusWrapper = clientStatus_initialMap[detailId];
+        var clientStatusWrapper = clientStatus_map[detailId];
+        var stratCount = clientStatusWrapper['buClustersCount'];
+        switch (field) {
+            case 'corpClust':
+                // check crop clusters greater than selected
+                for (var i = 0; i < startIndex - 1; i++)
+                    clientStatusWrapper['corpClusters'][i] = false;
+                // uncheck crop clusters less than selected
+                for (var i = startIndex; i < 6; i++)
+                    clientStatusWrapper['corpClusters'][i] = true;
+                clientStatusWrapper['corpClusters'][startIndex - 1] = element.checked;
+                break;
+            case 'clientClust':
+                clientStatusWrapper['strat'] = startIndex;
+                // check client clusters greater than selected
+                for (var i = 0; i < startIndex - 1; i++)
+                    clientStatusWrapper['clientClusters'][i] = false;
+                // uncheck client clusters less than selected
+                for (var i = startIndex; i < stratCount; i++)
+                    clientStatusWrapper['clientClusters'][i] = true;
+                
+                clientStatusWrapper['clientClusters'][startIndex - 1] = element.checked;
+                
+                var strongerClusterNumber;
+                if (!element.checked)
+                    strongerClusterNumber = startIndex == stratCount ? 0 : startIndex + 1;
+                else
+                    strongerClusterNumber = startIndex;
+                // Intro = false
+                clientStatusWrapper['clientAssortment'] = false;
+                // get initial value
+                var initialState_status = initialClientStatusWrapper['clientStatus'];
+                var previousStatus = clientStatusWrapper['clientStatus']
+                // change client status depending on selected strat
+                if (initialState_status == null || initialState_status == '' || initialState_status == 'Blank') {
+                    if (element.checked) {
+                        clientStatusWrapper['clientAssortment'] = true;
+                        clientStatusWrapper['clientStatus'] = 'New';
+                    } else if (strongerClusterNumber == 0) {
+                        clientStatusWrapper['clientStatus'] = '';
+                    }
+                } else if (strongerClusterNumber == 0) {
+                    clientStatusWrapper['clientStatus'] = 'Delete';
+                    clientStatusWrapper['clientAssortment'] = false;
+                    alert('{!JSENCODE($Label.MSG_After_saving_the_product_will_be_deleted_from_this_client_assortment)}'); // TODO: Make confirmation Message
+                } else if (initialClientStatusWrapper['strat'] == strongerClusterNumber) {
+                    clientStatusWrapper['clientStatus'] = initialClientStatusWrapper['clientStatus'];
+                    clientStatusWrapper['clientAssortment'] = initialClientStatusWrapper['clientAssortment'];
+                } else if (initialClientStatusWrapper['strat'] <= strongerClusterNumber) {
+                    clientStatusWrapper['clientStatus'] = 'Decrease';
+                } else if (initialClientStatusWrapper['strat'] >= strongerClusterNumber) {
+                    clientStatusWrapper['clientStatus'] = 'Increase';
+                }
+                element.checked = !clientStatusWrapper['clientClusters'][startIndex - 1];
+                updateTotals(detailId, clientStatusWrapper['categoryId'], previousStatus, clientStatusWrapper['clientStatus']);
+                break;
+            case 'clientStatus':
+                var selectedStatus = element.value;
+                // get initial client status
+                var initialState_status = initialClientStatusWrapper['clientStatus'];
+                
+                updateTotals(detailId, clientStatusWrapper['categoryId'], clientStatusWrapper['clientStatus'], selectedStatus);
+                
+                clientStatusWrapper['clientStatus'] = selectedStatus;
+                if (initialState_status != null && initialState_status != ''
+                    && initialState_status != 'Blank' && initialState_status != 'New'
+                    && selectedStatus === 'New')
+                {
+                    clientStatusWrapper['clientStatus'] = initialState_status;
+                    alert('{!JSENCODE($Label.MSG_Cannot_Select_Intro_for_Product_Referenced_in_Assortment)}');
+                }
+                // uncheck all client clusters
+                if (selectedStatus == 'Delete') {
+                    clientStatusWrapper['clientAssortment'] = false;
+                    for (var i = 0; i < stratCount; i++)
+                        clientStatusWrapper['clientClusters'][i] = false;
+                } else if (selectedStatus == initialState_status && initialState_status != 'Delete') {
+                    clientStatusWrapper['clientAssortment'] = initialClientStatusWrapper['clientAssortment'];
+                    for (var i = 0; i < stratCount; i++)
+                        clientStatusWrapper['clientClusters'][i] = initialClientStatusWrapper['clientClusters'][i];
+                }
+                break;
+            case 'clientAss':
+                var initialState_status = initialClientStatusWrapper['clientStatus'];
+                var previousStatus = clientStatusWrapper['clientStatus'];
+                
+                if (clientStatusWrapper['clientAssortment']) {
+                    clientStatusWrapper['clientAssortment'] = false;
+                    if (initialState_status == null || initialState_status == 'New' || initialState_status == 'Blank') {
+                        clientStatusWrapper['clientStatus'] = initialState_status;
+                        for (var i = 0; i < stratCount; i++)
+                            clientStatusWrapper['clientClusters'][i] = false;
+                    }
+                } else if (initialState_status != null && initialState_status != '' && initialState_status != 'Blank' && initialState_status != 'New' ) {
+                    alert('You can\'t select Introduction for a product already referencing in the assortment.');
+                    clientStatusWrapper['clientAssortment'] = false;
+                } else {
+                    clientStatusWrapper['clientAssortment'] = true;
+                    clientStatusWrapper['clientStatus'] = 'New';
+                }
+                updateTotals(detailId, clientStatusWrapper['categoryId'], previousStatus, clientStatusWrapper['clientStatus']);
+                break;
+        }
+        clientStatus_map[detailId] = clientStatusWrapper;
+        mapDataToView(detailId, true);
+    }
+    
+    function getClusterCount(clusterList, stratCount) {
+        var count = 0;
+        for (var i = 0; i < stratCount; i++)
+            count += clusterList[i] ? 1 : 0;
+        return count;
+    }
+    
+    function updateTotals(assortmentDetailId, categoryId, previousStatus, currentStatus) {
+        if (previousStatus == currentStatus) return;
+        if (!clientStatusToExcludeFromTotals.includes(currentStatus) && clientStatusToExcludeFromTotals.includes(previousStatus))
+            exclude = false;
+        else if (clientStatusToExcludeFromTotals.includes(currentStatus) && !clientStatusToExcludeFromTotals.includes(previousStatus))
+            exclude = true;
+            else return;
+        for (var index = 0; index < fieldsToCountList.length; index++) {
+            var fieldName = fieldsToCountList[index];
+            var input = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            if (typeof input !== 'undefined' && input != null && input.checked) {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                var value = exclude ? -1 : 1;
+                calculateCount(input, value, categoryId, totalClassname, grandTotalClassname);
+            }
+        }
+        for (var index = 0; index < fieldsToSumList.length; index++) {
+            var fieldName = fieldsToSumList[index];
+            var element = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            var value;
+            if ($(element).is('input')) {
+                value = $(element).val();
+            } else {
+                value = $(element).text();
+            }
+            value = stringToDecimal(value);
+            value = exclude ? value * -1 : value;
+            if (typeof element !== 'undefined' && element != null && value != 0) {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                var oldValueClassname = assortmentDetailId + 'initial' + fieldName;
+                calculateSum(fieldName, assortmentDetailId, categoryId, value);
+            }
+        }
+    }
+    
+    function includeRowInTotals(assortmentDetailId, categoryId) {
+        for (var index = 0; index < fieldsToCountList.length; index++) {
+            var fieldName = fieldsToCountList[index];
+            var input = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            if (typeof input !== 'undefined' && input != null && input.checked) {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                calculateCount(input, 1, categoryId, totalClassname, grandTotalClassname);
+            }
+        }
+        for (var index = 0; index < fieldsToSumList.length; index++) {
+            var fieldName = fieldsToSumList[index];
+            var element = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            var value;
+            if ($(element).is('input')) {
+                value = $(element).val();
+            } else {
+                value = $(element).text();
+            }
+            value = stringToDecimal(value);
+            if (typeof element !== 'undefined' && element != null && value != 0) {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                var oldValueClassname = assortmentDetailId + 'initial' + fieldName;
+                calculateSum(fieldName, assortmentDetailId, categoryId, value);
+            }
+        }
+    }
+    
+    function excludeRowFromTotals(assortmentDetailId, categoryId) {
+        for (var index = 0; index < fieldsToCountList.length; index++) {
+            var fieldName = fieldsToCountList[index];
+            var input = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            if (typeof input !== 'undefined' && input != null && input.checked)  {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                calculateCount(input, -1, categoryId, totalClassname, grandTotalClassname);
+            }
+        }
+        for (var index = 0; index < fieldsToSumList.length; index++) {
+            var fieldName = fieldsToSumList[index];
+            var element = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            var value;
+            if ($(element).is('input')) {
+                value = $(element).val();
+            } else {
+                value = $(element).text();
+            }
+            value = stringToDecimal(value) * -1;
+            if (typeof element !== 'undefined' && element != null && value != 0) {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                var oldValueClassname = assortmentDetailId + 'initial' + fieldName;
+                calculateSum(fieldName, assortmentDetailId, categoryId, value);
+            }
+        }
+    }
+    
+    /**
+     * handels changing values and disable/enable columns
+     * doCalculate: Boolean to indicate whether or not subtotals and totals should be updated (set to false when called on load)
+    */
+    function mapDataToView(detailId, doCalculate) {
+        var clientStatusWrapper = clientStatus_map[detailId];
+        var initialStatusWrapper = clientStatus_initialMap[detailId];
+        var stratCount = clientStatusWrapper['clientClusters'].length;
+        var element;
+        var oldValue;
+        var minChecked = 6;
+        var maxChecked = 1;
+        for (var i = 1; i <= 6; i++) {
+            if (i <= stratCount) {
+                element = document.getElementsByClassName(detailId + "_Client_Clust" + i + '__c')[0];
+                if (typeof element !== 'undefined' && element != null) {
+                    //// element = element.childNodes[0];
+                    
+                    // calculate only if value changed
+                    
+                    /*if (doCalculate && oldValue != element.checked && element.checked) {
+                        calculateTotal(element, clientStatusWrapper['assortmentBUId'], detailId,
+                                       clientStatusWrapper['categoryId'], detailId +'_Client_Clust' + i + '__c', '',
+                                       clientStatusWrapper['categoryId'] + 'Client_Clust' + i + '__c', 'clientClust' + i + 'total', true);
+                    }*/
+                    minChecked = (clientStatusWrapper['clientClusters'][i-1] && i < minChecked) ? i : minChecked;
+                    maxChecked = (!clientStatusWrapper['clientClusters'][i-1] && i > maxChecked) ? i : maxChecked;
+                    element.disabled = clientStatusWrapper['clientStatus'] == 'Delete';
+                }
+            }
+            element = document.getElementsByClassName(detailId + '_Corp_Clust' + i + '__c')[0];
+            if (typeof element !== 'undefined' && element != null) {
+                //// element = element.childNodes[0];
+                oldValue = element.checked;
+                element.checked = clientStatusWrapper['corpClusters'][i-1];
+                // calculate only if value changed
+                if (doCalculate && oldValue != element.checked) {
+                    calculateTotal('Corp_Clust' + i + '__c', detailId, clientStatusWrapper['categoryId'], clientStatusWrapper['assortmentBUId']);
+                }
+            }
+        }
+        // for cluster calculations
+        if (doCalculate) {
+            for (var i = 1; i <= stratCount; i++) {
+                element = document.getElementsByClassName(detailId + '_Client_Clust' + i + '__c')[0];
+                if (typeof element !== 'undefined' && element != null) {
+                    oldValue = element.checked;
+                    element.checked = clientStatusWrapper['clientClusters'][i-1];
+                    if (oldValue != element.checked) {
+                        var doRemoteAction = (element.checked && i == minChecked) || (!element.checked && i == maxChecked)
+                        calculateTotal('Client_Clust' + i + '__c', detailId, clientStatusWrapper['categoryId'], clientStatusWrapper['assortmentBUId'], doRemoteAction);
+                    }
+                }
+            }
+        }
+        //
+        element = document.getElementsByClassName(detailId + "_Client_Ass__c")[0];
+        if (typeof element !== 'undefined' && element != null) {
+            //// element = element[0];
+            oldValue = element.checked;
+            element.checked = clientStatusWrapper['clientAssortment'];
+            // calculate only if value changed
+            if (doCalculate && oldValue != element.checked) {
+                calculateTotal('Client_Ass__c', detailId, clientStatusWrapper['categoryId'], clientStatusWrapper['assortmentBUId']);
+            }
+            element.disabled = clientStatusWrapper['clientStatus'] == 'Delete';
+        }
+        element = document.getElementsByClassName(detailId + "_Client_Status__c")[0];
+        if (typeof element !== 'undefined' && element != null) {
+            //// element = element.childNodes[0];
+            if (clientStatusWrapper['clientStatus'] == null) clientStatusWrapper['clientStatus'] = '';
+            var keyNote = document.getElementsByClassName(detailId + "_Key_Note__c")[0];
+            if (typeof keyNote !== 'undefined' && keyNote != null) {
+                keyNote = keyNote.parentElement;
+                if (clientStatusWrapper['clientStatus'] == 'Probably deleted')
+                    keyNote.classList.add('keyNoteAnimate');
+                else
+                    keyNote.classList.remove('keyNoteAnimate');
+            }
+            element.value = clientStatusWrapper['clientStatus'];
+            $(element).children('option').each(function() {
+                if (initialStatusWrapper['clientStatus'] == null) initialStatusWrapper['clientStatus'] = '';
+                this.disabled = clientStatusWrapper['clientStatus'] == 'Delete'
+                && this.value != 'Delete' && this.value != initialStatusWrapper['clientStatus'];
+            });
+            var includeAllStatus = $('[id*=includeAllStatus]')[0].checked;
+        }
+        calculateClusterTotals();
+        handleClientStatusColors();
+    }
+    
+    function stringToDecimal(str) {
+        if (str == null) return 0;
+        var d = str.replace(/&nbsp/g, "").replace(/;/g,'');
+        d = str.toString().replace(/\s/g, "");
+        if(decimalSeparator == ',') {
+            d = d.replace(",", ".");
+        }
+        else {
+            d = d.replace(/,/g, "");
+        }
+        if (!isNaN(d) && d.length !== 0) {
+            return parseFloat(d);
+        }
+        return 0;
+    }
+    
+    function formatNumber(num, scale) {
+        if (num == null || isNaN(num) || num.length == 0) num = 0;
+        if (scale == 0)
+            num = parseInt(num);
+        else {
+            num = num.toFixed(scale);
+        }
+        var formatedValue = negoptimApp.formatCurrency(num);
+        return formatedValue;
+    }
+    
+    function showColumnArrows(difference, cell) {
+        $(cell).find('span').remove();
+        if (difference > -1 && difference < 1) return;
+        if (difference <= -1) {
+            var arrow = '<span class="arrow down"/>';
+        } else if (difference >= 1) {
+            var arrow = '<span class="arrow up"/>';
+        }
+        cell.append(arrow);
+    }
+    
+    // position switch product popup under the product's name
+    function positionPopup(element) {
+        /*var position = $(element).position();
+        var top = (position.top + $('.showTotalClass').is(':checked') ? 500 : 250) + 'px';
+        $('[id*=switchProductPopup]').css('top', top);
+        $('[id*=switchProductPopup]').css('left', '500px');
+        $('[id*=switchProductPopup]').css('width', '400px');*/
+    }
+    
+    // toggle select all on multiple product switch popup
+    function toggleSelectAll() {
+        var main = $('[id*=selectAll]');
+        var checked = main[0].checked;
+        var productCheckboxs = $('[id*=switchCheckbox]');
+        for (var i =0; i < productCheckboxs.length; i++ ) {
+            productCheckboxs[i].checked = checked;
+        }
+    }
+    
+    // show/hide subtotals
+    function showHideSubTotals() {
+        var isShowSubChecked = $('.showSubTotalClass').is(':checked');
+        if(isShowSubChecked)
+            $('.footer').show();
+        else
+            $('.footer').hide();
+        setTableDimensions();
+        
+    }
+    // show/hide totals
+    function showHideTotals() {
+        if (document.getElementById('thePage:theForm:blockOfTotals') == undefined) return;
+        var isShowTotalChecked = $('.showTotalClass').is(':checked');
+        if(isShowTotalChecked)
+            document.getElementById('thePage:theForm:blockOfTotals').style.display="block";
+        else
+            document.getElementById('thePage:theForm:blockOfTotals').style.display="none";
+        setTableDimensions();
+    }
+    
+    // functions related to Total caluculations
+    //
+    function Assortment_Detail__c() {
+        this.Id = null;
+        this.Name = null;
+        this.Assortment_BU__c = null;
+        this.Category__c = null;
+        this.Year__c = assortmentYear;
+        for (var index = 0; index < fieldsToCountList.length; index++)
+            this[fieldsToCountList[index]] = false;
+        for (var index = 0; index < fieldsToSumList.length; index++)
+            this[fieldsToSumList[index]] = null;
+    }
+    
+    function calculateTotal(fieldName, assortmentDetailId, categoryId, assortmentBUId, doCallRemote) {
+        var inputClassname = assortmentDetailId + '_' + fieldName;
+        var input = $('.' + inputClassname)[0];
+        var oldValueClassname = assortmentDetailId + 'initial' + fieldName;
+        var totalClassname = categoryId + fieldName;
+        var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+        doCallRemote = (typeof doCallRemote === 'undefined') ? true : doCallRemote;
+        var clientStatus = clientStatus_map[assortmentDetailId]['clientStatus'];
+        var excludeFromCalculation = !$('[id*=includeAllStatus]')[0].checked && clientStatusToExcludeFromTotals.includes(clientStatus);
+        var tr = $(input).closest('tr').get(0);
+        
+        // update Count
+        if (fieldsToCountList.indexOf(fieldName) >= 0 && !excludeFromCalculation)
+            calculateCount(input, null, categoryId, totalClassname, grandTotalClassname);
+        
+        if (fieldName.includes("Client_Clust") || fieldsToSumList.indexOf(fieldName) >= 0) {
+            var assortmentDetail = new Assortment_Detail__c();
+            assortmentDetail.Id = assortmentDetailId;
+            assortmentDetail.Assortment_BU__c = assortmentBUId;
+            assortmentDetail.Category__c = categoryId;
+            for (var index = 0; index < fieldsToCountList.length; index++) {
+                var field = fieldsToCountList[index];
+                assortmentDetail[field] = $('td input:checkbox.' + assortmentDetailId + '_' + field, tr).is(':checked');
+            }
+            for (var index = 0; index < fieldsToSumList.length; index++) {
+                var field = fieldsToSumList[index];
+                var element = document.getElementsByClassName(assortmentDetailId + '_' + field)[0];
+                if (typeof element !== 'undefined' && element != null) {
+                    assortmentDetail[field] = stringToDecimal(element.value);
+                }
+            }
+            if (doCallRemote) remoteCallout(assortmentDetail);
+        }
+    }
+    
+    function calculateCount(input, value, categoryId, totalClassname, grandTotalClassname) {
+        var total = parseInt($('.' + totalClassname).text());
+        var grandTotal = parseInt($('.' + grandTotalClassname).text());
+        if (value == null) {
+            if (input.checked) value = 1;
+            else value = -1;
+        }
+        $('.' + totalClassname).text(total + value);
+        $('.' + grandTotalClassname).text(grandTotal + value);
+        
+        // update parent counts
+        calculateParentTotalCount(categoryId, totalClassname, value);
+    }
+    
+    function calculateParentTotalCount(categoryId, totalClassname, value) {
+        var columnName = totalClassname.split(categoryId)[1];
+        var tree = $("#treegrid").fancytree("getTree");
+        var node = tree.getNodeByKey(categoryId);
+        if (node != null) {
+            do {
+                $tdList = $(node.tr).find(">td");
+                var bcNode = tree.getNodeByKey(node.key + '_bc');
+                var oldValue = parseInt(node.data.counts[columnName]);
+                var newValue = oldValue + value;
+                var column = $tdList.eq(totalColumnsMap.get(columnName));
+                var nbStore = getNbStore(categoryId, columnName);
+                column.text(formatNumber(newValue * nbStore, gridFields[columnName].scale));
+                oldValue = bcNode != null ? parseInt(bcNode.data.counts[columnName]) : oldValue;
+                if (oldValue != newValue) {
+                    addBeforeCalculationNode(node);
+                    bcNode = tree.getNodeByKey(node.key + '_bc');
+                }
+                showColumnArrows((newValue - oldValue), column);
+                // update before calculation node if includeStores changes
+                if (bcNode != null) {
+                    $tdList = $(bcNode.tr).find(">td");
+                    column = $tdList.eq(totalColumnsMap.get(columnName));
+                    column.text(parseInt(bcNode.data.counts[columnName]) * nbStore);
+                }
+                //
+                node.data.counts[columnName] = newValue;
+                node = node.parent;
+            } while(node != null && node.title != 'root');
+        }
+    }
+    
+    function calculateSum(fieldName, assortmentDetailId, categoryId, value) {
+        var oldValueClassname = assortmentDetailId + 'initial' + fieldName;
+        var totalClassname = categoryId + fieldName;
+        var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+        var total = stringToDecimal($('.' + totalClassname).text());
+        var grandTotal = stringToDecimal($('.' + grandTotalClassname).text());
+        $('.' + totalClassname).text(formatNumber(parseFloat(total + value), gridFields[fieldName].scale));
+        $('.' + grandTotalClassname).text(formatNumber(parseFloat(grandTotal + value), gridFields[fieldName].scale));
+        // update parent sums
+        calculateParentTotalSum(categoryId, totalClassname, value);
+    }
+    
+    function calculateParentTotalSum(categoryId, totalClassname, diffValue) {
+        var nodeKey = categoryId;
+        var columnName = totalClassname.split(categoryId)[1];
+        var tree = $("#treegrid").fancytree("getTree");
+        var node = tree.getNodeByKey(nodeKey);
+        if (node != null) {
+            do {
+                $tdList = $(node.tr).find(">td");
+                var bcNode = tree.getNodeByKey(node.key + '_bc');
+                var oldValue = node.data.sums[columnName];
+                var newValue = oldValue + diffValue;
+                var column = $tdList.eq(totalColumnsMap.get(columnName));
+                column.text(formatNumber(newValue, 0));
+                oldValue = bcNode != null ? parseInt(bcNode.data.sums[columnName]) : oldValue;
+                if (oldValue != newValue) {
+                    addBeforeCalculationNode(node);
+                }
+                showColumnArrows((newValue - oldValue), column);
+                node.data.sums[columnName] = newValue;
+                node = node.parent;
+            } while(node != null && node.title != 'root');
+        }
+    }
+    
+    function addBeforeCalculationNode(node) {
+        if (node.hasChildren() == false || (node.hasChildren() == true && node.children[0].key != node.key + '_bc')) {
+            var beforeClacNode = jQuery.extend(true, {}, node);
+            beforeClacNode.key += '_bc';
+            beforeClacNode.title += ' (previous values)';
+            beforeClacNode.children = null;            
+            var firstChild = node.hasChildren() == true ? firstChild = node.children[0] : null;
+            node.addChildren(new Array(beforeClacNode), firstChild);
+        }
+    }
+    
+    function remoteCallout(assortmentDetail) {
+        $(document).find('body').css('cursor', 'wait');
+        Visualforce.remoting.Manager
+        .invokeAction(
+            '{!$RemoteAction.AssortmentBUMatrixController.evaluateAssortmentDetail}',
+            assortmentDetail, function(
+                result, event) {
+                // change cursor
+                remoteCallback(result);
+            }, {
+                escape : false
+            });
+    }
+    
+    function remoteCallback(result) {
+        assortmentDetailMap.set(result.Id, result);
+        mapCalculationToView(result);
+        $(document).find('body').css('cursor', 'default');
+    }
+    
+    function mapCalculationToView(result) {
+        var oldValue, newValue, diffValue, total, grandtotal;
+        /// var htmlElement = $('.' + result.Id + '_Status__c').val(result['Status__c']);
+        for (var index = 0; index < fieldsToSumList.length; index++) {
+            var field = fieldsToSumList[index];
+            // get field old value
+            oldValue = stringToDecimal($('.' + result.Id + 'initial' + field).text());
+            // get field new value
+            newValue = typeof result[field] === 'undefined' ? 0 : result[field];
+            // get difference
+            diffValue = newValue - oldValue;
+            // always update field value with newValue
+            var htmlElement = $('.' + result.Id + '_' + field);
+            var formatedValue = formatNumber(newValue, gridFields[field].scale);
+            if ($(htmlElement).is('input')) {
+                $(htmlElement).val(formatedValue);
+            } else {
+                $('.' + result.Id + '_' + field).text(formatedValue);
+            }
+            // change totals only if field value changed
+            if (diffValue != 0) {
+                $('.' + result.Id + 'initial' + field).text(formatedValue);
+                var clientStatus = clientStatus_map[result.Id]['clientStatus'];
+                var excludeFromCalculation = !$('[id*=includeAllStatus]')[0].checked && clientStatusToExcludeFromTotals.includes(clientStatus);
+                if (!excludeFromCalculation)
+                    calculateSum(field, result.Id, result.Category__c, diffValue);
+            }
+        }
+    }
+    
+    function checkProductForStop(assortmentDetailId, productId) {
+        var clientStatus = clientStatus_map[assortmentDetailId]['clientStatus'];
+        if (clientStatus != null && clientStatus !== '') {
+            showSingleStopPopup(productId, true, true);
+        } else {
+            alert ('Status is null > Cannot be stopped');
+        }
+        
+        return false;
+    }
+    
+    function promptToSave() {
+        if ({!AND(hasDetails, !readOnly)}) {
+            var confirmation = window.confirm('{!JSENCODE($Label.MSG_Save_Before_Search)}');
+            if (confirmation) {
+                saveAndSearch();
+            } else {
+                $('[id*=includeAllStatus]')[0].checked = !$('[id*=includeAllStatus]')[0].checked;
+            }
+        } else {
+            search();
+        }
+    }
+    </script>
+    <style type="text/css">
+        
+        #dataGridBlock {
+        text-align: center;
+        /*font-size: 9px;*/
+        }
+        #dataGridBlock .footer {
+        vertical-align: middle;
+        height: 10px;
+        background: #f7fafc;
+        }
+        #dataGridBlock .headerRow {
+        background-color: #e6ecf2;
+        overflow: hidden;
+        font-size: 10px;
+        font-weight: bold;
+        padding-right: 0px!important;
+        padding-left: 0px!important;
+        text-align:center!important;
+        position: sticky;
+        /*z-index:1000;*/
+        top:0px;
+        }
+        .header-background {
+        background: #f7fafc; /*e6ecf2;*/
+        }
+        #dataGridBlock .in {
+        background: #ebd9f1;
+        }
+        
+        .header {
+        overflow: hidden;
+        font-size: 10px;
+        font-weight: bold;
+        padding-right: 0px!important;
+        padding-left: 0px!important;
+        text-align:center!important;
+        position: sticky;
+        /*z-index:1000;*/
+        top:0px;
+        }
+        .header-background {
+        background: #f7fafc;
+        }
+        
+        .header-background-In {
+        background: #ebd9f1;
+        z-index:1;
+        }
+        
+        .header-background-Out {
+        background: #e2f3ec;
+        z-index:1;
+        }
+        
+        .footer td {
+        background: #e3e3d7;
+        }
+        
+        .legendItem {
+        background-color:#89bded;
+        width: 10px;
+        height: 10px;
+        display: inline-block;
+        }
+        .headerRow .header-In {
+        background-color: #EBD9F1!important;
+        background-image: none !important;
+        }
+        .headerRow .header-Out {
+        background-color: #e2f3ec!important;
+        background-image: none !important;
+        }
+        /* to hide date picker links */
+        .dateFormat {
+        display: none;
+        }
+        
+        #dataGridBlock th {
+        /*border: 1px solid #e3deb8;*/
+        }
+        
+        #dataGridBlock td {
+        border-bottom: 1px solid #e3deb8;
+        }
+        
+        .freezeColumnsBorder {
+        
+        }
+        .ref-in {
+        background-color: #f8f8f8;
+        }
+        
+        .ref-out {
+        background-color:#e2f3ec;
+        }
+        .highlight-Keep {background-color: #89bded !important;}
+        .highlight-Delete {background-color: #f7ad65 !important;}
+        .highlight-New {background-color: #a5ea85 !important;}
+        .highlight-Increase {background-color: #ca87ed !important;}
+        .highlight-Decrease {background-color: #eadf81 !important;}
+        .highlight-Substitute {background-color: #ea9f85 !important;}
+        .highlight-Probablydeleted {background-color: #e8e8e9;}
+        .highlight-Opportunity { background-color: #c8e4ff;}
+        .highlight-null {background-color: white;}
+        
+        .legend-label {
+        font-size: smaller;
+        }
+        
+        .lengend-square {
+        width: 10px;
+        height: 10px;
+        display: inline-block;
+        cursor: pointer;
+        }
+        .lengend-square {
+        width: 10px;
+        height: 10px;
+        display: inline-block;
+        /*border: 1px solid black;*/
+        border: none!important;
+        }
+        
+        .text-center {
+        text-align:center;
+        vertical-align:middle;
+        }
+        
+        .productName {
+        text-align: left !important;
+        /*width: 240px;*/
+        min-width: 275px;
+        max-width: 275px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-word;
+        }
+        
+        .history {
+        background-color: #fff;
+        opacity: 0.40;
+        }
+        
+        .dataGridDivClassic {
+        overflow: auto;
+        width: 96vw;
+        height: 27vw;
+        }
+        .dataGridDivLightning {
+        overflow: auto;
+        width: 96vw;
+        height: 35vw;
+        }
+        .list td {
+        border-left: 0px none transparent !important;
+        border-right: 0px none transparent !important; 
+        }
+        .list th {
+        border-left: 0px none transparent !important;
+        border-right: 0px none transparent !important; 
+        }
+        .totalsRow th {
+        height: 30px;
+        backgroud-color: bisque;
+        }
+        .border-col {
+        width: 5px;
+        background-color: #FFFFFF !important;
+        border: none !important;
+        }
+        .btn {color: rgba(27, 82, 151, 1.0) !important;background-image: none !important;}
+        .grid-container a {
+        text-decoration: none;
+        color: rgb(0, 109, 204) !important;
+        -webkit-transition: color 0.1s linear;
+        transition: color 0.1s linear;
+        }
+        .up {
+        /*transform: rotate(-135deg);
+        /*-webkit-transform: rotate(-135deg);
+        border: solid green;*/
+        border-bottom: 5px solid green;
+        }
+        
+        .down {
+        /*transform: rotate(180deg);
+        -webkit-transform: rotate(180deg);
+        border: solid red;*/
+        border-top: 5px solid red;
+        }
+        
+        .arrow {
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        margin-left: 5px;
+        display: inline-block;
+        vertical-align: middle;
+        }
+        <!-- popup style -->
+        .popupBackground {
+        background-color: black;
+        opacity: 0.20;
+        filter: alpha(opacity = 20);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 9998;
+        }
+        .uploadPopup {
+        background-color: white;
+        border-width: 2px;
+        border-style: solid;
+        z-index: 9999;
+        left: 50%;
+        padding: 10px;
+        position: absolute;
+        width: 700px;
+        margin-left: -350px;
+        top: 10px;
+        }
+        
+        .datePicker{
+        position: fixed;
+        z-index:1151;
+        }
+        
+        .keyNoteAnimate {
+        animation: fadeOutAnimation 2s ;
+        }
+        @keyframes fadeOutAnimation {
+        from {background-color: #FBFBA0;}
+        to {background-color: yellow;}
+        }
+        .grid-container a {
+        text-decoration: none;
+        color: rgb(0, 109, 204) !important;
+        -webkit-transition: color 0.1s linear;
+        transition: color 0.1s linear;
+        }
+        
+        .grid-container {
+        width: 95vw;
+        overflow: auto;
+        height: 50vh;
+        }
+        
+        .grid-total-container {
+        width: 95vw;
+        overflow: auto;
+        font-size: 0.75rem;
+        border-color: white !important;
+        border-bottom: 0 !important;
+        border-left: 0 !important;
+        }
+        
+        .grid-total-container th {
+        border-bottom: 0 !important;
+        border-left: 0 !important;
+        border-color: white !important;
+        color: rgb(62, 62, 60) !important;
+        }
+        
+        .grid-total-container td:first-child {
+        border-bottom: 0 !important;
+        border-left: 0 !important;
+        border-color: white !important;
+        color: rgb(62, 62, 60) !important;
+        }
+        
+        .grid-total-container td {
+        border-bottom: 0 !important;
+        border-left: 0 !important;
+        border-color: white !important;
+        }
+        
+        body {
+        overflow-x: hidden;
+        }
+    </style>
+</apex:page>

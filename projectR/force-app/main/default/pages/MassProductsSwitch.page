@@ -1,0 +1,648 @@
+<apex:page id="thePage" standardController="Product2" showHeader="true" sidebar="false" lightningStylesheets="false"
+           tabStyle="Product2" extensions="MassProductsSwitchController" >
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}"/>
+    <style>
+        .text-center {
+        text-align:center !important;
+        vertical-align:middle;
+        }
+        .table-container {
+        overflow: scroll;
+        }
+        .nego-logo img {
+        max-width: none !important;
+        width: 25px !important;
+        height: 25px !important;
+        }
+        .nego-logo img:hover {
+        max-width: none !important;
+        width: 200px !important;
+        height: 200px !important;
+        z-index: 5;
+        position: absolute;
+        left: 0;
+        top: -25px;
+        -webkit-transition: all 0.1s ease-in-out;
+        -moz-transition: all 0.1s ease-in-out;
+        -o-transition: all 0.1s ease-in-out;
+        transition: all 0.1s ease-in-out;
+        }
+        .collapsed {
+        display: none !important;
+        }
+        .selected-option {
+        background-color: #c1e0ff;
+        }
+        
+        .blank-cell {
+        background: repeating-linear-gradient(
+        45deg,
+        #7ad4ef 10px,
+        #ffffff 15px
+        );
+        width: 100%;
+        height: 15px;
+        display: inline-block;
+        }
+        .border-blue {
+        border: solid #1b5297 2px !important;
+        }
+    </style>
+    <apex:slds />
+    
+    <apex:pageMessages id="messages" />
+    <div class="slds-m-around_small">
+        <div class="slds-page-header">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <span class="slds-icon_container" title="{!$Label.Switch}">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     xmlns:xlink="http://www.w3.org/1999/xlink"
+                                     class="slds-icon slds-icon-text-default" aria-hidden="true" style="transform: rotate(90deg);" >
+                                    <use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/action-sprite/svg/symbols.svg#user_activation')}"/>
+                                </svg>
+                                <span class="slds-assistive-text">{!$Label.switch}</span>
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <div class="slds-page-header__name">
+                                <div class="slds-page-header__name-title">
+                                    <h1>
+                                        <span class="slds-page-header__title slds-truncate" title="{!$Label.Mass_Product_Switch}">{!$Label.Mass_Product_Switch}</span>
+                                    </h1>
+                                </div>
+                            </div>
+                            <p class="slds-page-header__name-meta">{!$ObjectType.Product2.labelPlural}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- filter section -->
+        <div class="slds-grid slds-m-top_x-small slds-m-bottom_x-small">
+            <!-- product type filter -->
+            <div class="slds-form-element__control">
+                <div class="slds-radio_button-group">
+                    <span class="slds-button slds-radio_button">
+                        <input name="radio" type="radio" id="all_intro" value="all_intro" />
+                        <label class="slds-radio_button__label" for="all_intro">
+                            <span class="slds-radio_faux">{!$Label.All_Intro}</span>
+                        </label>
+                    </span>
+                    <span class="slds-button slds-radio_button">
+                        <input name="radio" type="radio" id="only_switch_products" value="only_switch_products" checked="true"/>
+                        <label class="slds-radio_button__label" for="only_switch_products">
+                            <span class="slds-radio_faux">{!$Label.Only_Switch_Products}</span>
+                        </label>
+                    </span>
+                    <span class="slds-button slds-radio_button">
+                        <input name="radio" type="radio" id="only_renno_products" value="only_renno_products"/>
+                        <label class="slds-radio_button__label" for="only_renno_products">
+                            <span class="slds-radio_faux">{!$Label.Only_Renno_Products}</span>
+                        </label>
+                    </span>
+                </div>
+            </div>
+            <!-- month filter -->
+            <div class="slds-form-element__control" style="margin-left: .25rem;">
+                <div class="slds-combobox_container">
+                    <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click">
+                        <input type="text" class="slds-input slds-combobox__input border-blue" id="selectedOptions"
+                               autoComplete="off" placeholder="Select an Option" onfocus="showMonthOptions();" />
+                        <section id="monthOptionsSection" class="slds-popover slds-popover_full-width collapsed border-blue" style="position: absolute;">
+                            <div class="slds-popover__body" id="dialog-body-id-26">
+                                <fieldset class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <apex:repeat value="{!options}" var="option">
+                                            <div class="slds-checkbox">
+                                                <input type="checkbox" name="{!options[option]}" id="checkbox-{!option}" class="filterOption" value="{!option}" onchange="historyFilterChange(this);"/>
+                                                <label class="slds-checkbox__label" for="checkbox-{!option}">
+                                                    <span class="slds-checkbox_faux"></span>
+                                                    <span class="slds-form-element__label">{!options[option]}</span>
+                                                </label>
+                                            </div>
+                                        </apex:repeat>
+                                    </div>
+                                </fieldset>
+                            </div>
+                            <footer class="slds-popover__footer slds-popover__footer_form">
+                                <button class="slds-button slds-button_brand" onclick="hideMonthOptions();">{!$Label.OK}</button>
+                            </footer>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <!-- BU Target format filter -->
+            <div class="slds-form-element__control" style="margin-left: .25rem;">
+                <div class="slds-combobox_container">
+                    <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click">
+                        <input type="text" class="slds-input slds-combobox__input" id="selectedBuFormatOptions"
+                               autoComplete="off" placeholder="{!$ObjectType.Orga_BU__c.fields.Format_Origin__c.label}" onfocus="showBuFormatOptions();" />
+                        <section id="buFormatOptionsSection" class="slds-popover slds-popover_full-width collapsed" style="position: absolute;">
+                            <div class="slds-popover__body" id="dialog-body-id-26">
+                                <fieldset class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <apex:repeat value="{!channels}" var="channel">
+                                            <div class="slds-checkbox">
+                                                <input type="checkbox" name="{!channel.value}" id="checkbox-{!channel.label}" class="buFormatOption" value="{!channel.value}"
+                                                       onchange="buFormatSelectionChange(this);"/>
+                                                <label class="slds-checkbox__label" for="checkbox-{!channel.value}">
+                                                    <span class="slds-checkbox_faux"></span>
+                                                    <span class="slds-form-element__label">{!channel.label}</span>
+                                                </label>
+                                            </div>
+                                        </apex:repeat>
+                                    </div>
+                                </fieldset>
+                            </div>
+                            <footer class="slds-popover__footer slds-popover__footer_form">
+                                <button class="slds-button slds-button_brand" onclick="hideBuFormatOptions();">{!$Label.OK}</button>
+                            </footer>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <!-- search box -->
+            <div style="margin-left: .25rem;">
+                <input class="slds-input slds-combobox__input" id="searchBox" autocomplete="off"
+                       type="text" placeholder="{!$Label.Search}..." value="" />
+            </div>
+            <!-- apply filters button --> 
+            <div class="slds-col" style="margin-left: .75rem;">
+                <button class="slds-button slds-button_neutral" onclick="applyFilters();">{!$Label.Search}</button>
+            </div>
+            <!-- buttons -->
+            <button class="slds-button slds-button_neutral slds-col_bump-right" onclick="save();">{!$Label.Save}</button>
+            <button class="slds-button slds-button_neutral" onclick="cancel();">{!$Label.Cancel}</button>
+            <button class="slds-button slds-button_neutral" onclick="downloadExcel();return false;">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     xmlns:xlink="http://www.w3.org/1999/xlink"
+                     class="slds-button__icon slds-button__icon_left" aria-hidden="true" >
+                    <use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/utility-sprite/svg/symbols.svg#download')}"></use>
+                </svg>
+                {!$Label.LBL_Export_Details}
+            </button>
+        </div>
+        <!-- form -->
+        <apex:form id="theForm" rendered="{!gridSettingsManager.ERRORS.size == 0}">
+            <!-- global loading action status -->
+            <apex:actionStatus id="globalloading">
+                <apex:facet name="start">
+                    <div class="loading-overlay">
+                        <div class="loader-img"></div>
+                        <div class="loading-block">{!$Label.Loading}</div>
+                    </div>
+                </apex:facet>
+            </apex:actionStatus>
+            <!-- Apply filter criterea to fetch products -->
+            <apex:actionFunction name="searchProducts" action="{!searchProducts}" status="globalloading" reRender="messages, thePageBlock" oncomplete="afterRerender();" >
+                <apex:param id="searchTerm" name="searchTerm" assignTo="{!searchTerm}" value=""/>
+                <apex:param id="buSourceFilter" name="buSourceFilter" assignTo="{!buSourceFilter}" value=""/>
+                <apex:param id="selectedMonths" name="selectedMonths" assignTo="{!selectedMonths}" value=""/>
+                <apex:param id="onlySwitchProduct" name="onlySwitchProduct" assignTo="{!onlySwitchProduct}" value=""/>
+                <apex:param id="onlyRennoProduct" name="onlyRennoProduct" assignTo="{!onlyRennoProduct}" value=""/>
+            </apex:actionFunction>
+            <!-- Switch or Select reference product -->
+            <apex:actionFunction name="switchProduct" action="{!switchProduct}" status="globalloading" rerender="messages, thePageBlock" oncomplete="afterRerender();">
+                <apex:param name="referenceProductId" assignTo="{!referenceProductId}" value="" />
+                <apex:param name="IntroducedProductId" assignTo="{!IntroducedProductId}" value="" />
+            </apex:actionFunction>
+            <!-- refresh table page size -->
+            <apex:actionFunction name="refreshPageSize" action="{!refreshPageSize}" status="globalloading" reRender="thePageBlock" oncomplete="afterRerender();" />
+            <!-- save -->
+            <apex:actionFunction name="save" action="{!save}" status="globalloading" oncomplete="afterRerender();" />
+            <!-- cancel 
+            <apex:actionFunction name="cancel" action="{!cancel}" />-->
+            <!-- downloadExcel -->
+            <apex:actionFunction name="downloadExcel" action="{!downloadExcel}"/>
+            <apex:pageBlock id="thePageBlock">
+                <apex:outputPanel rendered="{!NoData}" >
+                    <div class="slds-media__body">
+                        <h2 class="slds-card__header-title">
+                            <span>{!$Label.LBL_No_Item_To_Display}</span>
+                        </h2>
+                    </div>
+                </apex:outputPanel>
+                <apex:outputPanel id="dataGrid" rendered="{!!NoData}">
+                    <div class="table-container">
+                        <table class="slds-table slds-table--bordered slds-no-cell-focus slds-table_striped slds-no-row-hover" >
+                            <thead>
+                                <tr>
+                                    <!-- Introduced Product -->
+                                    <th rowspan="2" class="slds-text-title_caps text-center">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product2.fields.Category__c.Label}</span>
+                                    </th>
+                                    <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="item">
+                                        <th rowspan="2" class="slds-text-title_caps text-center">
+                                            <apex:commandLink rendered="{!item.isSortable}" action="{!toggleOrderDirection}"
+                                                              status="globalloading" reRender="messages, dataGrid" style="color: rgb(81, 79, 77) !important;" >
+                                                <apex:param name="orderField" value="{!item.fieldName}" assignTo="{!orderField}" />
+                                                <apex:outputText value="{!item.fieldLabel} {!IF(orderField==item.fieldName, IF(orderDirection == 'ASC','▲', '▼'), '')}" />
+                                            </apex:commandLink>
+                                            <apex:outputText rendered="{!!item.isSortable}" value="{!item.fieldLabel}" />
+                                        </th>
+                                    </apex:repeat>
+                                    <!-- Reference Product -->
+                                    <th rowspan="2" class="slds-text-title_caps text-center slds-border_left">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product2.fields.Name.Label}</span>
+                                    </th>
+                                    <th rowspan="2" class="slds-text-title_caps text-center">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product2.fields.Product_EAN__c.Label}</span>
+                                    </th>
+                                    <th rowspan="2" class="slds-text-title_caps text-center">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product2.fields.Retail_Price_Reco__c.Label}</span>
+                                    </th>
+                                    <th rowspan="2" class="slds-text-title_caps text-center">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product2.fields.Average_Weekly_Sales_Hyper__c.Label}</span>
+                                    </th>
+                                    <th rowspan="2" class="slds-text-title_caps text-center">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product2.fields.Average_Weekly_Sales_Super__c.Label}</span>
+                                    </th>
+                                    <th rowspan="2" class="slds-text-title_caps text-center">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product2.fields.Market_Introduction_Date__c.Label}</span>
+                                    </th>
+                                    <th rowspan="2" class="slds-text-title_caps text-center slds-border_right">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product2.fields.Market_End_of_Life_Date__c.Label}</span>
+                                    </th>
+                                    <!-- Assortment BU Names -->
+                                    <apex:repeat value="{!assortmentBUList}" var="assortmentBU" >
+                                        <th colspan="3" class="slds-text-title_caps text-center" id="detailInfo">
+                                            <apex:outputLink value="/{!assortmentBU.Id}" target="_blank" >
+                                                <span class="slds-m-around_xx-small">{!assortmentBU.Name}</span>
+                                            </apex:outputLink>
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                                <!-- assortment details -->
+                                <tr id="detailInfo">
+                                    <apex:repeat value="{!assortmentBUList}" var="assortmentBU" >
+                                        <th class="slds-text-title_caps text-center slds-border_left">
+                                            <span class="slds-m-around_xx-small">{!$ObjectType.Assortment_Detail__c.fields.Fact_WD_MarketBased__c.Label}</span>
+                                        </th>
+                                        <th class="slds-text-title_caps text-center">
+                                            <span class="slds-m-around_xx-small">{!$ObjectType.Assortment_Detail__c.fields.Ass_BU_Cluster__c.Label}</span>
+                                        </th>
+                                        <th class="slds-text-title_caps text-center">
+                                            <span class="slds-m-around_xx-small">{!$ObjectType.Assortment_Detail__c.fields.Movement_Date__c.Label}</span>
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <apex:repeat value="{!ProductWrappersByCategoryList}" var="list" id="repeatDetails">
+                                    <apex:variable var="count" value="{!1}"/>
+                                    <apex:repeat value="{!list}" var="productWrapper" >
+                                        <!-- Introduced Product -->
+                                        <tr class="slds-border_bottom" >                                        
+                                            <apex:outputPanel layout="none" rendered="{!count==1}">
+                                                <td rowspan="{!list.size}" class="slds-border_right slds-border_bottom text-center"
+                                                    style="background-color: white !important;">
+                                                    <apex:outputLink styleClass="slds-truncate slds-m-around_xx-small"  target="_blank"
+                                                                     value="/{!productWrapper.category.Id}" >
+                                                        <apex:outputText value="{!productWrapper.category.Name}"/>
+                                                    </apex:outputLink>
+                                                </td>
+                                            </apex:outputPanel>
+                                            <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="item">
+                                                <td class="text-center {!IF(item.stringFieldType == 'TEXTAREA', 'nego-logo', '')}">
+                                                    <apex:outputLink value="/{!productWrapper.introducedProduct.Id}" target="_blank" rendered="{!item.fieldName == 'Name'}">
+                                                        <apex:outputText value="{!productWrapper.introducedProduct.Name}"/>
+                                                    </apex:outputLink>
+                                                    <apex:outputField value="{!productWrapper.introducedProduct[item.fieldName]}" rendered="{!AND(!item.isInputField, item.fieldName != 'Name')}" />
+                                                    <apex:inputField value="{!productWrapper.introducedProduct[item.fieldName]}" rendered="{!AND(item.isInputField, item.fieldName != 'Name')}"
+                                                                     style="max-width: 70px; text-align:right"/>
+                                                </td>
+                                            </apex:repeat>
+                                            <!-- reference Product -->
+                                            <apex:outputPanel layout="none" rendered="{!!productWrapper.isUpdatable && productWrapper.referenceProduct.Id == null}">
+                                                <td colspan="7" class="slds-border_right slds-border_left" >
+                                                    <span class="blank-cell"/>
+                                                </td>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel layout="none" rendered="{!productWrapper.isUpdatable || productWrapper.referenceProduct.Id != null}">
+                                                <td class="slds-border_left text-center" style="z-index:1;">
+                                                    <apex:inputField rendered="{!productWrapper.isUpdatable}" styleClass="slds"
+                                                                     value="{!productWrapper.introducedProduct.Reference_Product__c}"
+                                                                     onchange="checkReferenceProduct(this, 
+                                                                               '{!productWrapper.introducedProduct.Reference_Product__c}',
+                                                                               '{!productWrapper.introducedProduct.Id}');" />
+                                                    <apex:outputField styleClass="slds-truncate slds-m-around_xx-small" rendered="{!!productWrapper.isUpdatable}"
+                                                                      value="{!productWrapper.introducedProduct.Reference_Product__c}"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" id="referenceEAN"
+                                                                      value="{!productWrapper.referenceProduct.Product_EAN__c}"
+                                                                      rendered="{!productWrapper.referenceProduct.Id != null}" />
+                                                </td>
+                                                <td class="text-center">
+                                                    <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" id="referenceRPR"
+                                                                      value="{!productWrapper.referenceProduct.Retail_Price_Reco__c}"
+                                                                      rendered="{!productWrapper.referenceProduct.Id != null}" />
+                                                </td>
+                                                <td class="text-center">
+                                                    <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" id="referenceAWSH"
+                                                                      value="{!productWrapper.referenceProduct.Average_Weekly_Sales_Hyper__c}"
+                                                                      rendered="{!productWrapper.referenceProduct.Id != null}" />
+                                                </td>
+                                                <td class="text-center">
+                                                    <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" id="referenceAWSS"
+                                                                      value="{!productWrapper.referenceProduct.Average_Weekly_Sales_Super__c}"
+                                                                      rendered="{!productWrapper.referenceProduct.Id != null}" />
+                                                </td>
+                                                <td class="text-center">
+                                                    <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" id="referenceIntroDate"
+                                                                      value="{!productWrapper.referenceProduct.Market_Introduction_Date__c}"
+                                                                      rendered="{!productWrapper.referenceProduct.Id != null}" />
+                                                </td>
+                                                <td class="text-center slds-border_right">
+                                                    <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" id="referenceEndOfLifeDate"
+                                                                      value="{!productWrapper.referenceProduct.Market_End_of_Life_Date__c}"
+                                                                      rendered="{!productWrapper.referenceProduct.Id != null}" />
+                                                </td>
+                                            </apex:outputPanel>
+                                            <!-- assortment details -->
+                                            <apex:repeat value="{!assortmentBUList}" var="assortment">
+                                                <apex:variable var="assortmentId" value="{!assortment.Id}" />
+                                                <!-- show detail if exist -->
+                                                <apex:outputPanel layout="none" rendered="{!CONTAINS(productWrapper.detailsMapKeySet, assortmentId)}">
+                                                    <apex:outputPanel layout="none"
+                                                                      rendered="{!AND(productWrapper.switchStatusMap[assortmentId],
+                                                                                OR(productWrapper.isUpdatable, productWrapper.referenceProduct.Id != null))}">
+                                                        <td colspan="3" class="slds-border_right slds-border_left text-center" >
+                                                            <span style="color:green; font-weight: bolder;">{!$Label.Product_Already_Switched}</span>
+                                                        </td>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel layout="none" rendered="{!!productWrapper.switchStatusMap[assortmentId]}">
+                                                        <apex:variable var="detail" value="{!productWrapper.detailsMap[assortmentId]}"/>
+                                                        <td class="text-center slds-border_left" id="detailInfo">
+                                                            <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" value="{!detail.Fact_WD_MarketBased__c}"/>
+                                                        </td>
+                                                        <td class="text-center" id="detailInfo">
+                                                            <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" value="{!detail.Ass_BU_Cluster__c}"/>
+                                                        </td>
+                                                        <td class="text-center" id="detailInfo">
+                                                            <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" value="{!detail.Movement_Date__c}"/>
+                                                        </td>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel>
+                                                <!-- show hashed area if detail doesn't exist -->
+                                                <apex:outputPanel layout="none" rendered="{!OR(!CONTAINS(productWrapper.detailsMapKeySet, assortmentId),
+                                                                                          AND(!productWrapper.isUpdatable, productWrapper.referenceProduct.Id == null))}">
+                                                    <td colspan="3" class="slds-border_right slds-border_left" >
+                                                        <span class="blank-cell"/>
+                                                    </td>
+                                                </apex:outputPanel>
+                                            </apex:repeat>
+                                            <apex:variable var="count" value="{!count+1}"/>
+                                        </tr>
+                                    </apex:repeat>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="slds-p-around_x-small">
+                        <apex:selectList value="{!pageSize}" size="1" styleClass="slds-select slds-m-right_xx-small"
+                                         onchange="refreshPageSize();" style="width: 50px" >
+                            <apex:selectOptions value="{!pageSizes}" />
+                        </apex:selectList>
+                        <apex:commandButton status="globalloading" value="first" action="{!first}"
+                                            disabled="{!!productsStdSetCtrl.hasPrevious}" reRender="messages,dataGrid"
+                                            styleClass="slds-button slds-button_neutral" oncomplete="afterRerender();" />
+                        <apex:commandButton status="globalloading" value="previous" action="{!previous}"
+                                            disabled="{!!productsStdSetCtrl.hasPrevious}" reRender="messages, dataGrid"
+                                            styleClass="slds-button slds-button_neutral" oncomplete="afterRerender();" />
+                        <apex:commandButton status="globalloading" value="next" action="{!next}"
+                                            disabled="{!!productsStdSetCtrl.hasNext}" reRender="messages, dataGrid"
+                                            styleClass="slds-button slds-button_neutral" oncomplete="afterRerender();" />
+                        <apex:commandButton status="globalloading" value="last" action="{!last}"
+                                            disabled="{!!productsStdSetCtrl.hasNext}" reRender="messages, dataGrid"
+                                            styleClass="slds-button slds-button_neutral" oncomplete="afterRerender();" />
+                        <apex:outputText >
+                            {!(productsStdSetCtrl.pageNumber * pageSize)+1-pageSize}-{!IF((productsStdSetCtrl.pageNumber * pageSize)>noOfRecords, noOfRecords,
+                            (productsStdSetCtrl.pageNumber * pageSize))} {!$Label.LBL_Of} {!noOfRecords}
+                        </apex:outputText>
+                    </div>
+                </apex:outputPanel>
+                <apex:pageBlockButtons location="bottom">
+                    <apex:commandButton styleClass="slds-button slds-button_neutral" action="{!save}" value="{!$Label.Save}"
+                                        status="globalloading" reRender="dataGrid, messages" oncomplete="afterRerender();" />
+                    <apex:commandButton styleClass="slds-button slds-button_neutral" onclick="cancel();return false;" value="{!$Label.Cancel}" />
+                    <button class="slds-button slds-button_neutral" onclick="downloadExcel();return false;">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             xmlns:xlink="http://www.w3.org/1999/xlink"
+                             class="slds-button__icon slds-button__icon_left" aria-hidden="true" >
+                            <use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/utility-sprite/svg/symbols.svg#download')}"></use>
+                        </svg>
+                        {!$Label.LBL_Export_Details}
+                    </button>
+                </apex:pageBlockButtons>
+            </apex:pageBlock>
+        </apex:form>
+    </div>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"/>
+    <script>
+    
+    var j$ = jQuery.noConflict();
+    var AllHistory = '13';
+    
+    j$(document).ready(function() {
+        checkCurrentMonth();
+        displayMonthSelection();
+        afterRerender();
+    });
+    
+    function afterRerender() {
+        setTableDimensions();
+        // remove currency iso code from reference product Retail_Price_Reco__c
+        var rprList = j$('[id*=referenceRPR]');
+        for (var i = 0; i < rprList.length; i++) {
+            var textWithCurrency = j$(rprList[i]).text();
+            var textNoCurrency = textWithCurrency.split(' ').splice(1, 1)[0];
+            j$(rprList[i]).text(textNoCurrency);
+        }
+        document.getElementById('searchBox').addEventListener("keyup", function(event) {
+            // Number 13 is the "Enter" key on the keyboard
+            if (event.keyCode === 13) {
+                event.preventDefault();
+                applyFilters();
+            }
+        });
+        // make sure all links (lookups) in the table will open in a new tab
+        var links = j$('.table-container').find('a');
+        for (var i = 0; i < links.length; i++) {
+            j$(links[i]).attr('target', '_blank');
+        }
+    }
+    
+    window.onresize = function(event) {
+        setTableDimensions();
+    }
+    
+    function setTableDimensions() {
+        if (document.getElementsByClassName('table-container').length == 0) return;
+        // width
+        var bodyWidth = document.body.clientWidth;
+        _97 = bodyWidth * 97 / 100;
+        document.getElementsByClassName('table-container')[0].style.width = _97 + "px";
+        // height
+        var window_h = window.innerHeight;
+        var body_h = document.body.clientHeight;
+        var delta_h = body_h - window_h;
+        var grid_h = document.getElementsByClassName('table-container')[0].offsetHeight;
+        var new_grid_h = grid_h - delta_h;
+        document.getElementsByClassName('table-container')[0].style.height = new_grid_h + "px";
+    }
+    
+    function historyFilterChange(e) {
+        var options = j$('.filterOption');
+        var checkedCount = 0;
+        if (e.value == AllHistory) {
+            for (var i = 0; i < options.length; i++) {
+                options[i].checked = e.checked;
+            }
+        } else {
+            for (var i = 0; i < options.length; i++) {
+                if (options[i].checked && options[i].id != 'checkbox-13')
+                    checkedCount++;
+            }
+            if (checkedCount != 12)
+                options[options.length - 1].checked = false;
+            else options[options.length - 1].checked = true;
+        }
+        for (var i = 0; i < options.length; i++) {
+            toggleSelection(options[i]);
+        }
+        if (checkedCount == 0) checkCurrentMonth();
+    }
+    
+    function checkCurrentMonth() {
+        var currentMonth = (new Date()).getMonth() + 1;
+        currentMonth = currentMonth == 13 ? 1 : currentMonth;
+        j$('#checkbox-' + currentMonth)[0].checked = true;
+        toggleSelection(j$('#checkbox-' + currentMonth)[0]);
+    }
+    
+    function applyFilters() {
+        var monthOptions = j$('.filterOption');
+        var buFormatOptions = j$('.buFormatOption');
+        var searchTerm = document.getElementById('searchBox').value;
+        var buSource = j$('#buSourceSelect').children("option:selected").val();
+        var onlySwitchProducts = document.getElementById('only_switch_products').checked;
+        var onlyRennoProducts = document.getElementById('only_renno_products').checked;
+        // get selected month
+        var selectedMonthOptions = '';
+        for (var i = 0; i < monthOptions.length; i++) {
+            if(monthOptions[i].checked) {
+                if (monthOptions[i].value == AllHistory) continue;
+                selectedMonthOptions +=  selectedMonthOptions.length == 0 ? monthOptions[i].value : ',' + monthOptions[i].value;
+            }
+        }
+        // get selected bu formats
+        var selectedBuFormatOptions = '';
+        for (var i = 0; i < buFormatOptions.length; i++) {
+            if(buFormatOptions[i].value == '{!$Label.LBL_All}') continue;
+            if(buFormatOptions[i].checked) {
+                selectedBuFormatOptions +=  buFormatOptions.length == 0 ? buFormatOptions[i].value : ',' + buFormatOptions[i].value;
+            }
+        }
+        selectedBuFormatOptions = selectedBuFormatOptions.length == 0  ? 'none' : selectedBuFormatOptions;
+        searchProducts(searchTerm, selectedBuFormatOptions, selectedMonthOptions, onlySwitchProducts, onlyRennoProducts);
+        console.log('searchProducts(' + searchTerm + ', ' + selectedBuFormatOptions + ', ' + selectedMonthOptions + ', ' + onlySwitchProducts +', ' +onlyRennoProducts+ ');');
+    }
+    
+    function checkReferenceProduct(element, referenceId, IntroducedId) {
+        switchProduct(referenceId, IntroducedId);
+    }
+    
+    function displayMonthSelection() {
+        var options = j$('.filterOption');
+        var selectedOptions = '';
+        for (var i = 0; i < options.length; i++) {
+            if(options[i].checked) {
+                if (options[i].value == AllHistory) {
+                    selectedOptions = options[i].name;
+                    break;
+                } else
+                    selectedOptions +=  selectedOptions.length == 0 ? options[i].name : ', ' + options[i].name;
+            }
+        }
+        j$('#selectedOptions').val(/*'{!$Label.Filter_By_Months}: ' + */selectedOptions);
+    }
+    
+    function displayBuFormatSelection() {
+        var options = j$('.buFormatOption');
+        var selectedOptions = '';
+        for (var i = 0; i < options.length; i++) {
+            if(options[i].checked) {
+                if(options[i].value == '{!$Label.LBL_All}') {
+                    selectedOptions = options[i].name;
+                    break;
+                }
+                selectedOptions +=  selectedOptions.length == 0 ? options[i].name : ', ' + options[i].name;
+            }            
+        }
+        j$('#selectedBuFormatOptions').val(selectedOptions);
+    }
+    
+    function showMonthOptions() {
+        j$('#monthOptionsSection').removeClass('collapsed');
+    }
+    
+    function showBuFormatOptions() {
+        j$('#buFormatOptionsSection').removeClass('collapsed');
+    }
+    
+    function hideMonthOptions() {
+		displayMonthSelection();
+        j$('#monthOptionsSection').addClass('collapsed');
+    }
+    
+    function hideBuFormatOptions() {
+		displayBuFormatSelection();
+        j$('#buFormatOptionsSection').addClass('collapsed');
+    }
+    
+    function buFormatSelectionChange(e) {
+        var nbSelectedElement = j$('#buFormatOptionsSection').find('input:checked').length;
+        if (nbSelectedElement == 0 || (e.value == '{!$Label.LBL_All}' && !e.checked)) {
+            j$('#buFormatOptionsSection').removeClass('border-blue');
+            j$('#selectedBuFormatOptions').removeClass('border-blue');
+        }
+        else {
+            j$('#buFormatOptionsSection').addClass('border-blue');
+            j$('#selectedBuFormatOptions').addClass('border-blue');
+        }
+        
+        var buFormatOptions = j$('.buFormatOption');
+        if (e.value == '{!$Label.LBL_All}') {
+            for (var i = 0; i < buFormatOptions.length - 1; i++) {
+                buFormatOptions[i].checked = e.checked;
+                toggleSelection(buFormatOptions[i]);
+            }
+        } else {
+            if (!e.checked) {
+                buFormatOptions[buFormatOptions.length - 1].checked = false;
+                toggleSelection(buFormatOptions[buFormatOptions.length - 1]);
+            }
+        }
+        toggleSelection(e);
+    }
+    
+    function toggleSelection(e) {
+        if (e.checked)
+            j$(e).parent().addClass('selected-option');
+        else
+            j$(e).parent().removeClass('selected-option');
+    }
+    
+    function cancel() {
+        var isClassic = {!$User.UIThemeDisplayed == 'Theme2' || $User.UIThemeDisplayed == 'Theme3'};
+        var returnUrl = isClassic ? '/home/home.jsp' : '/one/one.app';
+        window.open(returnUrl,"_self");
+    }
+    
+    
+    </script>
+</apex:page>

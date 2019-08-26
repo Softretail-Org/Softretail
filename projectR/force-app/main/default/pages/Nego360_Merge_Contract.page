@@ -1,0 +1,102 @@
+<apex:page standardController="Contract__c" extensions="Nego360_Merge_Contract_Controller">
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }" />
+    
+    <apex:pageMessages id="messages" />
+    <apex:sectionHeader title="{!$ObjectType.Contract__c.Label}"
+                        subtitle="Merge {!dupContObj.Name}" />
+    <apex:form id="theForm">
+        <apex:pageBlock >
+            <apex:pageBlockSection rendered="{!errors.size == 0}" collapsible="false"
+                                   columns="{!IF(dupContObj == Null,'1','2')}">
+                <apex:pageBlockSection collapsible="false" columns="1">
+                    <apex:pageBlockSection collapsible="false" columns="2">
+                        <apex:outputField value="{!simContObj.Name}" />
+                        <apex:outputField value="{!simContObj.Supplier__c}" />
+                        <apex:outputField value="{!simContObj.Contract_BDate__c}" />
+                        <apex:outputField value="{!simContObj.Supplier_Nego_Scope__c}" />
+                        <apex:outputField value="{!simContObj.Contract_EDate__c}" />
+                    </apex:pageBlockSection>
+                    <apex:pageBlockTable headerClass="hidden-table-header" value="{!simulationConditionsList}" var="item" width="100%">
+                        <apex:facet name="header">{!$Label.LBL_Simulated_Contract}</apex:facet>
+                        <apex:column styleClass="{!IF(item.isToAdd==true,'c-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Condition_Type__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.Condition_Type__c}" />
+                        </apex:column>
+                        <apex:column styleClass="{!IF(item.isToAdd==true,'c-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Disc_BDate__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.Disc_BDate__c}" />
+                            <!--<apex:outputText value="{0, date, d'/'MM'/'yyyy}">
+                                <apex:param value="{!item.condition.Disc_BDate__c}"/>
+                            </apex:outputText>-->
+                        </apex:column>
+                        <apex:column styleClass="{!IF(item.isToAdd==true,'c-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Disc_EDate__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.Disc_EDate__c}" />
+                        </apex:column>
+                        <apex:column styleClass="{!IF(item.isToAdd==true,'c-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Value_amt__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.Value_amt__c}" />
+                        </apex:column>
+                        <apex:column styleClass="{!IF(item.isToAdd==true,'c-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Value_per__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.Value_per__c}" />
+                        </apex:column>
+                        <apex:column styleClass="{!IF(item.isToAdd==true,'c-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.BU_Scope__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.BU_Scope__c}" />
+                        </apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+                
+                <apex:pageBlockSection rendered="{!errors.size == 0 && dupContObj != Null}" columns="1">
+                    <apex:pageBlockSection collapsible="false" columns="2">
+                        <apex:outputField value="{!dupContObj.Name}" />
+                        <apex:outputField value="{!dupContObj.Supplier__c}" />
+                        <apex:outputField value="{!dupContObj.Contract_BDate__c}" />
+                        <apex:outputField value="{!dupContObj.Supplier_Nego_Scope__c}" />
+                        <apex:outputField value="{!dupContObj.Contract_EDate__c}" />
+                    </apex:pageBlockSection>
+                    <apex:pageBlockTable headerClass="hidden-table-header" value="{!duplicatedConditionsList}" var="item" width="100%">
+                        <apex:facet name="header">{!$Label.LBL_Duplicated_Contract}</apex:facet>
+                        <apex:column styleClass="{!IF(item.isToRemove==true,'c-not-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Condition_Type__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.Condition_Type__c}" />
+                        </apex:column>
+                        <apex:column styleClass="{!IF(item.isToRemove==true,'c-not-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Disc_BDate__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.Disc_BDate__c}" />
+                        </apex:column>
+                        <apex:column styleClass="{!IF(item.isToRemove==true,'c-not-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Disc_EDate__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.Disc_EDate__c}" />
+                        </apex:column>
+                        <apex:column styleClass="{!IF(item.isToRemove==true,'c-not-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Value_amt__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.Value_amt__c}" />
+                        </apex:column>
+                        <apex:column styleClass="{!IF(item.isToRemove==true,'c-not-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Value_per__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.Value_per__c}" />
+                        </apex:column>
+                        <apex:column styleClass="{!IF(item.isToRemove==true,'c-not-duplicated','')}">
+                            <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.BU_Scope__c.Label}</apex:facet>
+                            <apex:outputField value="{!item.condition.BU_Scope__c}" />
+                        </apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:pageBlockSection>
+            
+            <apex:pageblockbuttons >
+                <apex:commandButton value="Merge" action="{!submitMerge}"
+                                    status="mergeStatus" reRender="theForm, messages"
+                                    rendered="{!errors.size == 0 && !isMerged}"/>
+                <apex:commandButton value="{!$Label.Cancel}" action="{!Cancel}" />
+                <apex:actionStatus id="mergeStatus">
+                    <apex:facet name="start">
+                        <img src="/img/loading.gif" />
+                    </apex:facet>
+                </apex:actionStatus>
+            </apex:pageblockbuttons>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

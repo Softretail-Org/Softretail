@@ -1,0 +1,39 @@
+.THIS {
+}
+.THIS .headerStyle {
+    background-color: #b8dbf5;
+    text-align:center;
+    z-index: 4;
+    position: sticky;
+    top: 0;
+}
+.THIS .emptyCell {
+    height:35px;
+    background-color:#eaf1ff;
+}
+
+.THIS .categoryMinWidth {
+    min-width:300px;
+    background-color:#eaf1ff;
+}
+
+.THIS .reportFolder {
+    font-size: 18pt;
+    background-color: #c0d6ff;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 4;
+}
+.THIS .cellStyle {
+    text-align:center;
+    table-layout: auto;
+    width: 180px;  
+    
+}
+.THIS.folderNameStyle {
+    font-size: 18pt;
+    background-color: #c0d6ff;
+    text-align: center;
+    font-weight: bold;
+}

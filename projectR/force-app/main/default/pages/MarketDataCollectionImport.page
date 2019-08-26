@@ -1,0 +1,10 @@
+<apex:page standardController="Market_Data_Collection_Head__c" recordSetVar="allMarketHeads" showHeader="true" sidebar="true" lightningStylesheets="true" >
+    <apex:includeLightning />
+    <script>
+    $Lightning.use("c:MarketDataCollectionImport", function() {
+        $Lightning.createComponent("c:MarketDataCollectionImportComponent", {}, "componentId", function(cmp){});
+    });
+    </script>
+    <apex:sectionHeader title="{!$ObjectType.Market_Data_Collection_Head__c.Label}" subtitle="{!$ObjectType.Market_Data_Collection_Detail__c.Label}"/>
+    <div id="componentId"></div>
+</apex:page>

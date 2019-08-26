@@ -1,0 +1,99 @@
+<apex:page controller="CustomLookupController" title="Search"
+	showHeader="false" sideBar="false" standardStylesheets="true"
+	applyBodyTag="false" id="pg">
+	<script
+		src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+	<script>
+        $(document).ready(function() {   
+        	$('body').addClass('hasMotif lookupTab  LookupSearchFrame  brandNoBgrImg');
+    	}); 
+    </script>
+	<apex:sectionHeader title="Reference" />
+	<apex:form id="form">
+		<apex:actionStatus id="loadingStatus">
+			<apex:facet name="start">
+				<img src="/img/loading.gif" />
+			</apex:facet>
+		</apex:actionStatus>
+		<apex:outputPanel id="page" layout="block">
+			<apex:actionRegion >
+				<apex:outputPanel id="top" layout="block"
+					style="margin:5px;padding:10px;padding-top:2px;">
+					<apex:inputText id="txtSearch" value="{!searchString}" />
+					<span style="padding-left: 5px"> <apex:commandButton id="btnGo" value="Go" action="{!Search}" rerender="searchResults"></apex:commandButton></span>
+					<br />
+					<br />
+					<apex:commandLink style="margin-top:5px"
+						title="Clear Search Results" rerender="form,searchResults"
+						status="loadingStatus" action="{!clearSearch}">
+						<apex:param value="productscope" name="column"
+							assignTo="{!caseString}"></apex:param>			
+                        Clear Search Results	</apex:commandLink>
+				</apex:outputPanel>
+				<apex:outputPanel id="pnlSearchResults"
+					style="margin:10px;height:350px;overflow-Y:auto;" layout="block">
+					<apex:pageBlock id="searchResults">
+						<apex:pageBlockTable value="{!results}" var="a" id="tblResults">
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Sup_sup_NegoScope__c.fields.Name.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputLink value="javascript:top.window.opener.lookupPick2('{!FormTag}','{!TextBox}_lkid','{!TextBox}','{!a.Id}','{!a.Name}', false)"
+									rendered="{!NOT(ISNULL(a.Id))}">{!a.Name}</apex:outputLink>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Sup_sup_NegoScope__c.fields.NS_Code__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.NS_Code__c}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Sup_sup_NegoScope__c.fields.Supplier__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.Supplier__r.Name}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Sup_sup_NegoScope__c.fields.Parent_Nego_Scope__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.Parent_Nego_Scope__r.Name}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Sup_sup_NegoScope__c.fields.Is_All_Brands__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.Is_All_Brands__c}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Sup_sup_NegoScope__c.fields.Is_All_HE__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.Is_All_HE__c}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Sup_sup_NegoScope__c.fields.Is_All__c.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.Is_All__c}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Sup_sup_NegoScope__c.fields.CreatedDate.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.CreatedDate}</apex:outputText>
+							</apex:column>
+							<apex:column >
+								<apex:facet name="header">
+									<apex:outputPanel >{!$ObjectType.Sup_sup_NegoScope__c.fields.LastModifiedDate.Label}</apex:outputPanel>
+								</apex:facet>
+								<apex:outputText rendered="{!NOT(ISNULL(a.Id))}">{!a.LastModifiedDate}</apex:outputText>
+							</apex:column>
+						</apex:pageBlockTable>
+					</apex:pageBlock>
+				</apex:outputPanel>
+			</apex:actionRegion>
+		</apex:outputPanel>
+	</apex:form>
+</apex:page>

@@ -1,0 +1,9 @@
+<apex:page standardController="Sup_Supplier__c" extensions="ProductsSellInChartController"
+           lightningStylesheets="true" readOnly="true">
+    <apex:chart data="{!chartData}" height="200" width="500" colorSet="#b6e32e,#ff5858,#ffc862,#ffffff" theme="Salesforce">
+        <apex:pieSeries dataField="data" labelField="name" donut="30" tips="true">
+            <apex:chartLabel display="none"/>
+        </apex:pieSeries>
+        <apex:legend position="right"/>
+    </apex:chart>
+</apex:page>

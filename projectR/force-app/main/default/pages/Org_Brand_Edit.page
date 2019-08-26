@@ -1,0 +1,54 @@
+<apex:page id="brokerPage" standardcontroller="Sup_Brand__c" lightningStylesheets="true" showHeader="true" sidebar="true">
+    
+    <apex:pageMessages id="messages" />
+    <apex:sectionHeader title="{!$ObjectType.Sup_Brand__c.Label}"
+                        subtitle="{!IF(ISNULL(Sup_Brand__c.Name), $Label.LBL_New + ' ' + $ObjectType.Sup_Brand__c.Label, Sup_Brand__c.Name)}" />
+    <chatter:feedwithFollowers entityId="{!Sup_Brand__c.id}" showHeader="True"/>
+    
+    <!-- <c:HoverList_New Params="Sup_Brand__c-{!Sup_Brand__c.Id}-Sup_Bra_Suppliers__r" /> -->
+    <!--==========================================================-->
+    <!-- HOVER -->
+    <div class="RLPanelShadow" style="height : 10px;"><div class="RLPanel" style="height : 10px;" id="RLPanel" onblur="sfdcPage.relatedListPanel.hideRLDelayed(null, 100)" onfocus="sfdcPage.relatedListPanel.showRL()" onmouseout="sfdcPage.relatedListPanel.hideRLDelayed(null, 100)" onmouseover="sfdcPage.relatedListPanel.showRL()"><iframe frameborder="0" id="RLPanelFrame" name="RLPanelFrame" src="/emptyHtmlDoc.html" title="Hidden Frame - Ignore"></iframe></div></div><div class="listHoverLinks" style="text-align : center;"><span class="invisibleMinHeight">|</span></div>
+    <script type="text/javascript">
+    sfdcPage.registerRelatedListPanel('RLPanel',false);
+    </script>
+    
+    <style type="text/css">
+        [id*=nodisp] {display: none;}
+    </style>
+    
+    <apex:detail id="nodisp" subject="{!Sup_Brand__c}" relatedList="false" relatedListHover="true" title="false"/>
+    
+    <apex:form >
+        <apex:pageblock mode="edit" title="{!$Label.LBL_Edit} {!$ObjectType.Sup_Brand__c.label}">
+            <apex:pageblockbuttons >
+                <apex:commandbutton value="{!$Label.Save}" action="{!Save}"/>
+                <apex:commandbutton value="{!$Label.Cancel}" action="{!Cancel}"/>
+            </apex:pageblockbuttons>
+            <apex:pageblocksection title="{!$Label.LBL_Information}" showheader="true" columns="2">
+                <apex:inputfield value="{!Sup_Brand__c.Brand_Type_2__c}" required="true"/>
+                <apex:inputfield value="{!Sup_Brand__c.Online_supplier_offer__c}" required="false"/>
+                <apex:inputfield value="{!Sup_Brand__c.Brand_code__c}" required="true"/>
+                <apex:outputfield value="{!Sup_Brand__c.OwnerId}"/>
+                <apex:inputfield value="{!Sup_Brand__c.Name}" required="true"/>
+                <apex:inputfield value="{!Sup_Brand__c.Status__c}" required="false"/>
+                <apex:inputfield value="{!Sup_Brand__c.Brand_Owner__c}" required="true"/>
+                <apex:inputfield value="{!Sup_Brand__c.Status_BDate__c}" required="true"/>
+                <apex:inputfield value="{!Sup_Brand__c.URL__c}" required="false"/>
+            </apex:pageblocksection>
+        </apex:pageblock>
+    </apex:form>
+    
+    <apex:relatedList id="contactList" list="Sup_Bra_Suppliers__r" pageSize="5"/>
+    <apex:relatedList id="NotesList" list="CombinedAttachments"/>
+    
+    <!--==========================================================-->
+    <!-- CUSTOM HOVER -->
+    <!--==========================================================-->
+    <apex:outputPanel rendered="true">
+        <script type="text/javascript">
+        sfdcPage.registerRelatedList('brokerPage:contactList', '', '', false, '', '',false,false,true, '');
+        sfdcPage.registerRelatedList('brokerPage:NotesList', '', '', false, '', '',false,false,true, '');
+        </script>
+    </apex:outputPanel>
+</apex:page>

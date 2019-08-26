@@ -1,0 +1,1089 @@
+<apex:page standardController="Assortment_BU__c" tabStyle="Assortment_BU__c"
+           extensions="AssortmentBudgetSimulationController" sidebar="false" setup="false" >
+    <style>
+        <!-- scroll bar -->
+        /* Track */
+        ::-webkit-scrollbar-track {
+        background: #f1f1f1; 
+        }
+        /* Handle */
+        ::-webkit-scrollbar-thumb:horizontal {
+        background: #90dca6;
+        }
+        /* Handle on hover */
+        ::-webkit-scrollbar-thumb:horizontal:hover {
+        background: #56af70; 
+        }
+        /* Handle */
+        ::-webkit-scrollbar-thumb:vertical {
+        background: #fda9cf; 
+        }
+        /* Handle on hover */
+        ::-webkit-scrollbar-thumb:vertical:hover {
+        background: #f76aaa; 
+        }
+        /* width */
+        ::-webkit-scrollbar {
+        width: auto;
+        }
+        ::-webkit-scrollbar-button {
+        background-color: fda9cf;
+        background-size: 10px 10px;
+        background-repeat: no-repeat;
+        background-position: center center;
+        -webkit-box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        ::-webkit-scrollbar-button:vertical:increment {
+        background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PjwhRE9DVFlQRSBzdmcgIFBVQkxJQyAnLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4nICAnaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkJz48c3ZnIGhlaWdodD0iNTEycHgiIGlkPSJMYXllcl8xIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyOyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgd2lkdGg9IjUxMnB4IiB4bWw6c3BhY2U9InByZXNlcnZlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj48cGF0aCBkPSJNOTguOSwxODQuN2wxLjgsMi4xbDEzNiwxNTYuNWM0LjYsNS4zLDExLjUsOC42LDE5LjIsOC42YzcuNywwLDE0LjYtMy40LDE5LjItOC42TDQxMSwxODcuMWwyLjMtMi42ICBjMS43LTIuNSwyLjctNS41LDIuNy04LjdjMC04LjctNy40LTE1LjgtMTYuNi0xNS44djBIMTEyLjZ2MGMtOS4yLDAtMTYuNiw3LjEtMTYuNiwxNS44Qzk2LDE3OS4xLDk3LjEsMTgyLjIsOTguOSwxODQuN3oiLz48L3N2Zz4=);
+        }
+        
+        
+        ::-webkit-scrollbar-button:vertical:decrement {
+        background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PjwhRE9DVFlQRSBzdmcgIFBVQkxJQyAnLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4nICAnaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkJz48c3ZnIGhlaWdodD0iNTEycHgiIGlkPSJMYXllcl8xIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyOyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgd2lkdGg9IjUxMnB4IiB4bWw6c3BhY2U9InByZXNlcnZlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj48cGF0aCBkPSJNNDEzLjEsMzI3LjNsLTEuOC0yLjFsLTEzNi0xNTYuNWMtNC42LTUuMy0xMS41LTguNi0xOS4yLTguNmMtNy43LDAtMTQuNiwzLjQtMTkuMiw4LjZMMTAxLDMyNC45bC0yLjMsMi42ICBDOTcsMzMwLDk2LDMzMyw5NiwzMzYuMmMwLDguNyw3LjQsMTUuOCwxNi42LDE1Ljh2MGgyODYuOHYwYzkuMiwwLDE2LjYtNy4xLDE2LjYtMTUuOEM0MTYsMzMyLjksNDE0LjksMzI5LjgsNDEzLjEsMzI3LjN6Ii8+PC9zdmc+);
+        }
+        
+        ::-webkit-scrollbar-button:horizontal:increment {
+        background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PjwhRE9DVFlQRSBzdmcgIFBVQkxJQyAnLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4nICAnaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkJz48c3ZnIGhlaWdodD0iNTEycHgiIGlkPSJMYXllcl8xIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyOyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgd2lkdGg9IjUxMnB4IiB4bWw6c3BhY2U9InByZXNlcnZlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj48cGF0aCBkPSJNMTg0LjcsNDEzLjFsMi4xLTEuOGwxNTYuNS0xMzZjNS4zLTQuNiw4LjYtMTEuNSw4LjYtMTkuMmMwLTcuNy0zLjQtMTQuNi04LjYtMTkuMkwxODcuMSwxMDFsLTIuNi0yLjMgIEMxODIsOTcsMTc5LDk2LDE3NS44LDk2Yy04LjcsMC0xNS44LDcuNC0xNS44LDE2LjZoMHYyODYuOGgwYzAsOS4yLDcuMSwxNi42LDE1LjgsMTYuNkMxNzkuMSw0MTYsMTgyLjIsNDE0LjksMTg0LjcsNDEzLjF6Ii8+PC9zdmc+);
+        }
+        
+        
+        ::-webkit-scrollbar-button:horizontal:decrement {
+        background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PjwhRE9DVFlQRSBzdmcgIFBVQkxJQyAnLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4nICAnaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkJz48c3ZnIGhlaWdodD0iNTEycHgiIGlkPSJMYXllcl8xIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyOyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgd2lkdGg9IjUxMnB4IiB4bWw6c3BhY2U9InByZXNlcnZlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj48cGF0aCBkPSJNMzI3LjMsOTguOWwtMi4xLDEuOGwtMTU2LjUsMTM2Yy01LjMsNC42LTguNiwxMS41LTguNiwxOS4yYzAsNy43LDMuNCwxNC42LDguNiwxOS4yTDMyNC45LDQxMWwyLjYsMi4zICBjMi41LDEuNyw1LjUsMi43LDguNywyLjdjOC43LDAsMTUuOC03LjQsMTUuOC0xNi42aDBWMTEyLjZoMGMwLTkuMi03LjEtMTYuNi0xNS44LTE2LjZDMzMyLjksOTYsMzI5LjgsOTcuMSwzMjcuMyw5OC45eiIvPjwvc3ZnPg==);
+        }
+        
+        .pageBlockSection h3 {
+        display: inline !important;
+        }
+        .grid-container {
+        font-size: 9pt;
+        }
+        
+        .treegrid-container {
+        font-size: 9pt;
+        }
+        
+        .treegrid-container {
+        border: solid #dcdad9 1px;
+        margin-bottom: 5px;
+        }
+        
+        .grid-container thead {
+        min-height: 115px;
+        height: 115px;
+        }
+        
+        .grid-container td, .treegrid-container td {
+        text-align:right !important;
+        vertical-align:middle !important;
+        }
+        
+        .grid-container td input {
+        text-align:right !important;
+        }
+        
+        .grid-container th, .treegrid-container th {
+        text-align:center !important;
+        vertical-align:middle !important;
+        white-space: inherit !important;
+        font-weight: normal;
+        }
+        
+        .fixed-col {
+        background-color: #fbefdf !important;
+        }
+
+        .fixed_category td {
+        background-color: #dde1fb !important;
+        }
+        
+        .blank-cell {
+        background: repeating-linear-gradient(
+        45deg,
+        #7ad4ef 10px,
+        #ffffff 15px
+        );
+        width: 100%;
+        height: 15px;
+        display: inline-block;
+        }
+        
+        .hide {
+        display: none !important;
+        }
+
+        .blank-budget {
+        background: repeating-linear-gradient(
+        45deg,
+        red 10px,
+        #ffffff 15px
+        );
+        width: 100%;
+        height: 15px;
+        display: inline-block;
+        }
+        .collapsed {
+        display: none !important;
+        }
+        .budget-col {
+        font-weight: bolder;
+        }
+        .lineHeightOne {
+        line-height: 1rem;
+        }
+        .fontSize16 {
+        font-size: 16px;
+        }
+        .marginTop3 {
+        margin-top: 3px;
+        }
+        .histoInnoButton {
+        line-height:1rem !important;
+        vertical-align:middle;
+        white-space:nowrap;
+        }
+        .minHeight15 {
+        min-height: 15px !important;
+        }
+        .refreshPageSize {
+        line-height: 1rem !important;
+        min-height:15px !important;
+        margin-top:1px;
+        }
+        .firstButtonStyle {
+        margin-left:1px !important;
+        width:70px !important;
+        min-height:1px;
+        margin:1px !important;
+        line-height:1rem !important;
+        font-size:11px !important;
+        }
+        .previousNextLastButtons {
+        width:70px !important;
+        min-height:1px !important;
+        margin:1px !important;
+        line-height:1rem !important;
+        font-size:11px !important;
+        }
+        
+    </style>
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}" />
+    <apex:slds />
+    <apex:pageMessages id="messages" escape="false" />
+    <div class="slds-p-around_small">
+        <div class="slds-page-header">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <span class="slds-icon_container" title="{!Assortment_BU__c.recordType.DeveloperName}">
+                                <!--svg xmlns="http://www.w3.org/2000/svg"
+                                     xmlns:xlink="http://www.w3.org/1999/xlink"
+                                     class="slds-icon slds-icon-text-default" aria-hidden="true" st.
+									yle="transform: rotate(90deg);" >
+                                    <use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/action-sprite/svg/symbols.svg#user_activation')}"/>
+                                </svg
+                                <span class="slds-icon slds-icon-text-default">
+                                    <img src="{!URLFOR($Action.Attachment.Download,imgUrl)}" />
+                                </span>-->
+                                    <span class="slds-assistive-text">{!Assortment_BU__c.recordType.DeveloperName}</span>
+                            </span>
+                        </div>
+                        <div class="slds-media__body lineHeightOne">
+                            <div class="slds-page-header__name">
+                                <div class="slds-page-header__name-title">
+                                    <apex:outputPanel id="sectionHeaderPanel">
+                                        <h1>
+                                            <span class="slds-page-header__title slds-truncate fontSize16" title="{!instanceLongName}">{!instanceLongName}</span>
+                                        </h1>
+                                    </apex:outputPanel>
+                                </div>
+                            </div>
+                            <p class="slds-page-header__name-meta">{!$ObjectType.Assortment_BU__c.labelPlural}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-grid slds-m-top_x-small slds-m-bottom_x-small">
+            <div class="slds-form-element__control">
+                <div class="slds-checkbox_button-group marginTop3">
+                    <span class="slds-button slds-checkbox_button">
+                        <input name="radio" type="checkbox" id="Histo_Products" value="Histo_Products" checked="true" onchange="validateProductFilter(this);" class="histoInnoButton"/>
+                        <label class="slds-checkbox_button__label" for="Histo_Products">
+                            <span class="slds-checkbox_faux histoInnoButton">{!$Label.LBL_Histo_Products}</span>
+                        </label>
+                    </span>
+                    <span class="slds-button slds-checkbox_button">
+                        <input name="radio" type="checkbox" id="Intro_Products" value="Intro_Products" checked="true" onchange="validateProductFilter(this);" class="histoInnoButton"/>
+                        <label class="slds-checkbox_button__label" for="Intro_Products">
+                            <span class="slds-checkbox_faux histoInnoButton">{!$Label.LBL_Intro_Products}</span>
+                        </label>
+                    </span>
+                </div>
+            </div>
+            <!-- filter section -->
+            <div class="slds-form-element__control" style="margin-left: .25rem;">
+                <div class="slds-combobox_container">
+                    <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click">
+                        <input type="text" class="slds-input slds-combobox__input histoInnoButton minHeight15" id="selectedBuFormatOptions"
+                               autoComplete="off" placeholder="{!$ObjectType.Orga_BU__c.fields.Format_Origin__c.label}" onfocus="showBuFormatOptions();" />
+                        <section id="buFormatOptionsSection" class="slds-popover slds-popover_full-width collapsed" style="position: absolute;">
+                            <div class="slds-popover__body" id="dialog-body-id-26">
+                                <fieldset class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <apex:repeat value="{!buFormats}" var="buFormat">
+                                            <div class="slds-checkbox">
+                                                <input type="checkbox" name="{!buFormat.label}" id="checkbox-{!buFormat.value}" class="buFormatOption" value="{!buFormat.value}"
+                                                       onchange="buFormatSelectionChange(this);"/>
+                                                <label class="slds-checkbox__label" for="checkbox-{!buFormat.value}">
+                                                    <span class="slds-checkbox_faux"></span>
+                                                    <span class="slds-form-element__label">{!buFormat.label}</span>
+                                                </label>
+                                            </div>
+                                        </apex:repeat>
+                                    </div>
+                                </fieldset>
+                            </div>
+                            <footer class="slds-popover__footer slds-popover__footer_form">
+                                <button class="slds-button slds-button_brand" onclick="hideBuFormatOptions(); return false;">{!$Label.OK}</button>
+                            </footer>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <!-- search box -->
+            <div style="margin-left: .25rem;">
+                <input class="slds-input slds-combobox__input histoInnoButton minHeight15" id="searchBox" autocomplete="off"
+                       type="text" placeholder="{!$Label.Search}..." value="" />
+            </div>
+            <!-- apply filters button --> 
+            <div class="slds-col" style="margin-left: .75rem;">
+                <button class="slds-button slds-button_neutral histoInnoButton marginTop3" onclick="applyFilters();">{!$Label.Search}</button>
+            </div>
+            <!-- buttons -->
+            <apex:outputPanel id="buttonsPanel">
+                <button id="saveBtn" class="slds-button slds-button_neutral slds-col_bump-right histoInnoButton" onclick="save();" style="{!IF(readOnlyUser, 'display: none;', '')}" >{!$Label.Save}</button>
+                <button class="slds-button slds-button_neutral histoInnoButton" onclick="cancel();return false;">{!$Label.Cancel}</button>
+                <button id="requestForApprovalBtn" class="slds-button slds-button_neutral histoInnoButton" onclick="confirmRequestForApproval(); rerenderButtons();" style="{!IF(readOnlyUser, 'display: none;', '')}" disabled="true">{!$Label.LBL_Request_For_Approval}</button>
+                <button id="validateBtn" class="slds-button slds-button_neutral histoInnoButton" onclick="confirmValidation(); rerenderButtons();" style="{!IF(readOnlyUser, 'display: none;', '')}" disabled="true">{!$Label.LBL_Validate_Budget}</button>
+                <script>
+                var initialSave = {!initialSave};
+                var assortmentStatus = '{!JSENCODE(Assortment_BU__c.Status__c)}';
+                </script>
+            </apex:outputPanel>
+        </div>
+        <apex:form id="theForm">
+            <apex:actionStatus id="globalloading">
+                <apex:facet name="start">
+                    <div class="loading-overlay">
+                        <div class="loader-img"></div>
+                        <div class="loading-block">{!$Label.Loading}</div>
+                    </div>
+                </apex:facet>
+            </apex:actionStatus>
+            <apex:actionFunction name="search" action="{!search}" reRender="theForm" oncomplete="afterRerender();" status="globalloading">
+                <apex:param name="searchTerm" assignTo="{!searchTerm}" value="" />
+                <apex:param name="introProducts" assignTo="{!introProducts}" value="" />
+                <apex:param name="histoProducts" assignTo="{!histoProducts}" value="" />
+                <apex:param name="selectedBUFormats" assignTo="{!selectedBUFormats}" value="" />
+            </apex:actionFunction>
+            <apex:actionFunction name="save" action="{!save}" status="globalloading" reRender="theForm, messages, buttonsPanel, subTotalsMapPanel, sectionHeaderPanel" oncomplete="afterRerender();" rendered="{!!readOnlyUser}" />
+            <apex:actionFunction name="requestForApproval" action="{!requestForApproval}" status="globalloading" reRender="theForm, messages, buttonsPanel, sectionHeaderPanel" oncomplete="afterRerender();" rendered="{!!readOnlyUser}" />
+            <apex:actionFunction name="validate" action="{!validate}" status="globalloading" reRender="theForm, messages, buttonsPanel, sectionHeaderPanel" oncomplete="afterRerender();" rendered="{!!readOnlyUser}" />
+            <apex:actionFunction action="{!refreshPageSize}" name="refreshPageSize" status="globalloading" reRender="theForm" oncomplete="afterRerender();" />
+            <apex:pageBlock id="thePageBlock">
+                <!-- information section -->
+                <apex:pageBlockSection title="{!$Label.LBL_Information}" collapsible="true" columns="2" html-class="infoSection pageBlockSection" >
+                    <apex:outputField value="{!Assortment_BU__c.Name}" />
+                    <apex:outputField value="{!Assortment_BU__c.Year__c}" />
+                    <apex:outputField value="{!Assortment_BU__c.BU_source__c}" />
+                    <apex:outputField value="{!Assortment_BU__c.Ass_BDate__c}" />
+                    <apex:outputField value="{!Assortment_BU__c.BU_Target__c}" />
+                    <apex:outputField value="{!Assortment_BU__c.Ass_EDate__c}" />
+                    <apex:outputField value="{!Assortment_BU__c.Assortment_type__c}" />
+                    <apex:outputField value="{!Assortment_BU__c.Orga_HE__c}" />
+                </apex:pageBlockSection>
+                <!-- category totals -->
+                <apex:outputPanel rendered="{!AND(!ISNULL(data), data.size != 0)}">
+                    <div class="treegrid-container hide">
+                        <table id="treegrid" class="slds-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="3" style="min-width:200px;"></th>
+                                    <th colspan="7" class="slds-text-title_caps slds-border_right slds-border_left">
+                                        <apex:outputField value="{!Assortment_BU__c.BU_Target__c}" />
+                                    </th>
+                                    <apex:repeat value="{!clientCircuitList}" var="clientCircuit">
+                                        <th colspan="5" class="slds-text-title_caps slds-border_right slds-border_left">
+                                            <apex:outputLink value="/{!clientCircuit.Id}" target="_blank">
+                                                {!clientCircuit.Name}
+                                            </apex:outputLink>
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                                <tr class="slds-border_top slds-border_bottom">
+                                    <th colspan="3"></th>
+                                    <!-- channel -->
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.DV_Fact_Histo}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.DV_Nego_Histo}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.WD_L4L}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.DV_Nego_MarketBased_Histo}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.New_WD}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.WD_Budget}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.GAP_WD}
+                                    </th>
+                                    <apex:repeat value="{!clientCircuitList}" var="clientCircuit">
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$Label.DV_Fact_Histo}
+                                        </th>
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$Label.DV_Nego_Histo}
+                                        </th>
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$Label.WD_L4L}
+                                        </th>
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$Label.LBL_Strate}
+                                        </th>
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$Label.WD_Budget}
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td></td>
+                                    <td></td>
+                                    <td style="text-align:left !important;"></td>
+                                    <!-- channel -->
+                                    <td class="slds-border_right slds-border_left"></td>
+                                    <td class="slds-border_right slds-border_left"></td>
+                                    <td class="slds-border_right slds-border_left"></td>
+                                    <td class="slds-border_right slds-border_left"></td>
+                                    <td class="slds-border_right slds-border_left budget-col"></td>
+                                    <td class="slds-border_right slds-border_left"></td>
+                                    <td class="slds-border_right slds-border_left"></td>
+                                    <apex:repeat value="{!clientCircuitList}" var="clientCircuit">
+                                        <td class="slds-border_right slds-border_left"></td>
+                                        <td class="slds-border_right slds-border_left"></td>
+                                        <td class="slds-border_right slds-border_left"></td>
+                                        <td class="slds-border_right slds-border_left"></td>
+                                        <td class="slds-border_right slds-border_left"></td>
+                                    </apex:repeat>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="grid-container slds-scrollable">
+                        <table id="fixedTable" class="slds-table slds-table_striped slds-no-cell-focus slds-no-row-hover" >
+                            <thead>
+                                <tr class="slds-border_top slds-border_bottom" >
+                                    <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="item" >
+                                        <th rowspan="3" class="slds-border_right" style="{!IF(item.fieldName=='Name', 'min-width:250px;', '')}">
+                                            {!item.fieldLabel}
+                                        </th>
+                                    </apex:repeat>
+                                    <th colspan="7" rowspan="2" class="slds-text-title_caps slds-border_right slds-border_left">
+                                        <apex:outputField value="{!Assortment_BU__c.BU_Target__c}" />
+                                    </th>
+                                    <apex:repeat value="{!clientCircuitList}" var="clientCircuit">
+                                        <th colspan="5" class="slds-text-title_caps slds-border_right slds-border_left">
+                                            <apex:outputLink value="/{!clientCircuit.Id}" target="_blank">
+                                                {!clientCircuit.Name}
+                                            </apex:outputLink>
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                                <!-- DV Row -->
+                                <tr class="slds-border_top slds-border_bottom">
+                                    <!-- channel -->
+                                    <apex:repeat value="{!clientCircuitList}" var="clientCircuit">
+                                        <th colspan="5" class="slds-border_right slds-border_left">
+                                            {!clientCircuit.Weighted_Distribution_Manual_N1__c}
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                                <!-- column titles row -->
+                                <tr class="slds-border_top slds-border_bottom">
+                                    <!-- channel -->
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.DV_Fact_Histo}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.DV_Nego_Histo}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.WD_L4L}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.DV_Nego_MarketBased_Histo}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.New_WD}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.WD_Budget}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left">
+                                        {!$Label.GAP_WD}
+                                    </th>
+                                    <apex:repeat value="{!clientCircuitList}" var="clientCircuit">
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$Label.DV_Fact_Histo}
+                                        </th>
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$Label.DV_Nego_Histo}
+                                        </th>
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$Label.WD_L4L}
+                                        </th>
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$Label.LBL_Strate}
+                                        </th>
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$Label.WD_Budget}
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <apex:variable id="tabIndex" var="tabindex" value="{!1}"/>
+                                <apex:repeat value="{!data}" var="categoryWrapper" >
+                                    <tr class="fixed_category slds-border_bottom">
+                                        <td colspan="{!IF(gridSettingsManager.GRID_FIELDS.size > 2, 2, gridSettingsManager.GRID_FIELDS.size)}" class="slds-border_right fixed-col" style="text-align:left !important;">
+                                            <apex:outputLink value="/{!categoryWrapper.categoryId}" target="_blank">
+                                                {!categoryWrapper.categoryName}
+                                            </apex:outputLink>
+                                        </td>
+                                        <apex:outputPanel layout="none" rendered="{!gridSettingsManager.GRID_FIELDS.size > 2}">
+                                            <td colspan="{!gridSettingsManager.GRID_FIELDS.size - 2}"></td>
+                                        </apex:outputPanel>
+                                        <td class="{!Assortment_BU__c.BU_Target__c}-{!categoryWrapper.categoryId}-Nego-Fact_WD_MarketBased_Pts__c fixed-col">
+                                            <span class="slds-truncate"></span>
+                                        </td>
+                                        <td class="{!Assortment_BU__c.BU_Target__c}-{!categoryWrapper.categoryId}-Nego-New_Client_WD_MarketBased_Pts__c fixed-col">
+                                            <span class="slds-truncate"></span>
+                                        </td>
+                                        <td class="{!Assortment_BU__c.BU_Target__c}-{!categoryWrapper.categoryId}-Nego-L4L_Client_WD_Marketbased_Pts__c fixed-col">
+                                            <span class="slds-truncate"></span>
+                                        </td>
+                                        <td class="{!Assortment_BU__c.BU_Target__c}-{!categoryWrapper.categoryId}-Nego-Ref_Client_WD_MarketBased_Nego_Pts__c fixed-col">
+                                            <span class="slds-truncate"></span>
+                                        </td>
+                                        <td class="{!Assortment_BU__c.BU_Target__c}-{!categoryWrapper.categoryId}-Budget-New_Client_WD_MarketBased_Pts__c fixed-col budget-col">
+                                            <span class="slds-truncate"></span>
+                                        </td>
+                                        <td class="{!Assortment_BU__c.BU_Target__c}-{!categoryWrapper.categoryId}-Target-New_Client_WD_MarketBased_Pts__c fixed-col">
+                                            <span class="slds-truncate"></span>
+                                        </td>
+                                        <td class="{!Assortment_BU__c.BU_Target__c}-{!categoryWrapper.categoryId}-gap fixed-col">
+                                            <span class="slds-truncate"></span>
+                                        </td>
+                                        <apex:repeat value="{!clientCircuitList}" var="clientCircuit">
+                                            <td class="{!clientCircuit.Id}-{!categoryWrapper.categoryId}-Nego-Fact_WD_MarketBased_Pts__c">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                            <td class="{!clientCircuit.Id}-{!categoryWrapper.categoryId}-Nego-New_Client_WD_MarketBased_Pts__c">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                            <td class="{!clientCircuit.Id}-{!categoryWrapper.categoryId}-Nego-L4L_Client_WD_Marketbased_Pts__c">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                            <td class="{!clientCircuit.Id}-{!categoryWrapper.categoryId}-Nego-Ass_BU_Cluster__c">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                            <td class="{!clientCircuit.Id}-{!categoryWrapper.categoryId}-Target-New_Client_WD_MarketBased_Pts__c">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                        </apex:repeat>
+                                    </tr>
+                                    <apex:repeat value="{!categoryWrapper.products}" var="productWrapper" >
+                                        <tr class="category-{!categoryWrapper.categoryId} slds-border_bottom" >
+                                            <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="item" >
+                                                <td class="fixed-col" style="text-align:left !important;" >
+                                                    <apex:outputField styleClass="slds-truncate" value="{!productWrapper.product[item.fieldName]}" rendered="{!item.fieldName != 'Name'}"/>
+                                                    <apex:outputLink styleClass="slds-truncate" value="/{!productWrapper.product.Id}"
+                                                                     rendered="{!item.fieldName == 'Name'}">
+                                                        <span style="{!IF(OR(productWrapper.product.IsInnovation__c, productWrapper.product.recordType.developerName == 'Unit_Need'), 'color: green;', '')}
+                                                                     {!IF(YEAR(productWrapper.product.Market_End_of_Life_Date__c) == Assortment_BU__c.Year__c, 'color: red;', '')}">
+                                                            {!productWrapper.product.Name}
+                                                        </span>
+                                                    </apex:outputLink>
+                                                </td>
+                                            </apex:repeat>
+                                            <td class="{!productWrapper.product.Id}-Nego-Fact_WD_MarketBased_Pts__c fixed-col">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                            <td class="{!productWrapper.product.Id}-Nego-New_Client_WD_MarketBased_Pts__c fixed-col">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                            <td class="{!productWrapper.product.Id}-Nego-L4L_Client_WD_Marketbased_Pts__c fixed-col">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                            <td class="{!productWrapper.product.Id}-Nego-Ref_Client_WD_MarketBased_Nego_Pts__c fixed-col">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                            <td class="{!productWrapper.product.Id}-Nego-L4L_Client_WD_Marketbased_Pts__c  fixed-col budget-col" >
+                                                <apex:inputField styleClass="slds-truncate inputNoEnter"
+                                                                 value="{!productWrapper.cumulDetail.New_Client_WD_MarketBased__c}"
+                                                                 style="width: 70px;"  html-tabindex="{!tabindex}"
+                                                                 onchange="" rendered="{!AND(Assortment_BU__c.Status__c != 'Validated', !readOnlyUser)}" />
+                                                <apex:outputField styleClass="slds-truncate"
+                                                                  value="{!productWrapper.cumulDetail.New_Client_WD_MarketBased_Pts__c}"
+                                                                  rendered="{!OR(Assortment_BU__c.Status__c == 'Validated', readOnlyUser)}" />
+                                                <input type="hidden" value="{!productWrapper.cumulDetail.Id}" />
+                                                <apex:variable var="tabindex" value="{!tabindex+1}"/>
+                                            </td>
+                                            <td class="{!productWrapper.product.Id}-Target-New_Client_WD_MarketBased_Pts__c
+                                                       {!categoryWrapper.categoryId}-budget-New_Client_WD_MarketBased_Pts__c fixed-col">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                            <td class="{!productWrapper.product.Id}-gap
+                                                       {!categoryWrapper.categoryId}-gap slds-border_right fixed-col">
+                                                <span class="slds-truncate"></span>
+                                            </td>
+                                            <apex:repeat value="{!productWrapper.details}" var="detailWrapper">
+                                                <apex:outputPanel layout="none" rendered="{!detailWrapper.buId == null || detailWrapper.histoDetail.Client_Status__c == null}" >
+                                                    <td colspan="4" class="slds-border_left" >
+                                                        <span class="blank-cell"/>
+                                                    </td>
+                                                </apex:outputPanel>
+                                                <apex:outputPanel layout="none" rendered="{!detailWrapper.buId != null && detailWrapper.histoDetail.Client_Status__c != null}" >
+                                                    <td class="{!categoryWrapper.categoryId}-{!detailWrapper.buId}-histo-Fact_WD_MarketBased_Pts__c
+                                                               {!productWrapper.product.Id}-histo-Fact_WD_MarketBased_Pts__c">
+                                                        <apex:outputField styleClass="slds-truncate" value="{!detailWrapper.histoDetail.Fact_WD_MarketBased__c}" />
+                                                    </td>
+                                                    <td class="{!categoryWrapper.categoryId}-{!detailWrapper.buId}-Nego-New_Client_WD_MarketBased__c
+                                                               {!productWrapper.product.Id}-Nego-New_Client_WD_MarketBased_Pts__c">
+                                                        <apex:outputField styleClass="slds-truncate" value="{!detailWrapper.histoDetail.New_Client_WD_MarketBased_Pts__c}" />
+                                                    </td>
+                                                    <td class="{!categoryWrapper.categoryId}-{!detailWrapper.buId}-l4l-New_Client_WD_MarketBased_Pts__c
+                                                               {!productWrapper.product.Id}-L4L-New_Client_WD_MarketBased_Pts__c">
+                                                        <apex:outputField styleClass="slds-truncate" value="{!detailWrapper.histoDetail.L4L_Client_WD_MarketBased_Pts__c}" />
+                                                    </td>
+                                                    <td class="{!categoryWrapper.categoryId}-{!detailWrapper.buId}-histo-Ass_BU_Cluster__c
+                                                               {!productWrapper.product.Id}-histo-Ass_BU_Cluster__c">
+                                                        <apex:outputField styleClass="slds-truncate" value="{!detailWrapper.histoDetail.Ass_BU_Cluster__c}" />
+                                                    </td>
+                                                </apex:outputPanel>
+                                                <apex:outputPanel layout="none" rendered="{!(Assortment_BU__c.Status__c == 'Validated' || Assortment_BU__c.Status__c == 'Request for Approval') && detailWrapper.targetDetail.Status__c == 'Validated'}">
+                                                    <td class="{!categoryWrapper.categoryId}-{!detailWrapper.buId}-budget-New_Client_WD_MarketBased_Pts__c
+                                                               {!productWrapper.product.Id}-budget-New_Client_WD_MarketBased_Pts__c slds-border_right">
+                                                        <apex:outputField styleClass="slds-truncate" value="{!detailWrapper.targetDetail.New_Client_WD_MarketBased_Pts__c}" />
+                                                    </td>
+                                                </apex:outputPanel>
+                                                <apex:outputPanel layout="none" rendered="{!Assortment_BU__c.Status__c != 'Validated' && Assortment_BU__c.Status__c != 'Request for Approval'}">
+                                                    <td>
+                                                    </td>
+                                                </apex:outputPanel>
+                                                <apex:outputPanel layout="none" rendered="{!(Assortment_BU__c.Status__c == 'Request for Approval' || Assortment_BU__c.Status__c == 'Validated') && detailWrapper.targetDetail.Status__c != 'Validated'}">
+                                                    <td>
+                                                        <span class="blank-budget"/>
+                                                    </td>
+                                                </apex:outputPanel>
+                                            </apex:repeat>
+                                        </tr>
+                                    </apex:repeat>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                    <apex:outputPanel >
+                        <span class="paginationClass">
+                            <apex:selectList value="{!pageSize}" multiselect="false" size="1" onchange="refreshPageSize();" styleClass="slds-select refreshPageSize" style="width:70px">
+                                <apex:selectOptions value="{!pageSizeOptions}" />
+                            </apex:selectList>
+                            <apex:commandButton status="globalloading" value="{!$Label.LBL_First}" action="{!first}" disabled="{!!productsObjectIterable.hasPrevious}"
+                                                reRender="theForm, messages" oncomplete="afterRerender();" styleClass="slds-button slds-button_neutral firstButtonStyle" />
+                            <apex:commandButton status="theForm, messages" value="{!$Label.LBL_Previous}" action="{!previous}" disabled="{!!productsObjectIterable.hasPrevious}"
+                                                reRender="theForm, messages" oncomplete="afterRerender();" styleClass="slds-button slds-button_neutral previousNextLastButtons" />
+                            <apex:commandButton status="globalloading" value="{!$Label.LBL_Next}" action="{!next}" disabled="{!!productsObjectIterable.hasNext}"
+                                                reRender="theForm, messages" oncomplete="afterRerender();" styleClass="slds-button slds-button_neutral previousNextLastButtons" />
+                            <apex:commandButton status="globalloading" value="{!$Label.LBL_Last}" action="{!last}" disabled="{!!productsObjectIterable.hasNext}"
+                                                reRender="theForm, messages" oncomplete="afterRerender();" styleClass="slds-button slds-button_neutral previousNextLastButtons" />
+                            <apex:outputText style="text-align: right">
+                                {!(productsObjectIterable.pageNumber * pageSize)+1-pageSize}-{!IF((productsObjectIterable.pageNumber * pageSize)>noOfRecords,
+                                noOfRecords, (productsObjectIterable.pageNumber * pageSize))} {!$Label.LBL_Of} {!noOfRecords}
+                            </apex:outputText>
+                        </span>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!data.size == 0}">
+                    <apex:outputText >
+                        {!$Label.LBL_No_Item_To_Display}
+                    </apex:outputText>
+                </apex:outputPanel>
+            </apex:pageBlock>
+            <!-- to rerender some variables -->
+            <apex:outputPanel >
+                <script>
+                var categoriesIdSet = JSON.parse('{!categoriesIdSet_serialized}');
+                </script>
+            </apex:outputPanel>
+            <apex:outputPanel id="subTotalsMapPanel">
+                <script>
+                var subTotalsMap = JSON.parse('{!JSENCODE(subTotalsMap_serialized)}');
+                </script>
+            </apex:outputPanel>
+        </apex:form>
+    </div>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"/>
+    <!--apex:includeScript value="{!$Resource.freeze_table}"/-->
+    
+    <apex:includeScript value="{!URLFOR($Resource.Assets, 'assets/js/app.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/dist/jquery.fancytree-all-deps.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/dist/modules/jquery.fancytree.filter.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/src/jquery.fancytree.table.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/src/jquery.fancytree.gridnav.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.fancytree, 'fancytree/dist/skin-win8/ui.fancytree.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}" />
+    
+    <script>
+    var decimalSeparator = '{!localeDecimalSeparator}';
+    negoptimApp = new App('{!locale}', '{!localeDecimalSeparator}');
+    var budgetBUTargetId = '{!JSENCODE(Assortment_BU__c.BU_Target__c)}'
+    
+    var categoriesIdSet = JSON.parse('{!categoriesIdSet_serialized}');
+    var treeFields = JSON.parse('{!treeFields_serialized}');
+    var CategoryTree_serialized = {!CategoryTree_serialized};
+    var nbProductFields = {!gridSettingsManager.GRID_FIELDS.size};
+    var totalColumnsMap = new Map();
+    var fields = JSON.parse('{!fieldNames_serialized}');
+    var fieldsScaleMap =  JSON.parse('{!fieldsScaleMap_serialized}');//JSON.parse('{JSENCODE(fieldsScaleMap_serialized)}');
+    var subTotalsMap = JSON.parse('{!JSENCODE(subTotalsMap_serialized)}');
+    
+    var fixedCategoryRows;
+    
+    $(document).ready(function() {
+        console.log(JSON.stringify(CategoryTree_serialized));
+        renderTotalsTree();
+        afterRerender();
+    });
+    
+    function afterRerender() {
+        ////removeSymbols();
+        renderTotalsTree();
+        var pageBlockSections = $('.pageBlockSection');
+        for (var i = 0; i < pageBlockSections.length; i++)
+            twistSection($(pageBlockSections[i]).find('img')[0]);
+        $('.infoSection').find('img')[0].onclick = function(){
+            twistSection(this);
+            $('.treegrid-container').toggleClass('hide');
+        };
+        // treegrid-container;
+        // set table width based on page size
+        setTableDimensions();
+        // bind grid width with page size change
+        window.onresize = function(event) {
+            setTableDimensions();
+            setSticky();
+        };
+        // make sure all links (lookups) in the table will open in a new tab
+        var links = $('.grid-container').find('a');
+        for (var i = 0; i < links.length; i++)
+            $(links[i]).attr('target', '_blank');
+        fillSubTotalRows();
+        $(".inputNoEnter").on('keypress', function(e) {
+            code = e.keyCode ? e.keyCode : e.which;
+            if (code.toString() == 13) {
+                e.preventDefault();
+            }
+        });
+        var searchBoxCopies = $('.searchBox');
+        for (var index = 0; index < searchBoxCopies.length; index++) {
+            $(searchBoxCopies[index]).on('keypress', function(e) {
+                code = e.keyCode ? e.keyCode : e.which;
+                if (code.toString() == 13) {
+                    var searchTerm = $(this).val();
+                    console.log('searchTerm >>>> ' + searchTerm);
+                    e.preventDefault();
+                    search(searchTerm);
+                }
+            });
+        }
+        rerenderButtons();
+        $("img[class$='hideListButton']").click(function() {
+            setTableDimensions();
+        });
+        $("img[class$='showListButton']").click(function() {
+            setTableDimensions();
+        });
+        setTableDimensions();
+        setSticky();
+    }
+    
+    function removeSymbols() {
+        var spans = $('.grid-container tbody').find('span');
+        for (var i = 0; i < spans.length; i++) {
+            if ($(spans[i]).find('a').length != 0 || $(spans[i]).find('img').length) continue;
+            var textContent = $(spans[i])[0].textContent
+            $(spans[i])[0].textContent = textContent.replace('%','');
+        }
+    }
+        
+    // expand and collapse tree to render all rows
+    function renderTotalsTree() {
+        var i = 3;
+        for (var index = 0; index < treeFields.length; index++)
+            totalColumnsMap.set(treeFields[index], i++);
+        
+        // Attach the fancytree widget to an existing <div id="treegrid"> element
+        // and pass the tree options as an argument to the fancytree() function:
+        $("#treegrid").fancytree({
+            extensions: ["table", "filter", "gridnav"],
+            checkbox: false,
+            filter: {
+                // mode: "hide"
+            },
+            gridnav: {
+                // autofocusInput: true, // focus first embedded input if node gets activated
+                // handleCursorKeys: true,   // Allow UP/DOWN in inputs to move to prev/next node
+            },
+            table: {
+                indentation: 20,      // indent 20px per node level
+                nodeColumnIdx: 2,     // render the node title into the 2nd column
+                checkboxColumnIdx: 1  // render the checkboxes into the 1st column
+            },
+            source: CategoryTree_serialized,
+            titlesTabbable: true, // Add all node titles to TAB chain
+            lazyLoad: function(event, data) { },
+            renderColumns: function(event, data) {
+                var node = data.node, $tdList = $(node.tr).find(">td");
+                i = 3;
+                for (var index = 0; index < treeFields.length; index++) {
+                    var field = treeFields[index];
+                    if (node.data.sums[field] != null) {
+                        $tdList.eq(i++).text(node.data.sums[field]);
+                    }
+                }
+            }
+        });
+        
+        $("#treegrid").fancytree("getTree").expandAll();
+        $("#treegrid").fancytree("getTree").expandAll(false);
+    }
+    
+    // calculation related functions
+    function fillSubTotalRows() {
+        fields.push('Nego-Ref_Client_WD_MarketBased_Nego_Pts__c');
+        fields.push('gap');
+        for (var key in subTotalsMap) {
+            for (var fieldIndex = 0; fieldIndex < fields.length; fieldIndex++) {
+                var fieldName = fields[fieldIndex];
+                assignSubTotal(key, fieldName);
+                if (key.includes('-')) {
+                    var splitKey = key.split('-');
+                    value = subTotalsMap[key].hasOwnProperty(fieldName) ? subTotalsMap[key][fieldName] : 0;
+                    if (key.startsWith(budgetBUTargetId) && fieldName == 'Budget-New_Client_WD_MarketBased_Pts__c' && !subTotalsMap[key].hasOwnProperty('Budget-New_Client_WD_MarketBased_Pts__c')) {
+                        value = subTotalsMap[key].hasOwnProperty('Nego-L4L_Client_WD_Marketbased_Pts__c') ? subTotalsMap[key]['Nego-L4L_Client_WD_Marketbased_Pts__c'] : 0;
+                    }
+                    calculateParentTotalSum(splitKey[1], splitKey[0] + '-' + fieldName, value);
+                }
+            }
+        }
+        fields.splice(fields.length - 1, 1);
+        fields.splice(fields.length - 1, 1);
+    }
+    
+    function assignSubTotal(key, fieldName) {
+        var subTotal = subTotalsMap[key][fieldName];
+        if (key.includes('-') && key.startsWith(budgetBUTargetId) && fieldName == 'Budget-New_Client_WD_MarketBased_Pts__c' && !subTotalsMap[key].hasOwnProperty('Budget-New_Client_WD_MarketBased_Pts__c')) {
+            var substituteField = 'Nego-L4L_Client_WD_Marketbased_Pts__c';
+            subTotal = subTotalsMap[key][substituteField];
+        }
+        var subTotalCell = document.getElementsByClassName(key + '-' + fieldName);
+        if (subTotal != null && subTotalCell != null && typeof subTotalCell !== 'undefined' && subTotalCell.length > 0) {
+            var spans = subTotalCell[0].getElementsByTagName('span');
+            var scale = fieldsScaleMap[fieldName.split('-')[1]];
+            if (spans.length > 0) {
+                spans[0].textContent = formatNumber(subTotal, scale);
+            }
+            if (subTotalCell.length > 1) {
+                var inputs = subTotalCell[1].getElementsByTagName('input');
+                if (inputs.length > 0 && (inputs[0].value == null || inputs[0].value == 0)) {
+                    inputs[0].value = formatNumber(subTotal, scale);
+                }
+            }
+        }
+    }
+    
+    function calculateParentTotalSum(categoryId, columnName, newValue) {
+        var nodeKey = categoryId;
+        var tree = $("#treegrid").fancytree("getTree");
+        var node = tree.getNodeByKey(nodeKey);
+        if (node != null) {
+            $tdList = $(node.tr).find(">td");
+            var oldValue = isNaN(node.data.sums[columnName]) ? 0 : node.data.sums[columnName];
+            var diffValue = newValue - oldValue;
+            var column = $tdList.eq(totalColumnsMap.get(columnName));
+            var fieldName = columnName.split('-')[2];
+            var scale = fieldsScaleMap[fieldName];
+            column.text(formatNumber(newValue, scale));
+            node.data.sums[columnName] = newValue;
+            node = node.parent;
+            while(node != null && node.title != 'root') {
+                $tdList = $(node.tr).find(">td");
+                var oldValue = isNaN(node.data.sums[columnName]) ? 0 : node.data.sums[columnName];
+                var newValue = oldValue + diffValue;
+                var column = $tdList.eq(totalColumnsMap.get(columnName));
+                var fieldName = columnName.split('-')[2];
+                var scale = fieldsScaleMap[fieldName];
+                column.text(formatNumber(newValue, scale));
+                node.data.sums[columnName] = newValue;
+                node = node.parent;
+            }
+        }
+    }
+    
+    // set grid width depending on page size
+    function setGridContainerWidth() {
+        // width
+        var bodyWidth = $(document).find('body')[0].clientWidth;
+        _97 = bodyWidth * 97 / 100;
+        $('.grid-container').css('width', _97 + 'px');
+        $('.treegrid-container').css('width', _97 + 'px');
+        $('.treegrid-container').css('overflow-x', 'scroll');
+    }
+    
+    function stringToDecimal(str) {
+        if (str == null) return 0;
+        var d = str.replace(/&nbsp/g, "").replace(/;/g,'');
+        d = str.toString().replace(/\s/g, "");
+        if(decimalSeparator == ',') {
+            d = d.replace(",", ".");
+        }
+        else {
+            d = d.replace(/,/g, "");
+        }
+        if (!isNaN(d) && d.length !== 0) {
+            return parseFloat(d);
+        }
+        return 0;
+    }
+    
+    /*function formatNumber(num, scale) {
+        if (num == null || isNaN(num) || num.length == 0) num = 0;
+        if (scale == 0)
+            num = parseInt(num);
+        else {
+            num = num.toFixed(scale);
+        }
+        var formatedValue = negoptimApp.formatCurrency(num);
+        return formatedValue;
+    }*/
+    
+    function formatNumber(num, scale) {
+        if (num == null || isNaN(num) || num.length == 0) num = 0;
+        if (scale == 0)
+            num = parseInt(num);
+        else {
+            num = num.toFixed(scale);
+        }
+        var formatedValue = negoptimApp.formatCurrency(num);
+        if (scale > 0) {
+            formatedValue = formatedValue.split(decimalSeparator)[0] + decimalSeparator + num.split('.')[1];
+        }
+        return formatedValue;
+    }
+
+    function confirmValidation() {
+        var confirmation = window.confirm('{!JSENCODE($Label.MSG_Confirm_Validate)}');
+        if (confirmation) validate();
+    }
+    
+    function confirmRequestForApproval() {
+        var confirmation = window.confirm('{!JSENCODE($Label.MSG_Confirm_Request_For_Approval)}');
+        if (confirmation) requestForApproval();
+    }
+    
+    // gestion de filtre de fomart bu
+    function showBuFormatOptions() {
+        $('#buFormatOptionsSection').removeClass('collapsed');
+    }
+    
+    function hideBuFormatOptions() {
+		displayBuFormatSelection();
+        $('#buFormatOptionsSection').addClass('collapsed');
+    }
+    
+    function buFormatSelectionChange(e) {
+        var nbSelectedElement = $('#buFormatOptionsSection').find('input:checked').length;
+        if (nbSelectedElement == 0 || (e.value == '{!$Label.LBL_All}' && !e.checked)) {
+            $('#buFormatOptionsSection').removeClass('border-blue');
+            $('#selectedBuFormatOptions').removeClass('border-blue');
+        }
+        else {
+            $('#buFormatOptionsSection').addClass('border-blue');
+            $('#selectedBuFormatOptions').addClass('border-blue');
+        }
+        
+        var buFormatOptions = $('.buFormatOption');
+        if (e.value == '{!$Label.LBL_All}') {
+            for (var i = 0; i < buFormatOptions.length - 1; i++) {
+                buFormatOptions[i].checked = e.checked;
+                toggleSelection(buFormatOptions[i]);
+            }
+        } else {
+            if (!e.checked) {
+                buFormatOptions[buFormatOptions.length - 1].checked = false;
+                toggleSelection(buFormatOptions[buFormatOptions.length - 1]);
+            }
+        }
+        toggleSelection(e);
+    }
+    
+    function toggleSelection(e) {
+        if (e.checked)
+            $(e).parent().addClass('selected-option');
+        else
+            $(e).parent().removeClass('selected-option');
+    }
+    
+    function displayBuFormatSelection() {
+        var options = $('.buFormatOption');
+        var selectedOptions = '';
+        for (var i = 0; i < options.length; i++) {
+            if(options[i].checked) {
+                if(options[i].value == '{!$Label.LBL_All}') {
+                    selectedOptions = options[i].name;
+                    break;
+                }
+                selectedOptions +=  selectedOptions.length == 0 ? options[i].name : ', ' + options[i].name;
+            }            
+        }
+        $('#selectedBuFormatOptions').val(selectedOptions);
+    }
+    // gestion de filtre de type produit
+    function validateProductFilter(e) {
+        var otherId = e.id == 'Histo_Products' ? 'Intro_Products' : 'Histo_Products';
+        console.log('e.Id >>> ' + e.id);
+        console.log('otherId >>> ' + otherId);
+        if (!e.checked && !document.getElementById(otherId).checked) {
+            e.checked = true;
+        }
+    }
+    //
+    function applyFilters() {
+        var buFormatOptions = $('.buFormatOption');
+        var searchTerm = document.getElementById('searchBox').value;
+        var buSource = $('#buSourceSelect').children("option:selected").val();
+        var introProducts = document.getElementById('Intro_Products').checked;
+        var histoProducts = document.getElementById('Histo_Products').checked;
+        // get selected bu formats
+        var selectedBuFormatOptions = '';
+        for (var i = 0; i < buFormatOptions.length; i++) {
+            if(buFormatOptions[i].value == '{!$Label.LBL_All}') continue;
+            if(buFormatOptions[i].checked) {
+                selectedBuFormatOptions +=  buFormatOptions.length == 0 ? buFormatOptions[i].value : ',' + buFormatOptions[i].value;
+            }
+        }
+        search(searchTerm, introProducts, histoProducts, selectedBuFormatOptions);
+    }
+    
+    function cancel() {
+        var returnUrl = '/{!JSENCODE(Assortment_BU__c.Id)}';
+        window.open(returnUrl,"_self");
+    }
+    
+    function rerenderButtons() {
+        var requestForApprovalBtn = $('#requestForApprovalBtn');
+        var validateBtn = $('#validateBtn');
+        var saveBtn = $('#saveBtn');
+        
+        switch (assortmentStatus) {
+            case 'Open (in bulding process)':
+                if (initialSave) {
+                    requestForApprovalBtn.removeAttr('disabled');
+                }
+                break;
+            case 'Request for Approval':
+                $(validateBtn).removeAttr('disabled');
+                break;
+            case 'Validated':
+                $(saveBtn).attr('disabled', 'true');
+                break;
+        }
+    }
+    
+    function setTableDimensions() {
+        if (document.getElementsByClassName('grid-container') == undefined ) return;
+        // width
+        var bodyWidth = document.body.clientWidth;
+        var _97 = bodyWidth * 97 / 100;
+        $('.treegrid-container').css('width', _97 + 'px');
+        $('.treegrid-container').css('overflow-x', 'scroll');
+        document.getElementsByClassName('grid-container')[0].style.width =  _97 + "px";
+        // height
+        var window_h = window.innerHeight;
+        var body_h = document.body.clientHeight;
+        var delta_h = body_h - window_h;
+        var grid_h = document.getElementsByClassName('grid-container')[0].offsetHeight;
+        var new_grid_h = grid_h - delta_h;
+        document.getElementsByClassName('grid-container')[0].style.height = new_grid_h + "px";
+    }
+    
+    function setSticky() {
+        var tableHeader = $('#fixedTable thead');
+        var trs = $(tableHeader).find('tr');
+        var sumTrHeights = 0;
+        var gridSettingFieldsCount = {!gridSettingsManager.GRID_FIELDS.size};
+        var fixedColumnsCount = gridSettingFieldsCount > 2 ? 2 : gridSettingFieldsCount;
+        for (var index = 0 ; index < trs.length ; index++) {
+            var leftPosition = 0;
+            var ths = $(trs[index]).find('th');
+            for (var index2 = 0 ; index2 < ths.length ; index2++) {
+                var style = {};
+                style["top"] = sumTrHeights;
+                style["position"] = "sticky";
+                if (index === 0 && index2 < fixedColumnsCount) {
+                    style["z-index"] = 6;
+                    style["left"] = leftPosition + 'px';
+                    leftPosition = leftPosition + $(ths[index2]).outerWidth();
+                } else {
+                    style["z-index"] = 5;
+                }
+                $(ths[index2]).css(style);
+            }
+            sumTrHeights += $(trs[index]).outerHeight();
+        }
+        var tableHeaderHeight = $('#fixedTable thead').outerHeight();
+        var tableBody = $('#fixedTable tbody');
+        trs = $(tableBody).find('tr');
+        for (var index = 0; index < trs.length; index++) {
+            if ($(trs[index]).hasClass('fixed_category')) {
+                var tds = $(trs[index]).find('td');
+                for (var i = 0; i < tds.length; i++) {
+                    var Cell = tds[i];
+                    if (i === 0) {
+                        $(Cell).attr('style', 'top: ' + tableHeaderHeight + 'px !important; z-index: 4; text-align:left !important; position: sticky !important; left: 0px !important;');
+                    } else {
+                        $(Cell).attr('style', 'top: ' + tableHeaderHeight + 'px !important; z-index: 2; position: sticky !important;');
+                    }
+                }
+            } else {
+                var leftPosition = 0;
+                var tds = $(trs[index]).find('td');
+                for (var j = 0; j < tds.length && j < fixedColumnsCount; j++) {
+                    $(tds[j]).css({left: leftPosition, "position" : 'sticky', 'z-index' : 3});
+                    leftPosition = leftPosition + $(tds[j]).outerWidth();
+                }
+            }
+        }
+    }
+    </script>
+</apex:page>

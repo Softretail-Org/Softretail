@@ -1,0 +1,54 @@
+.THIS {
+    
+}
+.THIS .margin10{
+    margin-left:10px;
+}
+.THIS .margin25{
+    margin-left:25px;
+}
+.THIS .margin40{
+    margin-left:40px;
+}
+.THIS .margin305{
+    margin-left:305px;
+}
+.THIS .scrollClass{
+    max-width:95vw;
+    max-height:60vh;
+    margin-left:10px;
+}
+.THIS #mySelect{
+    position: sticky;
+    top: 0;
+    z-index: 9;
+}
+.THIS .slds-select{
+    height:30px;
+}
+.THIS .articleStyle{
+    border:solid 2px #008B8B;
+}
+.THIS .fontStyle{
+    font-size:12px;
+}
+.THIS .tableContract{
+    width:90%;
+}
+.THIS .tableDuplication{
+    width:18%;
+}
+.THIS .tableContractRates{
+     width:40%;
+}
+.THIS .tableradio{
+    width:15%;
+}
+.THIS .titleStyle{
+    background-color: #cbd2e7;
+    font-weight: bold;
+    font-size: 13px;
+}
+.THIS .expdate{
+    height:30px;
+}

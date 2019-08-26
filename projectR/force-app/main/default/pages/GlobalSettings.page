@@ -1,0 +1,302 @@
+<apex:page controller="GlobalSettingsController" lightningStylesheets="true"
+           sidebar="false" docType="html-5.0">
+    <apex:pageMessages id="messages"/>
+    <apex:sectionHeader title="{!$Organization.Name}" subtitle="Global Settings" />
+    <apex:form id="settingform" enctype="multipart/form-data">
+        <apex:pageBlock mode="edit">
+            <apex:actionStatus id="status">
+                <apex:facet name="start">
+                    <img src="/img/loading.gif"/>
+                </apex:facet>
+            </apex:actionStatus>
+            <apex:pageBlockSection title="Organization Settings" collapsible="false" columns="2">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Business_Type__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Business_Type__c.Label}" for="businessType"/>
+                    <apex:selectList label="Business Type" accesskey="1" id="businessType" value="{!tempBusinessType}" multiselect="false" size="1"
+                                     required="true" disabled="{!IF(negoSettings.sBusinessType == businessTypeNone, false, true)}">
+                        <apex:selectOptions value="{!BusinessTypes}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>            
+            </apex:pageBlockSection>
+            <!-- General Settings -->
+            <apex:pageBlockSection title="General Settings" collapsible="false" columns="2">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.CSV_Delimiter__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.CSV_Delimiter__c.Label}" for="businessType"/>
+                    <apex:selectList id="delimiter"
+                                     value="{!negoSettings.delimiter}" multiselect="false" size="1" required="false">
+                        <apex:selectOptions value="{!Delimiters}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:selectList label="{!$ObjectType.NegoptimCustomSettings__c.fields.Group_Code_BU_for_Integration__c.Label}" id="groupBU" value="{!negoSettings.groupBU}" multiselect="false" size="1" required="false">
+                    <apex:selectOptions value="{!Groups}"/>
+                </apex:selectList>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Dispatch_Max_Closing_Day__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Dispatch_Max_Closing_Day__c.Label}" />
+                    <apex:input html-min="1" html-max="31" value="{!negoSettings.dispatchMaxClosingDay}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Run_Sellin_Reparenting_For_Business_Unit__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Run_Sellin_Reparenting_For_Business_Unit__c.Label}" />
+                    <apex:inputCheckbox value="{!negoSettings.runSellinReparentingForBusinessUnit}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Default_Condition_Code__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Default_Condition_Code__c.Label}" />
+                    <apex:input value="{!negoSettings.defaultConditionCode}" />
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Grid Layout Settings" collapsible="false" columns="2">
+                <!-- Assortment Matrix Grid Settings -->
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Matrix_Grid_Layout__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Matrix_Grid_Layout__c.Label}" for="assortmentMatrixGridLayout"/>
+                    <apex:selectList id="assortmentMatrixGridLayout"
+                                     value="{!negoSettings.assortmentMatrixGridLayout}" multiselect="false" size="1" required="false">
+                        <apex:selectOptions value="{!gridSettingsLayouts}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <!-- Product Switch Grid Settings -->
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Switch_Grid_Layout__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Switch_Grid_Layout__c.Label}" for="productSwitchGridLayout"/>
+                    <apex:selectList id="productSwitchGridLayout" value="{!negoSettings.productSwitchGridLayout}" multiselect="false" size="1" required="false">
+                        <apex:selectOptions value="{!gridSettingsLayouts}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <!-- Product Inno Grid Settings -->
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Inno_Grid_Layout__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Inno_Grid_Layout__c.Label}" for="productInnoGridLayout"/>
+                    <apex:selectList id="productInnoGridLayout" value="{!negoSettings.productInnoGridLayout}" multiselect="false" size="1" required="false">
+                        <apex:selectOptions value="{!gridSettingsLayouts}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <!-- Product Stop Grid Settings -->
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Stop_Grid_Layout__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Stop_Grid_Layout__c.Label}" for="productStopGridLayout"/>
+                    <apex:selectList id="productStopGridLayout" value="{!negoSettings.productStopGridLayout}" multiselect="false" size="1" required="false">
+                        <apex:selectOptions value="{!gridSettingsLayouts}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <!-- Assortment Budget Simulator Grid Settings -->
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Budget_Simulator_Grid_Layout__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Budget_Simulator_Grid_Layout__c.Label}" for="assortmentBudgetSimulatorGridLayout"/>
+                    <apex:selectList id="assortmentBudgetSimulatorGridLayout" value="{!negoSettings.assortmentBudgetSimulatorGridLayout}" multiselect="false" size="1" required="false">
+                        <apex:selectOptions value="{!gridSettingsLayouts}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <!-- Assortment Matrix Comparator Grid Settings -->
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Matrix_Comparator_Grid_Layout__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Matrix_Comparator_Grid_Layout__c.Label}" for="assortmentMatrixComparatorGridLayout"/>
+                    <apex:selectList id="assortmentMatrixComparatorGridLayout" value="{!negoSettings.assortmentMatrixComparatorGridLayout}" multiselect="false" size="1" required="false">
+                        <apex:selectOptions value="{!gridSettingsLayouts}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <!-- Grid Settings Profiles -->
+            <apex:pageBlockSection title="Grid Settings Profiles: Press Ctrl or Cmd to Select Profiles" collapsible="false" columns="2">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Matrix_Profile__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Matrix_Profile__c.Label}" for="assortmentMatrixProfile"/>  
+                    <apex:selectList id="AssortmentMatrixProfile" value="{!negoSettings.assortmentMatrixProfile}" multiselect="true" size="3">
+                        <apex:selectOptions value="{!Profiles}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Switch_Profile__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Switch_Profile__c.Label}" for="productSwitchProfile"/>  
+                    <apex:selectList id="ProductSwitchProfile" value="{!negoSettings.productSwitchProfile}" multiselect="true" size="3">
+                        <apex:selectOptions value="{!Profiles}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                  <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Inno_Profile__c.inlineHelpText}">
+                      <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Inno_Profile__c.Label}" for="productInnoProfile"/>
+                      <apex:selectList id="ProductInnoProfile" value="{!negoSettings.productInnoProfile}" multiselect="true" size="3">
+                        <apex:selectOptions value="{!Profiles}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                  <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Stop_Profile__c.inlineHelpText}">
+                      <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Product_Stop_Profile__c.Label}" for="productStopProfile"/>
+                      <apex:selectList id="ProductStopProfile" value="{!negoSettings.productStopProfile}" multiselect="true" size="3">
+                        <apex:selectOptions value="{!Profiles}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Budget_Simulator_Profile__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Budget_Simulator_Profile__c.Label}" for="assortmentBudgetSimulatorProfile"/>
+                    <apex:selectList id="AssortmentBudgetSimulatorProfile" value="{!negoSettings.assortmentBudgetSimulatorProfile}" multiselect="true" size="3">
+                        <apex:selectOptions value="{!Profiles}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Matrix_Comparator_Profile__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Assortment_Matrix_Comparator_Profile__c.Label}" for="assortmentMatrixComparatorProfile"/>
+                    <apex:selectList id="AssortmentMatrixComparatorProfile" value="{!negoSettings.assortmentMatrixComparatorProfile}" multiselect="true" size="3">
+                        <apex:selectOptions value="{!Profiles}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+            <!-- Products Management -->
+            <apex:pageBlockSection title="Products Management" collapsible="false" columns="2">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Allowed_profiles_to_manage_Products__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Allowed_profiles_to_manage_Products__c.Label}" for="allowedProfilesToManageProducts"/>
+                    <apex:selectList id="AssortmentMatrixComparatorProfile" value="{!negoSettings.allowedProfilesToManageProducts}" multiselect="true" size="3">
+                        <apex:selectOptions value="{!Profiles}"/>
+                    </apex:selectList>
+            </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <!-- Contract Balancing -->
+            <apex:pageBlockSection title="Contract Balancing Settings" collapsible="false" columns="2">
+                <apex:inputText label="{!$ObjectType.NegoptimCustomSettings__c.fields.TO_gap_Tolerence_neg__c.Label}" id="tOGapTolerenceNegative" value="{!negoSettings.tOGapTolerenceNegative}"
+                                required="true" onkeyup="decimalOnly(this);"> 
+                </apex:inputText>
+                <apex:inputText label="{!$ObjectType.NegoptimCustomSettings__c.fields.TO_gap_Tolerence_Pos__c.Label}" id="tOGapTolerencePositive" value="{!negoSettings.tOGapTolerencePositive}"
+                                required="true" onkeyup="decimalOnly(this);"> 
+                </apex:inputText>
+                <apex:inputText label="{!$ObjectType.NegoptimCustomSettings__c.fields.Coop_gap_Tolerence_neg__c.Label}" id="coopGapTolerenceNegative" value="{!negoSettings.coopGapTolerenceNegative}"
+                                required="true" onkeyup="decimalOnly(this);"> 
+                </apex:inputText>
+                <apex:inputText label="{!$ObjectType.NegoptimCustomSettings__c.fields.Coop_gap_Tolerence_pos__c.Label}" id="coopGapTolerencePositive" value="{!negoSettings.coopGapTolerencePositive}"
+                                required="true" onkeyup="decimalOnly(this);"> 
+                </apex:inputText>
+            </apex:pageBlockSection>
+            <!-- Invoicing -->
+            <apex:pageBlockSection title="Invoicing" collapsible="false" columns="1">
+                <apex:pageBlockSection collapsible="false" columns="2">
+                    <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Allow_Updating_Invoice_Date_On_Print__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Allow_Updating_Invoice_Date_On_Print__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.allowUpdatingInvoiceDateOnPrint}" />
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Allow_Updating_Print_Date_On_Print__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Allow_Updating_Print_Date_On_Print__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.allowUpdatingPrintDateOnPrint}" />
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Invoice_Max_Closing_Day__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Invoice_Max_Closing_Day__c.Label}" />
+                        <apex:input html-min="1" html-max="31" value="{!negoSettings.invoiceMaxClosingDay}" />
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.Dispatch_Aggregate_Mode__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Dispatch_Aggregate_Mode__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.dispatchAggregateMode}" />
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection collapsible="false" columns="1" title="Invoice Reminder">
+                    <apex:pageBlockSection columns="2">
+                        <apex:selectList label="{!$ObjectType.NegoptimCustomSettings__c.fields.Level_of_reminder_managed__c.Label}" id="reminderLevel" value="{!negoSettings.reminderLevel}" multiselect="false" size="1" required="false">
+                            <apex:selectOptions value="{!ReminderLevels}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection columns="3">
+                        <apex:input type="number" label="{!$ObjectType.NegoptimCustomSettings__c.fields.Reminder1__c.Label}" id="reminder1" value="{!negoSettings.reminderValue1}" required="false"> 
+                        </apex:input>
+                        <apex:input type="number" label="{!$ObjectType.NegoptimCustomSettings__c.fields.Reminder2__c.Label}" id="reminder2" value="{!negoSettings.reminderValue2}" required="false"> 
+                        </apex:input>
+                        <apex:input type="number" label="{!$ObjectType.NegoptimCustomSettings__c.fields.Reminder3__c.Label}" id="reminder3" value="{!negoSettings.reminderValue3}" required="false">
+                        </apex:input>
+                        <apex:inputTextArea id="reminderDescription1" label="{!$ObjectType.NegoptimCustomSettings__c.fields.Reminder_Description1__c.Label}" value="{!negoSettings.reminderDescription1}" rows="5" cols="50"/>
+                        <apex:inputTextArea id="reminderDescription2" label="{!$ObjectType.NegoptimCustomSettings__c.fields.Reminder_Description2__c.Label}" value="{!negoSettings.reminderDescription2}" rows="5" cols="50"/>
+                        <apex:inputTextArea id="reminderDescription3" label="{!$ObjectType.NegoptimCustomSettings__c.fields.Reminder_Description3__c.Label}" value="{!negoSettings.reminderDescription3}" rows="5" cols="50"/>
+                    </apex:pageBlockSection>
+                </apex:pageBlockSection>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Contract update filter" collapsible="false" columns="2">
+                <apex:selectList label="{!$ObjectType.NegoptimCustomSettings__c.fields.Group_BU_1__c.Label}" id="groupBU1" value="{!negoSettings.groupBU1}" multiselect="false" size="1">
+                    <apex:selectOptions value="{!GroupsBU}"/>
+                </apex:selectList>
+                <apex:selectList label="{!$ObjectType.NegoptimCustomSettings__c.fields.Profile__c.Label}" id="groupBU3" value="{!negoSettings.profile}" multiselect="false" size="1">
+                    <apex:selectOptions value="{!Profiles}"/>
+                </apex:selectList>
+                <apex:selectList label="{!$ObjectType.NegoptimCustomSettings__c.fields.Group_BU_2__c.Label}" id="groupBU2" value="{!negoSettings.groupBU2}" multiselect="false" size="1">
+                    <apex:selectOptions value="{!GroupsBU}"/>
+                </apex:selectList>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Dates Overlap Control on BU level" collapsible="false" columns="1">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.Allow_contract_overlap_dates__c.Label}"/>
+                    <apex:inputCheckbox value="{!negoSettings.datesOverlapControlBU}"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="BU Record type for Distribution" collapsible="false" columns="3">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.BU_Record_types__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.BU_Record_types__c.Label}" />
+                    <apex:selectcheckboxes id="type" value="{!negoSettings.selectedBURTList}" layout="pageDirection" required="false">
+                        <apex:selectOptions value="{!BURecordTypes}"/>
+                    </apex:selectcheckboxes>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Advanced Settings" collapsible="false" columns="2">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.csv_Date_Format__c.inlineHelpText}">
+                    <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.csv_Date_Format__c.Label}" />
+                    <apex:inputText id="csvDateFormat" value="{!negoSettings.csvDateFormat}" required="false" />
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+           <!-- Mass Batch Form Settings -->
+           <apex:pageBlockSection title="Mass Batch Form Settings" collapsible="false" columns="2">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_ContractTOProcedures__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_ContractTOProcedures__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_ContractTOProcedures}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_ContractDuplication__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_ContractDuplication__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_ContractDuplication}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_LastActiveContractProcedure__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_LastActiveContractProcedure__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_LastActiveContractProcedure}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_ContractRates__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_ContractRates__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_ContractRates}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_GroupScanAndSynchro__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_GroupScanAndSynchro__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_GroupScanAndSynchro}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_PromoDetailProcedure__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_PromoDetailProcedure__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_PromoDetailProcedure}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_ContractCounterpartyDetail__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_ContractCounterpartyDetail__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_ContractCounterpartyDetail}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_MarketDataCollection__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_MarketDataCollection__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_MarketDataCollection}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_AssortmentSFPlanning__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_AssortmentSFPlanning__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_AssortmentSFPlanning}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_SellInProcedure__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_SellInProcedure__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_SellInProcedure}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_InvoiceReminder__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_InvoiceReminder__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_InvoiceReminder}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_MassDistribution__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_MassDistribution__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_MassDistribution}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_CallingWebServices__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_CallingWebServices__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_CallingWebServices}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_Batches__c.inlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_Batches__c.Label}" />
+                        <apex:inputCheckbox value="{!negoSettings.MBF_Section_Batches}" />
+                </apex:pageBlockSectionItem>
+               <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_PenaltiesProcedure__c.inlineHelpText}">
+                   <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_PenaltiesProcedure__c.Label}" />
+                   <apex:inputCheckbox value="{!negoSettings.MBF_Section_PenaltiesProcedure}" />
+               </apex:pageBlockSectionItem>
+               <apex:pageBlockSectionItem helpText="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_RecalculateAssortmentDetail__c.inlineHelpText}">
+                   <apex:outputLabel value="{!$ObjectType.NegoptimCustomSettings__c.fields.MBF_Section_RecalculateAssortmentDetail__c.Label}" />
+                   <apex:inputCheckbox value="{!negoSettings.MBF_Section_RecalculateAssortmentDetail}" />
+               </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Save" action="{!save}" rerender="settingform, messages" status="status"/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+    <script>
+    function decimalOnly(e){
+        e.value = e.value.replace(/[^0-9\.]/g,'');
+        if(e.value.split('.').length>2) e.value = e.value.replace(/\.+$/,"");
+    };     
+    </script>
+</apex:page>

@@ -1,0 +1,116 @@
+<apex:page standardController="Contract__c" extensions="Nego360_Duplicate_Contract_Controller">
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }" />
+    
+    <apex:pageMessages id="messages" />
+    <apex:sectionHeader title="{!$ObjectType.Contract__c.Label}"
+                        subtitle="{!$Label.LBL_Duplicate_Contract}: {!contractObj.Name}" />
+    <apex:form id="theForm">
+        <apex:pageBlock >
+            <apex:pageBlockSection collapsible="false" columns="2">
+                <apex:pageBlockSection collapsible="false" columns="2">
+                    <apex:outputField value="{!contractObj.Supplier__r.Code__c}" />
+                    <apex:outputField value="{!contractObj.Contract_Numbder__c}" />
+                    <apex:outputField value="{!contractObj.Supplier__c}" />
+                    <apex:outputField value="{!contractObj.D_N__c}" />
+                    <apex:outputField value="{!contractObj.Supplier_Nego_Scope__r.NS_Code__c}" />
+                    <apex:outputField value="{!contractObj.Contract_BDate__c}" />
+                    <apex:outputField value="{!contractObj.Supplier_Nego_Scope__c}" />
+                    <apex:outputField value="{!contractObj.Contract_EDate__c}" />
+                </apex:pageBlockSection>
+                
+                <apex:pageBlockSection collapsible="false" columns="2">
+                    <apex:inputField value="{!duplicatedContract.Contract_BDate__c}" >
+                        <apex:actionSupport event="onchange" action="{!checkContract}" rendered="{!errors.size == 0}"
+                                            reRender="theForm,messages" status="duplicateStatus"/>
+                    </apex:inputField>
+                    <apex:inputField value="{!duplicatedContract.Contract_EDate__c}" >
+                        <apex:actionSupport event="onchange" action="{!checkContract}" rendered="{!errors.size == 0}"
+                                            reRender="theForm,messages" status="duplicateStatus"/>
+                    </apex:inputField>
+                    <apex:inputField value="{!duplicatedContract.D_N__c}" />
+                </apex:pageBlockSection>
+                
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection collapsible="false" columns="2">
+                
+                <apex:pageBlockTable headerClass="hidden-table-header" value="{!contractObj.Contract_Discounts__r}"
+                                     var="item" width="100%">
+                    <apex:facet name="header">{!$Label.LBL_Main_Conditions}</apex:facet>
+                    
+                    <apex:column style="height:25px" styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Name.Label}</apex:facet>
+                        <apex:outputField value="{!item.Name}" />
+                    </apex:column>
+                    <apex:column style="height:25px" styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Condition_Type__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.Condition_Type__c}" />
+                    </apex:column>
+                    <apex:column styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Disc_BDate__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.Disc_BDate__c}" />
+                    </apex:column>
+                    <apex:column styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Disc_EDate__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.Disc_EDate__c}" />
+                    </apex:column>
+                    <apex:column styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Value_amt__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.Value_amt__c}" />
+                    </apex:column>
+                    <apex:column styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}" >
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Value_per__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.Value_per__c}" />
+                    </apex:column>
+                    <apex:column styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.BU_Scope__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.BU_Scope__c}" />
+                    </apex:column>
+                </apex:pageBlockTable>
+                
+                <apex:pageBlockTable rendered="{!errors.size == 0 && isDuplicate == false}" headerClass="hidden-table-header" value="{!duplicatedConditions}"
+                                     var="item" width="100%">
+                    <apex:facet name="header">{!$Label.LBL_List_Conditions_After_Duplication}</apex:facet>
+                    
+                    <apex:column style="height:25px"  styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Condition_Type__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.Condition_Type__r.Name}" />
+                    </apex:column>
+                    <apex:column styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}" >
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Disc_BDate__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.Disc_BDate__c}" />
+                    </apex:column>
+                    <apex:column styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Disc_EDate__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.Disc_EDate__c}" />
+                    </apex:column>
+                    <apex:column styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Value_amt__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.Value_amt__c}" />
+                    </apex:column>
+                    <apex:column styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.Value_per__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.Value_per__c}" />
+                    </apex:column>
+                    <apex:column styleClass="{!IF(item.is_duplicable__c==false,'c-not-duplicated','c-duplicated')}">
+                        <apex:facet name="header">{!$ObjectType.Contract_Discount__c.fields.BU_Scope__c.Label}</apex:facet>
+                        <apex:outputField value="{!item.BU_Scope__c}" />
+                    </apex:column>
+                </apex:pageBlockTable>
+                
+            </apex:pageBlockSection>
+            
+            <apex:pageblockbuttons >
+                <apex:commandButton value="Duplicate" action="{!submitDuplicate}"
+                                    status="duplicateStatus" reRender="theForm, messages"
+                                    rendered="{!invalidId != true && errors.size == 0 && isDuplicate == false}" />
+                <apex:commandButton value="{!$Label.Cancel}" action="{!Cancel}" />
+                <apex:actionStatus id="duplicateStatus">
+                    <apex:facet name="start">
+                        <img src="/img/loading.gif" />
+                    </apex:facet>
+                </apex:actionStatus>
+            </apex:pageblockbuttons>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

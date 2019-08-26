@@ -1,0 +1,39 @@
+.THIS .oSelect {
+    min-height:	200px;
+    min-width:	200px;
+}
+
+.THIS.c-container {
+    width: -webkit-fit-content;
+    width: -moz-fit-content;
+    width: fit-content;
+}
+
+.THIS div.c-container span.slds-radio {
+    padding: 0.2rem;
+    display: inline-block;
+    white-space: normal;
+    width:33%;
+
+}
+.THIS .In{
+    color:blue;
+}
+.THIS .Out{
+    color:orange;
+}
+
+.THIS .InBackground{
+    background-color:blue;
+    border:1px solid black;
+}
+.THIS .OutBackground{
+    background-color:orange;
+    border:1px solid black;
+}
+.THIS .rectangle-big{
+    height:1rem;
+}
+.THIS .rectangle-small{
+    height:0.5rem;
+}

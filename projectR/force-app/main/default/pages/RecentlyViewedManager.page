@@ -1,0 +1,47 @@
+<apex:page controller="RecentlyViewedController">    
+    <apex:sectionHeader title="Recently Viewed Manager"/>
+    <apex:form id="formBatch">
+        <apex:pageBlock >
+            <apex:pageMessages id="messages"/>
+            <apex:actionStatus id="batchStatus">
+                <apex:facet name="start">
+                    <img src="/img/loading.gif"/>
+                </apex:facet>
+            </apex:actionStatus>
+            <apex:pageBlockSection columns="1">
+                <apex:pageBlockSectionItem >
+                    <apex:outputlabel value="Object Names :"/>                    
+                    <apex:selectCheckboxes value="{!selectedObjects}" layout="pageDirection" required="true">
+                        <label><input type="checkbox" name="selectAll"/><b>Select all</b></label>
+                        <apex:selectOptions value="{!ObjectNames}"/>
+                    </apex:selectCheckboxes>   
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Run" action="{!submitRecentItemsBatch}" style="width:70px;"
+                                    reRender="messages" status="batchStatus"/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+    <apex:includeScript value="https://code.jquery.com/jquery-2.1.4.js" />
+    <script>
+    $j = jQuery.noConflict();    
+    $j(document).ready(function() {
+        selectAll_Click();
+    });    
+    function selectAll_Click(){
+        $j("input[name='selectAll']").on("click", selectAllBoxes);
+    }    
+    function selectAllBoxes(){
+        if ($j("input[name='selectAll']").is(':checked')){
+            $j(':checkbox').each(function() {
+                this.checked = true;
+            })
+        } else {
+            $j(':checkbox').each(function() {
+                this.checked = false;
+            })
+        }
+    }
+    </script>
+</apex:page>

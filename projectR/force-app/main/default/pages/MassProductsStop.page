@@ -1,0 +1,512 @@
+<apex:page id="thePage" controller="MassProductsActionController" action="{!stopAction}"
+           tabStyle="Product2" showHeader="true" sidebar="true" lightningStylesheets="false" docType="html-5.0">
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}"/>
+    <style>
+        body .pbBody{overflow:hidden;}
+        .text-center {
+        text-align:center !important;
+        vertical-align:middle;
+        }
+        .table-container {
+        overflow: scroll;
+        }
+        .nego-logo img {
+        max-width: none !important;
+        width: 25px !important;
+        height: 25px !important;
+        }
+        .nego-logo img:hover {
+        max-width: none !important;
+        width: 200px !important;
+        height: 200px !important;
+        z-index: 5;
+        position: absolute;
+        left: 0;
+        top: -50px;
+        -webkit-transition: all 0.1s ease-in-out;
+        -moz-transition: all 0.1s ease-in-out;
+        -o-transition: all 0.1s ease-in-out;
+        transition: all 0.1s ease-in-out;
+        }
+        .collapsed {
+        display: none !important;
+        }
+        .selected-option {
+        background-color: #c1e0ff;
+        }
+    </style>
+    <apex:slds />
+    <apex:pageMessages id="messages" />
+    <div class="slds-m-around_small">
+        <div class="slds-page-header">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <span class="slds-icon_container" title="{!$Label.LBL_Product_Stop}">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     xmlns:xlink="http://www.w3.org/1999/xlink"
+                                     class="slds-icon slds-icon-text-default" aria-hidden="true">
+                                    <use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/utility-sprite/svg/symbols.svg#stop')}"/>
+                                </svg>
+                                <span class="slds-assistive-text">{!$Label.LBL_Product_Stop}</span>
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <div class="slds-page-header__name">
+                                <div class="slds-page-header__name-title">
+                                    <h1>
+                                        <span class="slds-page-header__title slds-truncate" title="{!$Label.Mass_Product_Stop}">{!$Label.Mass_Product_Stop}</span>
+                                    </h1>
+                                </div>
+                            </div>
+                            <p class="slds-page-header__name-meta">{!$ObjectType.Product2.labelPlural}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- filter section -->
+        <div class="slds-grid slds-m-top_x-small slds-m-bottom_x-small">
+            <!-- history date -->
+            <div class="slds-form-element__control">
+                <div class="slds-radio_button-group">
+                    <span class="slds-button slds-radio_button">
+                        <input class="historyOption" name="radio" type="radio" id="last_7_days" value="last_7_days" />                    
+                        <label class="slds-button slds-radio_button__label" for="last_7_days" style="margin:0;">
+                            <span class="slds-radio_faux">{!$Label.Last_7_days}</span>
+                        </label>
+                    </span>
+                    <span class="slds-button slds-radio_button">
+                        <input class="historyOption" name="radio" type="radio" id="last_60_days" value="last_60_days" />
+                        <label class="slds-button slds-radio_button__label" for="last_60_days" style="margin:0;">
+                            <span class="slds-radio_faux">{!$Label.Last_60_days}</span>
+                        </label>
+                    </span>
+                    <span class="slds-button slds-radio_button">
+                        <input class="historyOption" name="radio" type="radio" id="all_history" value="all_history" checked="checked" />
+                        <label class="slds-button slds-radio_button__label" for="all_history" style="margin:0;">
+                            <span class="slds-radio_faux">{!$Label.All_history}</span>
+                        </label>
+                    </span>
+                </div>
+            </div>
+            <!-- clients 
+<div class="slds-form-element slds-col slds-size_2-of-12">
+<div class="slds-form-element__control">
+<div class="slds-select_container">
+<select class="slds-select" id="clientSelect">
+<apex:repeat value="{!clients}" var="client">
+<option value="{!client.value}">{!client.label}</option>
+</apex:repeat>
+</select>
+</div>
+</div>
+</div> -->
+            <!-- level 1 Categories (HE) -->
+            <div class="slds-form-element__control" style="margin-left: .25rem;">
+                <div class="slds-select_container">
+                    <select class="slds-select" id="level1HESelect">
+                        <apex:repeat value="{!level1HEs}" var="level1HE">
+                            <option value="{!level1HE.value}">{!level1HE.label}</option>
+                        </apex:repeat>
+                    </select>
+                </div>
+            </div>
+            <!-- BU Target filter -->
+            <div class="slds-form-element__control" style="margin-left: .25rem;">
+                <div class="slds-form-element__control">
+                    <div class="slds-combobox_container">
+                        <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click">
+                            <input type="text" class="slds-input slds-combobox__input" id="selectedBuFormatOptions" value="{!selectedBuFormat}"
+                                   autoComplete="off" placeholder="{!$ObjectType.Orga_BU__c.fields.Format_Origin__c.label}" onfocus="showBuFormatOptions();" />
+                            <section id="buFormatOptionsSection" class="slds-popover slds-popover_full-width collapsed" style="position: absolute;">
+                                <div class="slds-popover__body" id="dialog-body-id-26">
+                                    <fieldset class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <apex:repeat value="{!buFormats}" var="buFormat">
+                                                <div class="slds-checkbox">
+                                                    <input type="checkbox" name="{!buFormat.value}" id="checkbox-{!buFormat.label}" class="buFormatOption" value="{!buFormat.value}"
+                                                           onchange="buFormatSelectionChange(this);" />
+                                                    <label class="slds-checkbox__label" for="checkbox-{!buFormat.value}">
+                                                        <span class="slds-checkbox_faux"></span>
+                                                        <span class="slds-form-element__label">{!buFormat.label}</span>
+                                                    </label>
+                                                </div>
+                                            </apex:repeat>
+                                        </div>
+                                    </fieldset>
+                                </div>
+                                <footer class="slds-popover__footer slds-popover__footer_form">
+                                    <button class="slds-button slds-button_brand" onclick="hideBuFormatOptions();">{!$Label.OK}</button>
+                                </footer>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-left: .25rem;">
+                <input class="slds-input slds-combobox__input" id="searchBox" autocomplete="off"
+                       type="text" placeholder="{!$Label.Search}..." value="" />
+            </div>
+            <!-- apply filters button -->            
+            <div class="slds-col" style="margin-left: .75rem;">
+                <button class="slds-button slds-button_neutral" onclick="applyFilters();">{!$Label.Search}</button>
+            </div>
+            <!-- buttons -->
+            <button class="slds-button slds-button_neutral slds-col_bump-right" onclick="save();">{!$Label.Save}</button>
+            <button class="slds-button slds-button_neutral" onclick="cancel();">{!$Label.Cancel}</button>
+        </div>
+        <!-- form -->
+        <apex:form id="theForm" rendered="{!gridSettingsManager.ERRORS.size == 0}">
+            <!-- action functions -->
+            <apex:actionFunction action="{!searchRecords}" name="searchProductIntro" reRender="theForm, messages" status="globalloading" oncomplete="setTableDimensions();">
+                <apex:param name="dateFilter" assignTo="{!dateFilter}" value="" />
+                <apex:param name="selectedLevel1HE" assignTo="{!selectedLevel1HE}" value="" />
+                <apex:param name="selectedBuFormat" assignTo="{!selectedBuFormat}" value="" />
+                <apex:param name="searchString" assignTo="{!searchString}" value="" />
+            </apex:actionFunction>
+            <!-- refresh table page size -->
+            <apex:actionFunction action="{!refreshPageSize}" name="refreshPageSize" rerender="theForm, messages" status="globalloading" oncomplete="setTableDimensions();"/>
+            <!-- save -->
+            <apex:actionFunction name="save" action="{!save}" reRender="messages, productStopGrid" status="globalloading" oncomplete="afterRerender();" />
+            <!-- cancel -->
+            <apex:actionFunction name="cancel" reRender="messages, productStopGrid" action="{!cancel}" />
+            <!-- global loading action status -->
+            <apex:actionStatus id="globalloading">
+                <apex:facet name="start">
+                    <div class="loading-overlay">
+                        <div class="loader-img"></div>
+                        <div class="loading-block">{!$Label.Loading}</div>
+                    </div>
+                </apex:facet>
+            </apex:actionStatus>
+            <apex:inputHidden id="selectedLoadRule" value="{!selectedLoadRule}" />
+            <apex:pageBlock >
+                <apex:pageBlockButtons location="top" rendered="{!!NoData}">
+                    <label class="slds-form-element__label" for="select-01">{!$ObjectType.Product_Assortment_Introduction_History__c.fields.Load_Rules__c.Label}</label>
+                    <select class="slds-select" id="loadRulesPicklist" style="width:200px;"
+                            onChange="changeLoadRules(this, '{!$Component.selectedLoadRule}');" >
+                        <apex:repeat value="{!loadRulesPicklist}" var="option" >
+                            <option value="{!option.value}">{!option.label}</option>
+                        </apex:repeat>
+                    </select>
+                </apex:pageBlockButtons>
+                <apex:outputPanel layout="none" rendered="{!NoData}" >
+                    <div class="slds-media__body">
+                        <h2 class="slds-card__header-title">
+                            <span>{!$Label.LBL_No_Item_To_Display}</span>
+                        </h2>
+                    </div>
+                </apex:outputPanel>
+                <!-- Product Intro Grid -->
+                <apex:outputPanel id="productStopGrid" rendered="{!!NoData}">
+                    <div class="table-container">
+                        <table class="slds-table slds-table_bordered slds-no-cell-focus slds-no-row-hover" >
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="slds-text-title_caps text-center">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product_Assortment_Introduction_History__c.fields.Product_Category__c.Label}</span>
+                                    </th>
+                                    <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="item">
+                                        <th rowspan="2" class="text-center">
+                                            <apex:commandLink rendered="{!item.fieldName == 'Product__r.Name'}" action="{!toggleOrderDirection}"
+                                                              status="globalloading" reRender="productStopGrid" style="color: rgb(81, 79, 77) !important;" >
+                                                <apex:outputText value="{!item.fieldLabel} {!IF(orderDirection == 'ASC','▲', '▼')}" />
+                                            </apex:commandLink>
+                                            <apex:outputText rendered="{!item.fieldName != 'Product__r.Name'}" value="{!item.fieldLabel}" />
+                                        </th>
+                                    </apex:repeat>
+                                    <apex:repeat value="{!assortmentBUsMap}" var="keyBU">
+                                        <th colspan="3" class="slds-text-title_caps slds-border_left text-center" scope="col">
+                                            <apex:outputLink title="{!assortmentBUsMap[keyBU].Name}" value="/{!assortmentBUsMap[keyBU].buId}" target="_blank">
+                                                {!assortmentBUsMap[keyBU].Name}
+                                            </apex:outputLink>
+                                        </th>
+                                    </apex:repeat>
+                                    <th rowspan="2" class="slds-text-title_caps text-center slds-border_left">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product2.fields.Keynote_Marketing__c.Label}</span>
+                                    </th>
+                                    <th rowspan="2" class="slds-text-title_caps text-center">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product2.fields.Keynote_Administrative__c.Label}</span>
+                                    </th>
+                                    <th rowspan="2" class="slds-text-title_caps text-center">
+                                        <span class="slds-m-around_xx-small">{!$ObjectType.Product_Assortment_Introduction_History__c.fields.Record_Date__c.Label}</span>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <apex:repeat value="{!assortmentBUsMap}" var="keyBU">
+                                        <th class="slds-text-title_caps text-center slds-border_left">
+                                            <span class="slds-m-around_xx-small">{!$ObjectType.Product_Assortment_Introduction_History__c.fields.Load_Status__c.Label}</span>
+                                        </th>
+                                        <th class="slds-text-title_caps text-center">
+                                            <span class="slds-m-around_xx-small">{!$ObjectType.Product_Assortment_Introduction_History__c.fields.BU_Assortment__c.Label}</span>
+                                        </th>
+                                        <th class="slds-text-title_caps text-center">
+                                            <span class="slds-m-around_xx-small">{!$ObjectType.Product_Assortment_Introduction_History__c.fields.Application_Date__c.Label}</span>
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <apex:repeat value="{!productIntroHistoryWrappersByCategoryList}" var="ProductIntroHistoryList" >
+                                    <apex:variable var="count" value="{!1}"/>
+                                    <apex:repeat value="{!ProductIntroHistoryList}" var="item" >
+                                        <tr>
+                                            <apex:outputPanel layout="none" rendered="{!count==1}" >
+                                                <td rowspan="{!ProductIntroHistoryList.size}" class="slds-border_right slds-border_bottom text-center"
+                                                    style="background-color: white !important;" >
+                                                    <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" value="{!item.productIntro.Product__r.Category__c}"/>
+                                                </td>
+                                            </apex:outputPanel>
+                                            <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="field">
+                                                <td class="text-center {!IF(field.stringFieldType == 'TEXTAREA', 'nego-logo', '')}">
+                                                    <apex:outputLink value="/{!item.productIntro.Product__c}" target="_isblank" rendered="{!field.fieldName == 'Product__r.Name'}">
+                                                        {!item.productIntro[field.fieldName]}
+                                                    </apex:outputLink>
+                                                    <apex:outputField value="{!item.productIntro[field.fieldName]}" rendered="{!AND(!field.isInputField, field.fieldName != 'Product__r.Name')}" />
+                                                    <apex:inputField value="{!item.productIntro[field.fieldName]}" rendered="{!AND(field.isInputField, field.fieldName != 'Product__r.Name')}" />
+                                                </td>
+                                            </apex:repeat>
+                                            <apex:repeat value="{!assortmentBUsMap}" var="keyBU">
+                                                <!--apex:variable value="{!item.productIntro.Product__c + keyBU}" var="complexKey"/-->
+                                                <!--apex:variable value="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU]}" var="detail" /-->
+                                                <!--apex:variable value="{!initialProductIntroHistoryMap[item.productIntro.Product__c + keyBU]}" var="productIntro" rendered="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Id != null}" /-->
+                                                
+                                                <td class="text-center slds-border_left">
+                                                    <apex:outputPanel layout="none" rendered="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Id != null}" >
+                                                        <div class="slds-form-element__control">
+                                                            <div id="{!item.productIntro.Product__c + keyBU}" class="slds-radio_button-group" style="height:100%;border-radius:.0rem;">
+                                                                <span class="slds-radio_button">
+                                                                    <apex:outputPanel styleClass="slds-radio_button" rendered="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c == 'No' && initialProductIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c != 'Yes'}">
+                                                                        <input name="radio{!item.productIntro.Product__c + keyBU}" type="radio" id="no{!item.productIntro.Product__c + keyBU}"
+                                                                               onclick="changeLoadStatus(this,'{!$Component.hiddenLoadStatus}');" value="No" checked="checked" />
+                                                                        <label class="slds-button slds-radio_button__label" for="no{!item.productIntro.Product__c + keyBU}" style="margin-right:0;line-height:1.5;">
+                                                                            <span class="slds-radio_faux" style="padding-left:0.5rem;padding-right:0.5rem;">No</span>
+                                                                        </label>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel styleClass="slds-radio_button" rendered="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c != 'No' && initialProductIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c != 'Yes'}">
+                                                                        <input name="radio{!item.productIntro.Product__c + keyBU}" type="radio" id="no{!item.productIntro.Product__c + keyBU}"
+                                                                               onclick="changeLoadStatus(this,'{!$Component.hiddenLoadStatus}');" value="No" />
+                                                                        <label class="slds-button slds-radio_button__label" for="no{!item.productIntro.Product__c + keyBU}" style="margin-right:0;line-height:1.5;">
+                                                                            <span class="slds-radio_faux" style="padding-left:0.5rem;padding-right:0.5rem;">No</span>
+                                                                        </label>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel styleClass="slds-radio_button" rendered="{!initialProductIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c == 'Yes'}">
+                                                                        <input name="radio{!item.productIntro.Product__c + keyBU}" type="radio" id="no{!item.productIntro.Product__c + keyBU}"
+                                                                               onclick="changeLoadStatus(this,'{!$Component.hiddenLoadStatus}');" value="No" disabled="true" />
+                                                                        <label class="slds-button slds-radio_button__label" for="no{!item.productIntro.Product__c + keyBU}" style="margin-right:0;line-height:1.5;">
+                                                                            <span class="slds-radio_faux" style="padding-left:0.5rem;padding-right:0.5rem;">No</span>
+                                                                        </label>
+                                                                    </apex:outputPanel>
+                                                                </span>
+                                                                <span class="slds-radio_button">
+                                                                    <apex:outputPanel styleClass="slds-radio_button" rendered="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c == null && initialProductIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c != 'Yes'}">
+                                                                        <input name="radio{!item.productIntro.Product__c + keyBU}" type="radio" id="none{!item.productIntro.Product__c + keyBU}"
+                                                                               onclick="changeLoadStatus(this, '{!$Component.hiddenLoadStatus}');" value="N/A" checked="checked" />
+                                                                        <label class="slds-button slds-radio_button__label" for="none{!item.productIntro.Product__c + keyBU}" style="margin-right:0;line-height:1.5;">
+                                                                            <span class="slds-radio_faux" style="padding-left:0.2rem;padding-right:0.2rem;">N/A</span>
+                                                                        </label>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel styleClass="slds-radio_button" rendered="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c != null && initialProductIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c != 'Yes'}">
+                                                                        <input name="radio{!item.productIntro.Product__c + keyBU}" type="radio" id="none{!item.productIntro.Product__c + keyBU}"
+                                                                               onclick="changeLoadStatus(this,'{!$Component.hiddenLoadStatus}');" value="N/A" />
+                                                                        <label class="slds-button slds-radio_button__label" for="none{!item.productIntro.Product__c + keyBU}" style="margin-right:0;line-height:1.5;">
+                                                                            <span class="slds-radio_faux" style="padding-left:0.2rem;padding-right:0.2rem;">N/A</span>
+                                                                        </label>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel styleClass="slds-radio_button" rendered="{!initialProductIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c == 'Yes'}">
+                                                                        <input name="radio{!item.productIntro.Product__c + keyBU}" type="radio" id="none{!item.productIntro.Product__c + keyBU}"
+                                                                               onclick="changeLoadStatus(this,'{!$Component.hiddenLoadStatus}');" value="N/A" disabled="true" />
+                                                                        <label class="slds-button slds-radio_button__label" for="none{!item.productIntro.Product__c + keyBU}" style="margin-right:0;line-height:1.5;">
+                                                                            <span class="slds-radio_faux" style="padding-left:0.2rem;padding-right:0.2rem;">N/A</span>
+                                                                        </label>
+                                                                    </apex:outputPanel>
+                                                                </span>
+                                                                <span class="slds-radio_button">
+                                                                    <apex:outputPanel styleClass="slds-radio_button" rendered="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c == 'Yes' && initialProductIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c != 'Yes'}">
+                                                                        <input name="radio{!item.productIntro.Product__c + keyBU}" type="radio" id="yes{!item.productIntro.Product__c + keyBU}"
+                                                                               onclick="changeLoadStatus(this,'{!$Component.hiddenLoadStatus}');" value="Yes" checked="checked" />
+                                                                        <label class="slds-button slds-radio_button__label" for="yes{!item.productIntro.Product__c + keyBU}" style="margin-right:0;line-height:1.5;">
+                                                                            <span class="slds-radio_faux" style="padding-left:0.5rem;padding-right:0.5rem;">Yes</span>
+                                                                        </label>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel styleClass="slds-radio_button" rendered="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c != 'Yes' && initialProductIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c != 'Yes'}">
+                                                                        <input name="radio{!item.productIntro.Product__c + keyBU}" type="radio" id="yes{!item.productIntro.Product__c + keyBU}"
+                                                                               onclick="changeLoadStatus(this,'{!$Component.hiddenLoadStatus}');" value="Yes" />
+                                                                        <label class="slds-button slds-radio_button__label" for="yes{!item.productIntro.Product__c + keyBU}" style="margin-right:0;line-height:1.5;">
+                                                                            <span class="slds-radio_faux" style="padding-left:0.5rem;padding-right:0.5rem;">Yes</span>
+                                                                        </label>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel styleClass="slds-radio_button" rendered="{!initialProductIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c == 'Yes'}">
+                                                                        <input name="radio{!item.productIntro.Product__c + keyBU}" type="radio" id="yes{!item.productIntro.Product__c + keyBU}"
+                                                                               onclick="changeLoadStatus(this,'{!$Component.hiddenLoadStatus}');" value="Yes" checked="checked" disabled="true" />
+                                                                        <label class="slds-button slds-radio_button__label" for="yes{!item.productIntro.Product__c + keyBU}" style="margin-right:0;line-height:1.5;">
+                                                                            <span class="slds-radio_faux" style="padding-left:0.5rem;padding-right:0.5rem;">Yes</span>
+                                                                        </label>
+                                                                    </apex:outputPanel>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <apex:inputHidden value="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c}" id="hiddenLoadStatus"/>
+                                                    </apex:outputPanel>
+                                                </td>
+                                                <td class="text-center">
+                                                    <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" value="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].BU_Assortment__c}" rendered="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Id != null}"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <apex:outputfield styleClass="slds-truncate slds-m-around_xx-small" value="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Application_Date__c}" rendered="{!AND(item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c == 'Yes',item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Id != null)}" />
+                                                    <apex:inputfield styleClass="slds-truncate slds-m-around_xx-small test" value="{!item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Application_Date__c}" rendered="{!AND(item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Load_Status__c != 'Yes', item.productIntroHistoryMap[item.productIntro.Product__c + keyBU].Id != null)}" />
+                                                </td>
+                                            </apex:repeat>
+                                            <td class="text-center slds-border_left"><apex:outputField value="{!item.productIntro.Product__r.Keynote_Marketing__c}" /></td>
+                                            <td class="text-center"><apex:outputField value="{!item.productIntro.Product__r.Keynote_Administrative__c}" /></td>
+                                            <td class="text-center"><apex:outputField value="{!item.productIntro.Record_Date__c}" /></td>
+                                            <apex:variable var="count" value="{!count+1}"/>
+                                        </tr>
+                                    </apex:repeat>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="slds-p-around_medium">
+                        <apex:selectList value="{!pageSize}" size="1" styleClass="slds-select slds-m-right_xx-small"
+                                         onchange="refreshPageSize();" style="width: 50px" >
+                            <apex:selectOptions value="{!paginationSizeOptions}" />
+                        </apex:selectList>
+                        <apex:commandButton status="globalloading" value="{!$Label.LBL_First}" action="{!first}"
+                                            disabled="{!!productIntroHistoryListCtrl.hasPrevious}" reRender="productStopGrid, messages"
+                                            styleClass="slds-button slds-button_neutral" /> 
+                        <apex:commandButton status="globalloading" value="{!$Label.LBL_Previous}" action="{!previous}"
+                                            disabled="{!!productIntroHistoryListCtrl.hasPrevious}" reRender="productStopGrid, messages"
+                                            styleClass="slds-button slds-button_neutral" />
+                        <apex:commandButton status="globalloading" value="{!$Label.LBL_Next}" action="{!next}"
+                                            disabled="{!!productIntroHistoryListCtrl.hasNext}" reRender="productStopGrid, messages"
+                                            styleClass="slds-button slds-button_neutral" />
+                        <apex:commandButton status="globalloading" value="{!$Label.LBL_Last}" action="{!last}"
+                                            disabled="{!!productIntroHistoryListCtrl.hasNext}" reRender="productStopGrid, messages"
+                                            styleClass="slds-button slds-button_neutral" />
+                        <apex:outputText styleClass="slds-m-left_small"
+                                         value="{!productIntroHistoryListCtrl.pageNumber * pageSize + 1 - pageSize}-{!IF((productIntroHistoryListCtrl.pageNumber * pageSize)>noOfRecords, noOfRecords,
+                                                (productIntroHistoryListCtrl.pageNumber * pageSize))} {!$Label.LBL_Of} {!noOfRecords}" />
+                    </div>
+                </apex:outputPanel>
+                <apex:pageBlockButtons location="bottom">
+                    <apex:commandButton styleClass="slds-button slds-button_neutral" value="{!$Label.Save}" action="{!save}"
+                                        status="globalloading" reRender="messages, productStopGrid" />
+                    <apex:commandButton styleClass="slds-button slds-button_neutral" value="{!$Label.Cancel}" action="{!cancel}"
+                                        status="globalloading" reRender="messages, productStopGrid" immediate="true" />
+                </apex:pageBlockButtons>
+            </apex:pageBlock>
+        </apex:form>
+    </div>
+    <script>    
+    document.addEventListener('DOMContentLoaded', docReady, false);
+    window.onresize = setTableDimensions;
+    
+    function docReady() {
+        setTableDimensions();
+        var buFormatOptions = document.getElementsByClassName('buFormatOption');
+        buFormatOptions[0].checked = true;
+        toggleSelection(buFormatOptions[0]);
+    }
+    
+    function setTableDimensions() {
+        if (document.getElementsByClassName('table-container').length == 0) return;
+        // width
+        var bodyWidth = document.body.clientWidth;
+        _97 = bodyWidth * 97 / 100;
+        document.getElementsByClassName('table-container')[0].style.width = _97 + "px";
+        // height
+        var window_h = window.innerHeight;
+        var body_h = document.body.clientHeight;
+        var delta_h = body_h - window_h;
+        var grid_h = document.getElementsByClassName('table-container')[0].offsetHeight;
+        var new_grid_h = grid_h - delta_h;
+        document.getElementsByClassName('table-container')[0].style.height = new_grid_h + "px";
+    }
+    
+    function applyFilters() {
+        var options = document.getElementsByClassName('historyOption');
+        var selectedHistoryOption;
+        for (var i = 0; i <options.length; i++)
+            if (options[i].checked)
+                selectedHistoryOption = options[i].value;
+        var searchString = document.getElementById('searchBox').value;
+        // get selected month
+        var buFormatOptions = document.getElementsByClassName('buFormatOption');
+        var selectedBuFormatOptions = '';
+        for (var i = 0; i < buFormatOptions.length; i++) {
+            if(buFormatOptions[i].value == '{!$Label.LBL_All}') continue;
+            if(buFormatOptions[i].checked) {
+                selectedBuFormatOptions +=  selectedBuFormatOptions.length == 0 ? buFormatOptions[i].value : ',' + buFormatOptions[i].value;
+            }
+        }
+        // category
+        var selectedLevel1HE = document.getElementById('level1HESelect').value;
+        console.log('searchProductIntro(' + selectedHistoryOption + ', ' + selectedLevel1HE + ', ' + selectedBuFormatOptions + ', ' + searchString + ')');
+        searchProductIntro(selectedHistoryOption, selectedLevel1HE, selectedBuFormatOptions, searchString);
+    }
+    
+    function changeLoadRules(e, paramId) {
+        var val = e.options[e.selectedIndex].value;
+        document.getElementById(paramId).value = val;
+    }
+    
+    function changeLoadStatus(input, paramId) {
+        if(input.value != 'N/A') {
+            document.getElementById(paramId).value = input.value;
+        } else {
+            document.getElementById(paramId).value = null;
+        }        
+    }
+    
+    function showBuFormatOptions() {
+        document.getElementById('buFormatOptionsSection').classList.remove('collapsed');
+    }
+    
+    function hideBuFormatOptions() {
+        displayBuFormatSelection();
+        document.getElementById('buFormatOptionsSection').classList.add('collapsed');
+    }
+    
+    function displayBuFormatSelection() {
+        var options = document.getElementsByClassName('buFormatOption');
+        var selectedOptions = '';
+        for (var i = 0; i < options.length; i++) {
+            if(options[i].checked) {
+                if(options[i].value == '{!$Label.LBL_All}') {
+                    selectedOptions = options[i].name;
+                    break;
+                }
+                selectedOptions +=  selectedOptions.length == 0 ? options[i].name : ', ' + options[i].name;
+            }            
+        }
+        document.getElementById('selectedBuFormatOptions').value = selectedOptions;
+    }
+    
+    function buFormatSelectionChange(e) {
+        var buFormatOptions = document.getElementsByClassName('buFormatOption');
+        if (e.value == '{!$Label.LBL_All}') {
+            for (var i = 0; i < buFormatOptions.length - 1; i++) {
+                buFormatOptions[i].checked = e.checked;
+                toggleSelection(buFormatOptions[i]);
+            }
+        } else {
+            if (!e.checked) {
+                buFormatOptions[buFormatOptions.length - 1].checked = false;
+                toggleSelection(buFormatOptions[buFormatOptions.length - 1]);
+            }
+        }
+        toggleSelection(e);
+    }
+    
+    function toggleSelection(e) {
+        if (e.checked)
+            e.parentElement.classList.add('selected-option');
+        else
+            e.parentElement.classList.remove('selected-option');
+    }
+    function setFocusOnLoad() {}
+    </script>
+</apex:page>

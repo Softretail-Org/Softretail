@@ -1,0 +1,144 @@
+<apex:page id="thePage" tabStyle="NegoTemplate__c"
+           controller="SingleRecordPrintController" lightningStylesheets="true" >
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}" />
+    <apex:pageMessages id="messages" />
+    <apex:form id="theForm" >
+        <apex:actionStatus id="globalloading">
+            <apex:facet name="start">
+                <div class="loading-overlay">
+                    <div class="loader-img"></div>
+                    <div class="loading-block">{!$Label.Loading}</div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        <apex:pageBlock id="templatePageBlock" rendered="{!AND(!phaseSendEmail, recordId != null)}" title="{!$ObjectType[SObjectType].label}">
+            <apex:pageBlockSection id="availableTemplatesPageBlock" title="{!$Label.Available_Templates}"
+                                   columns="1" collapsible="false">
+                <apex:pageBlockSection rendered="{!fieldSetExists}" columns="2">
+                    <apex:repeat value="{!$ObjectType[SObjectType].FieldSets.Field_Set}"  
+                                 var="field">
+                        <apex:outputField value="{!record[field]}" />
+                    </apex:repeat>
+                </apex:pageBlockSection>
+                <!--<apex:detail relatedList="false" showChatter="false"  />-->
+                <apex:pageBlockTable id="availableTemplatesTable" value="{!wTableRows}" var="item">
+                    <apex:column width="1%">
+                        <apex:inputCheckbox value="{!item.isSelected}" />
+                    </apex:column>
+                    <apex:column width="2%" >
+                        <apex:outputLink value="/apex/negotemplatepreview?preview=true&rid={!recordId}&tid={!item.template.Id}"
+                                         target="_blank">
+                            <apex:image url="/img/icon/documents32.png"
+                                        title="{!$Label.Preview}"
+                                        alt="{!$Label.Preview}" />
+                        </apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.NegoTemplate__c.fields.Name.label}"
+                                 value="{!item.template.Name}" 
+                                 width="10%" />
+                    <apex:column headerValue="{!$ObjectType.NegoTemplate__c.fields.Description__c.label}"
+                                 value="{!item.template.Description__c}"
+                                 width="30%" />
+                    <apex:column headerValue="{!$ObjectType.NegoTemplate__c.fields.Template_Format__c.label}"
+                                 value="{!item.template.Template_Format__c}"
+                                 width="10%" />
+                    <apex:column headerValue="{!$ObjectType.NegoTemplate__c.fields.Send_Email_When_Printing__c.label}"
+                                 style="align: center;" >
+                        <apex:inputField value="{!item.template.Send_Email_When_Printing__c}"
+                                         rendered="{!item.template.Document_Recipient__c!=null}" />
+                        <apex:outputField value="{!item.template.Send_Email_When_Printing__c}"
+                                         rendered="{!item.template.Document_Recipient__c==null}" />
+                    </apex:column>
+                   <!-- <apex:column rendered="{!phaseSelectTemplates}" >
+                        <apex:commandLink action="{!previewDocument}" target="_BLANK" value="preview" >
+                            <apex:param name="currentTemplateId" assignTo="{!currentTemplateId}" value="{!item.template.Id}" />
+                        </apex:commandLink> 
+                        <apex:commandButton value="{!$Label.Preview}" reRender="nothing"
+                                            onclick="window.open('/apex/negotemplatepreview?preview=true&rid={!recordId}&tid={!item.template.Id}','_blank');"/>
+                    </apex:column>-->
+                    <apex:column headerValue="Document" >
+                        <apex:outputLink value="/{!item.attachment.Id}" target="_BLANK">
+                            <apex:outputText value="{!item.attachment.Name}" />
+                        </apex:outputLink>
+                    </apex:column>
+                    <apex:column rendered="{!!phaseSelectTemplates}" >
+                        <apex:outputLink value="/servlet/servlet.FileDownload?file={!item.attachment.Id}" target="_BLANK" rendered="{!item.isPrinted}">
+                            <apex:outputText value="{!$Label.view}" />
+                        </apex:outputLink>
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            <apex:pageBlockButtons location="Bottom">
+                <apex:commandButton value="{!$Label.Print}" action="{!saveAttachments}"
+                                    reRender="templatePageBlock" status="globalloading"  />
+                <apex:commandButton value="{!$Label.Email_Selected}" action="{!emailSelected}" rendered="{!!phaseSelectTemplates}"
+                                    reRender="theForm" status="globalloading"  />
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" />
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+        
+        <apex:pageBlock id="emailPageBlock" rendered="{!phaseSendEmail}" title="Email Setup">
+        	<apex:pageBlockSection columns="1" collapsible="false">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$Label.To}"/>
+                    <apex:inputText style="width: 70%;" value="{!emailTo}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Cc"/>
+                    <apex:inputText style="width: 70%;" value="{!emailCc}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Bcc"/>
+                    <apex:inputText style="width: 70%;" value="{!emailBcc}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$Label.Subject}"/>
+                    <apex:inputText style="width: 70%;" value="{!emailSubject}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="attachmentsBlockSectionItem" >
+                    <apex:outputLabel value="Attachments" />
+                    <apex:repeat value="{!emailAttachmentList}" var="item" >
+                        <apex:outputLink target="_ISBLANK" value="/{!item.Id}">
+                            <apex:outputText value="{!item.Name}" />
+                        </apex:outputLink>    
+                        <apex:commandLink style="padding: 10px;" value="x" action="{!removeSelectedAttachment}"
+                                          reRender="emailPageBlock" status="fetchStatus" >
+                            <apex:param assignTo="{!selectedAttachmentId}" value="{!item.Id}" name="selectedAttachmentId" />
+                        </apex:commandLink>
+                        <br/>
+                    </apex:repeat>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$Label.Email_Body}"/>
+                    <apex:inputTextarea style="width: 70%;" rows="25" value="{!emailBody}" />
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <apex:pageBlockButtons location="bottom" >
+                <apex:outputPanel >
+                    <apex:actionStatus id="fetchStatus" >
+                        <apex:facet name="start" >
+                            <img src="/img/loading.gif" />                    
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputPanel>
+            	<apex:commandButton value="{!$Label.Send}" action="{!send}" status="globalloading" reRender="messages" />
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" />
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+    <script>
+    function validateEmail(email) {
+        var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return re.test(email);
+    }
+    
+    function hightlight(img) {
+        img.style.background = "#b3b3f2";
+    }
+    
+    function removeHighlight(img) {
+        img.style.background = "none";
+    }
+    </script>
+    
+</apex:page>

@@ -1,0 +1,4 @@
+<apex:page standardController="Store_cases__c" recordSetVar="Elements" sidebar="true" lightningStylesheets="true">
+  <h2 style="font-size:22px;">{!$ObjectType.Store_cases__c.labelPlural}</h2>          
+  <apex:enhancedList type="Store_cases__c" height="600" rowsPerPage="50"/>
+</apex:page>

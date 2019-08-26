@@ -1,0 +1,255 @@
+<apex:page standardController="Sup_Supplier__c" extensions="Product_Selection_Controller,ProductsSellInChartController"
+           lightningStylesheets="true">
+    
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
+
+    <apex:includeScript value="https://code.jquery.com/jquery-1.12.4.js" />
+    <apex:includeScript value="https://code.jquery.com/ui/1.12.1/jquery-ui.js" />
+
+    <apex:pageMessages id="messages" />
+    <apex:sectionHeader title="{!Sup_Supplier__c.Name}"
+                        subtitle="{!$ObjectType.Supplier_PG_Mapping__c.Labelplural}" />
+    <apex:form id="form">
+        <apex:pageBlock id="pbId" mode="edit" rendered="{!supplier != null}">
+            <apex:pageBlockSection columns="2">
+                <apex:pageBlockSection title="{!$Label.Informations}" collapsible="false" columns="2">
+                    <apex:outputField value="{!Sup_Supplier__c.Name}" />
+                    <apex:outputText />
+                    <apex:outputField value="{!Sup_Supplier__c.Code__c}" />
+                    <apex:inputField value="{!clientAssortment.Status__c}" />
+                </apex:pageBlockSection>
+                <apex:pageBlockSection id="sectionChart" title="{!$Label.LBL_Statistics}" collapsible="false" columns="1" >
+                    <apex:include pageName="ProductsSellInChart" />
+                    <apex:pageBlockSection columns="2">
+                        <apex:outputPanel >
+                            <apex:commandButton value="{!$Label.LBL_Fast_Action_1}" action="{!fastAction1}" disabled="{!!hasCreatePGAccess}" rerender="productGrid,sectionChart,messages" oncomplete="refreshGrid()" status="search_reset" />
+                            <apex:commandButton value="{!$Label.LBL_Fast_Action_2}" action="{!fastAction2}" disabled="{!!hasDeletePGAccess}" rerender="productGrid,sectionChart,messages" oncomplete="refreshGrid()" status="search_reset" />
+                        </apex:outputPanel>
+                        <apex:outputPanel >
+                            <apex:outputLabel value="{!$Label.LBL_Total_Product}: " />
+                            <apex:outputText id="countPositiveSellInWithoutAssortment" value="{!countPositiveSellInWithoutAssortment}" style="color:#ff5858;" />
+                        </apex:outputPanel>
+                        <apex:outputPanel />
+                        <apex:outputPanel >
+                            <apex:outputLabel value="{!$Label.LBL_Volume_Product}: " />
+                            <apex:outputText value="{!sPercentPositiveSellInWithoutAssortment}" style="color:#ff5858;" />
+                        </apex:outputPanel>
+                    </apex:pageBlockSection>
+                </apex:pageBlockSection>
+            </apex:pageBlockSection>
+            <apex:actionFunction name="refreshGrid" action="{!refresh}" rerender="productGrid,scriptPanel" />
+            <apex:actionFunction name="searchProduct" action="{!search}" rerender="productGrid,scriptPanel" status="search_reset"/>
+            <apex:pageBlockSection title="{!$Label.LBL_Detention}" id="detention" collapsible="false" columns="1">
+                <apex:pageBlockSection columns="2">
+                    <apex:pageBlockSectionItem >
+                        <apex:panelGroup >
+                            <apex:inputText id="searchInput" value="{!textFilter}" label="Product search" required="false"/>                            
+                            <apex:commandButton value="{!$Label.LBL_Search}" action="{!search}" rerender="productGrid,scriptPanel" status="search_reset" oncomplete="removeCheckAll()" >
+                            </apex:commandButton>
+                            <apex:commandButton value="{!$Label.LBL_Reset}" action="{!reset}" rerender="productGrid,scriptPanel" status="search_reset" oncomplete="removeCheckAll()" >
+                            </apex:commandButton>
+                            <apex:commandButton value="{!$Label.LBL_Refresh}" action="{!refresh}" rerender="productGrid,scriptPanel" status="search_reset" oncomplete="removeCheckAll()" >
+                            </apex:commandButton>
+                            <apex:outputPanel >
+                                <apex:actionStatus id="search_reset" >
+                                    <apex:facet name="start" >
+                                        <img src="/img/loading.gif" />                    
+                                    </apex:facet>
+                                </apex:actionStatus>
+                            </apex:outputPanel> 
+                        </apex:panelGroup>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSection columns="2">
+                        <apex:selectList label="{!$Label.LBL_Products_list}" value="{!productListingFilter}" multiselect="false" size="1" required="false">
+                            <apex:selectOptions value="{!productListingOptions}"/>
+                            <apex:actionSupport event="onchange" action="{!search}" reRender="productGrid" status="productListingFilter"/>
+                        </apex:selectList>
+                        <apex:selectList label="{!$Label.LBL_Year}" value="{!year}" id="field__year" multiselect="false" size="1" required="true">
+                            <apex:selectOptions value="{!listYears}" />
+                            <apex:actionSupport event="onchange" action="{!setYearValue}" status="productListingFilter"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    <apex:outputPanel >
+                        <apex:actionStatus id="productListingFilter" >
+                            <apex:facet name="start" >
+                                <img src="/img/loading.gif" />                    
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputPanel>
+                </apex:pageBlockSection>
+                <apex:actionFunction name="refreshPageSize" action="{!refreshPageSize}" status="fetchStatus" reRender="productGrid"/>
+                <apex:pageBlockTable id="productGrid" value="{!products}" var="item">
+                    <apex:column style="width:1%;" >
+                        <apex:facet name="header">
+                            <apex:inputCheckbox id="checkAll" styleClass="checkAllProduct" onclick="checkAll(this)" />
+                        </apex:facet>
+                        <apex:inputCheckbox value="{!item.selected}" id="checkedone" />
+                    </apex:column>
+                    <apex:column style="background-color: {!item.codeColor}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!SortToggle}" rerender="productGrid" status="productListingFilter">
+                                <apex:param name="SortField" value="ProductCode" assignTo="{!SortField}" />
+                                <apex:outputText value="{!$ObjectType.Product2.fields.ProductCode.Label}{!IF(SortField=='ProductCode',IF(SortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputLink value="/{!item.product.Id}" target="_blank"><apex:outputField value="{!item.product.ProductCode}" /></apex:outputLink>
+                    </apex:column>
+                    <apex:column style="background-color: {!item.codeColor}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!SortToggle}" rerender="productGrid" status="productListingFilter">
+                                <apex:param name="SortField" value="Name" assignTo="{!SortField}" />
+                                <apex:outputText value="{!$ObjectType.Product2.fields.Name.Label}{!IF(SortField=='Name',IF(SortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputLink value="/{!item.product.Id}" target="_blank"><apex:outputField value="{!item.product.Name}" /></apex:outputLink>
+                    </apex:column>
+                    <apex:column style="background-color: {!item.codeColor}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!SortToggle}" rerender="productGrid" status="productListingFilter">
+                                <apex:param name="SortField" value="Brand__r.Name" assignTo="{!SortField}" />
+                                <apex:outputText value="{!$ObjectType.Product2.fields.Brand__c.Label}{!IF(SortField=='Brand__r.Name',IF(SortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{!item.product.Brand__c}" />
+                    </apex:column>
+                    <apex:column style="background-color: {!item.codeColor}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!SortToggle}" rerender="productGrid" status="productListingFilter">
+                                <apex:param name="SortField" value="Category__r.Parent_Element__r.Parent_Element__c" assignTo="{!SortField}" />
+                                <apex:outputText value="{!$Label.LBL_Product_Classif_Level1}{!IF(SortField=='Category__r.Parent_Element__r.Parent_Element__c',IF(SortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{!item.product.Category__r.Parent_Element__r.Parent_Element__c}" />
+                    </apex:column>
+                    <apex:column style="background-color: {!item.codeColor}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!SortToggle}" rerender="productGrid" status="productListingFilter">
+                                <apex:param name="SortField" value="Category__r.Parent_Element__c" assignTo="{!SortField}" />
+                                <apex:outputText value="{!$Label.LBL_Product_Classif_Level2}{!IF(SortField=='Category__r.Parent_Element__c',IF(SortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{!item.product.Category__r.Parent_Element__c}" />
+                    </apex:column>
+                    <apex:column style="background-color: {!item.codeColor}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!SortToggle}" rerender="productGrid" status="productListingFilter">
+                                <apex:param name="SortField" value="Category__r.Name" assignTo="{!SortField}" />
+                                <apex:outputText value="{!$ObjectType.Product2.fields.Category__c.Label}{!IF(SortField=='Category__r.Name',IF(SortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{!item.product.Category__c}" />
+                    </apex:column>
+                    <apex:column style="background-color: {!item.codeColor}">
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!SortToggle}" rerender="productGrid" status="productListingFilter">
+                                <apex:param name="SortField" value="Attribute1_name__c" assignTo="{!SortField}" />
+                                <apex:outputText value="{!$ObjectType.Product2.fields.Attribute1_name__c.Label}{!IF(SortField=='Attribute1_name__c',IF(SortDirection='asc','▲','▼'),'')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{!item.product.Attribute1_name__c}" />
+                    </apex:column>
+                    <apex:column style="background-color: {!item.codeColor}; text-align:center;" headerValue="{!$Label.LBL_In_Assortment}">
+                        <apex:inputCheckbox value="{!item.inAssortment}" disabled="true" />
+                    </apex:column>
+                    <apex:column style="background-color: {!item.codeColor}; text-align:right;" headerValue="{!$Label.LBL_Sell_In_YTD}">
+                        <apex:outputText value="{!item.sValueSellInYTD}" />
+                    </apex:column>
+                    <apex:column style="background-color: {!item.codeColor}; text-align:right;" headerValue="{!$Label.LBL_Sell_In_Last_Month}">
+                        <apex:outputText value="{!item.sValueSellInLastMonth}" />
+                    </apex:column>
+                    <apex:facet name="footer">
+                        <apex:outputPanel layout="table">
+                            <apex:outputText rendered="{!NULLVALUE(noOfRecords,0)==0}" value="{!$Label.LBL_No_Record_To_Display}"/>
+                            <apex:outputPanel layout="table" rendered="{!NULLVALUE(noOfRecords,0) > 0}">
+                                <apex:selectList value="{!size}" multiselect="false" size="1" onchange="refreshPageSize();">
+                                    <apex:selectOptions value="{!paginationSizeOptions}"/>
+                                </apex:selectList>
+                                <apex:commandButton status="fetchStatus" reRender="productGrid" value="{!$Label.LBL_First}" action="{!first}" disabled="{!!setCtrlr.hasPrevious}" title="{!$Label.LBL_First}" oncomplete="removeCheckAll()" /> 
+                                <apex:commandButton status="fetchStatus" reRender="productGrid" value="{!$Label.LBL_Previous}" action="{!previous}" disabled="{!!setCtrlr.hasPrevious}" title="{!$Label.LBL_Previous}" oncomplete="removeCheckAll()" /> 
+                                <apex:commandButton status="fetchStatus" reRender="productGrid" value="{!$Label.LBL_Next}" action="{!next}" disabled="{!!setCtrlr.hasNext}" title="{!$Label.LBL_Next}" oncomplete="removeCheckAll()" /> 
+                                <apex:commandButton status="fetchStatus" reRender="productGrid" value="{!$Label.LBL_Last}" action="{!last}" disabled="{!!setCtrlr.hasNext}" title="{!$Label.LBL_Last}" oncomplete="removeCheckAll()" /> 
+                                <apex:outputText style="text-align: right" >{!(setCtrlr.pageNumber * size)+1-size}-{!IF((setCtrlr.pageNumber * size)>noOfRecords, noOfRecords,
+                                    (setCtrlr.pageNumber * size))} {!$Label.LBL_Of} {!noOfRecords}
+                                </apex:outputText>
+                                <apex:outputPanel >
+                                    <apex:actionStatus id="fetchStatus" >
+                                        <apex:facet name="start" >
+                                            <img src="/img/loading.gif" />
+                                        </apex:facet>
+                                    </apex:actionStatus>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            <apex:pageblockbuttons >
+                <apex:commandButton value="{!$Label.Save}" action="{!savePGs}" disabled="{!!hasCreatePGAccess}" status="saveStatus" reRender="productGrid,sectionChart,messages" oncomplete="refreshGrid()" />
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" />
+                <apex:actionStatus id="saveStatus">
+                    <apex:facet name="start">
+                        <img src="/img/loading.gif" />
+                    </apex:facet>
+                </apex:actionStatus>
+            </apex:pageblockbuttons>
+        </apex:pageBlock>
+        
+    </apex:form>
+    <apex:outputPanel id="scriptPanel">
+        <script>
+        $(document).ready(function() {
+            $("[id*='searchInput']").focus(function() {
+                $(this).select();
+            });
+            
+            $("[id*='searchInput']").keypress(function(e) {
+                if (e.keyCode == 13) {
+                    searchProduct();
+                }
+                return e.keyCode !== 13;
+            });
+        });
+        </script>
+    </apex:outputPanel>
+    <script>
+    function checkAll(cb) {
+        var inputElem = document.getElementsByTagName("input");
+        for (var i = 0; i < inputElem.length; i++) {
+            if (inputElem[i].id.indexOf("checkedone") != -1)
+                inputElem[i].checked = cb.checked;
+        }
+    }
+    
+    function removeCheckAll() {
+        var input = document.getElementsByClassName("checkAllProduct");
+        input[0].checked = false;
+    };
+    
+    function search(e) {
+        if (e.keyCode == 13) {
+            searchProduct();
+        }
+        return e.keyCode !== 13;
+    }
+    
+    $(function() {
+        $("[id*='searchInput']").autocomplete({
+            source: function(request, response) {
+                Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Product_Selection_Controller.populateProducts}',
+                                                          request.term,
+                                                          function(result, event) {
+                                                              if (event.status) {
+                                                                  response(result);
+                                                              } else {
+                                                                  alert(event.message);
+                                                              }
+                                                          });
+            },
+            select: function(event, ui) {
+                // Call class method by passing this value using action function            
+                ////callControllermethod(ui.item.label);
+            }
+        });
+    });    
+    </script>    
+</apex:page>

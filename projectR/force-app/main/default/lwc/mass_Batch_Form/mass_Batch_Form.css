@@ -1,0 +1,67 @@
+.margin10{
+    margin-left:0.2vw;
+}
+.margin20{
+    margin-left:1vw;
+}
+.margin40{
+    margin-left:20vw;
+}
+.fontStyle{
+    font-size:12px;
+}
+.dateStyle{
+    width: 14.5vw;
+}
+h1 {
+    font-weight: initial;
+    font-size: 2em;
+}
+.marginTop{
+    margin-top: 1vw;
+}
+.margin20Layout{
+    margin: 5%;
+}
+.uploadClass{
+    top: 3vw;
+    margin-right: 50vw;
+}
+.fixedWidthContainerCol1{
+    max-width: 15vw;
+    text-align: right;
+}
+.fixedWidthContainerCol1BU{
+    max-width: 15vw;
+    text-align: center;
+}
+.fixedWidthContainerCol2{
+    max-width: 8vw;
+}
+.fixedWidthCalculRate{
+    max-width: 23vw;
+    text-align: right;
+}
+.fixedWidthReminderLevel{
+    max-width: 12vw;
+}
+.fixedWidthReminder{
+    max-width: 15vw;
+}
+.fixedWidthInvoiceReminder{
+max-width: 11vw;
+text-align: right;
+}
+.fixedWidthRadio{
+    max-width:10vw;
+}
+.fixedWidthCsvSep{
+    max-width: 10vw;
+}
+.fixedWidthPenalite{
+    max-width: 15.3vw;
+    text-align: right;
+}
+.reminderWidth{
+    width:10vw;
+}

@@ -1,0 +1,60 @@
+<apex:page standardController="Commercial_Plan_Detail__c" extensions="Commercial_Plan_Detail_BU_Controller" lightningStylesheets="true">
+    <apex:pageMessages id="messages" />
+    <apex:sectionHeader title="{!$ObjectType.Commercial_Plan_Detail__c.Label}"
+                        subtitle="{!$ObjectType.Commercial_Plan_Detail_BU__c.Label}" />
+    <apex:form id="theForm" >
+        <apex:pageBlock id="pbId">
+            <apex:pageBlockSection collapsible="false" columns="2">
+                <apex:outputField value="{!Commercial_Plan_Detail__c.Event_Name__c}" />
+                <apex:outputField value="{!Commercial_Plan_Detail__c.Event_Code__c}" />
+                <apex:outputField value="{!Commercial_Plan_Detail__c.Event_Start_Date__c}" />
+                <apex:outputField value="{!Commercial_Plan_Detail__c.Event_End_Date__c}" />
+                <apex:outputField value="{!Commercial_Plan_Detail__c.Unit_Need__c}" />
+                <apex:outputField value="{!Commercial_Plan_Detail__c.Products_inline__c}" />
+                <apex:outputField value="{!Commercial_Plan_Detail__c.POS_Comit_Status__c}" />
+                <apex:outputField value="{!Commercial_Plan_Detail__c.Volume_to_Reach__c}">
+                    <apex:commandButton value="Distribute Equally" action="{!DistributeEqually}"
+                                        status="loading" reRender="pbId, BUTable" style="margin-left: 5px;" />
+                    <apex:actionStatus id="loading">
+                        <apex:facet name="start">
+                            <img src="/img/loading.gif" />
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputField>
+                <apex:outputField value="{!Commercial_Plan_Detail__c.Volume_Corrected__c}" />
+                <apex:outputField value="{!Commercial_Plan_Detail__c.Volume_Validated_POSCommit__c}" />
+            </apex:pageBlockSection>
+            <apex:pageBlockTable id="BUTable" value="{!commercialPlanDetailBUList}" var="item">
+                <apex:column headerValue="{!$ObjectType.Orga_BU__c.fields.BU_Code__c.Label}">
+                    <apex:outputText value="{!item.BUCode}" />
+                </apex:column>
+                <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail_BU__c.fields.Orga_Business_Unit__c.Label}">
+                    <apex:outputText value="{!item.BUName}" />
+                </apex:column>
+                <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail_BU__c.fields.BU_Proposed_Volume__c.Label}">
+                    <apex:outputField value="{!item.cpdBU.BU_Proposed_Volume__c}" />
+                </apex:column>
+                <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail_BU__c.fields.POS_Corrected_Volume__c.Label}">
+                    <apex:outputField value="{!item.cpdBU.POS_Corrected_Volume__c}" />
+                </apex:column>
+                <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail_BU__c.fields.BU_Validated_Volume__c.Label}">
+                    <apex:inputField value="{!item.cpdBU.BU_Validated_Volume__c}" />
+                </apex:column>
+                <apex:column headerValue="{!$ObjectType.Commercial_Plan_Detail_BU__c.fields.Status__c.Label}">
+                    <apex:outputField value="{!item.cpdBU.Status__c}" />
+                </apex:column>
+            </apex:pageBlockTable>
+            
+            <apex:pageblockbuttons >
+                <apex:commandButton value="{!$Label.Save}" action="{!save}" status="saveStatus"
+                                    reRender="pbId, BUTable, messages" />
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" />
+                <apex:actionStatus id="saveStatus">
+                    <apex:facet name="start">
+                        <img src="/img/loading.gif" />
+                    </apex:facet>
+                </apex:actionStatus>
+            </apex:pageblockbuttons>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

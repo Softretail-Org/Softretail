@@ -1,0 +1,4 @@
+<apex:page standardController="Invoice__c" recordSetVar="Elements" sidebar="true" lightningStylesheets="true">
+  <h2 style="font-size:22px;">{!$ObjectType.Invoice__c.labelPlural}</h2>          
+  <apex:enhancedList type="Invoice__c" height="600" rowsPerPage="50"/>
+</apex:page>

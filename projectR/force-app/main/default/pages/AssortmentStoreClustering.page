@@ -1,0 +1,568 @@
+<apex:page standardController="Orga_BU__c" extensions="AssortmentStoreClusteringController"
+           lightningStylesheets="true" sidebar="false" docType="html-5.0">
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"/>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"/>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/ui-lightness/jquery-ui.css" type="text/css" media="all" />
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }" />
+    <script type="text/javascript">
+    $j = jQuery.noConflict();
+    function toggleCheckboxes(cb) {
+        var parentTR = $j(cb).closest('tr').get(0);
+        $j('td input:checkbox.toggle', parentTR).prop('checked', false);
+        $j(cb).prop("checked", true);
+    }
+    function enterPress(e) {
+        if (e.keyCode == 13) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+            }
+            validate();
+        }
+    }
+    function validate(){
+        var inp = document.getElementById('{!$Component.j_id0:myForm:storeCluster:j_id38:j_id41:searchBar}').value;
+        if (inp.length == 1) {
+            alert('Please enter at least 2 characters to search.');
+            return false;
+        }
+        searchFunction();
+        return true;
+    }
+    function onChangeCountryHandler(name, id) {
+        refresh();
+    }
+    </script>
+    <apex:pageMessages id="message"/>
+    <apex:sectionHeader title="Store Clustering" subtitle="{!IF(recordId != null, 'Store Clustering for ' + countryList[0].Name, 'Store Clustering')}"/>
+    <apex:form id="myForm">
+        <apex:actionStatus id="load">
+            <apex:facet name="start">
+                <img src="/img/loading.gif" />
+            </apex:facet>
+        </apex:actionStatus>
+        <apex:actionStatus id="globalloading">
+            <apex:facet name="start">
+                <div class="loading-overlay">
+                    <div class="loader-img"></div>
+                    <div class="loading-block">{!$Label.Loading}</div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        <apex:pageBlock id="storeCluster">
+            <apex:pageBlockButtons >
+                <apex:commandButton value="{!$Label.Save}" action="{!save}" status="saveStatus" reRender="countryGridPanel,message"/>
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" rendered="{!IF(recordId != null, true, false)}"/>
+                <apex:commandButton value="{!$Label.LBL_Edit} {!$Label.LBL_Weighted_Distribution}" action="{!updateWeightDistribution}" status="saveStatus" reRender="countryGridPanel,message"/>
+                <apex:commandButton value="Calculate" status="saveStatus" reRender="countryGridPanel,message" action="{!calculate}"/>
+                <apex:actionStatus id="saveStatus">
+                    <apex:facet name="start">
+                        <img src="/img/loading.gif" />
+                    </apex:facet>
+                </apex:actionStatus>
+            </apex:pageBlockButtons>
+            <apex:actionFunction name="refresh" action="{!refresh}" reRender="valueSection" />
+            <!----------------- SEARCH PANEL GROUP ---------------->
+            <apex:pageBlockSection collapsible="true" columns="1" id="filterSection">
+                <apex:pageBlockSectionItem rendered="{!IF(recordId != null, false, true)}" >
+                    <apex:outputLabel value="{!$ObjectType.Orga_BU__c.fields.Country_origin__c.Label}" />
+                    <c:AdvancedLookup sObjectName="Orga_BU__c"
+                                      value="{!countryLookup}"
+                                      searchFields="Name, BU_Code__c"
+                                      formFields="Name, BU_Code__c"
+                                      canCreate="false"
+                                      fieldLabel="Name"
+                                      tabIndexLookup="1"
+                                      multiSelect="true"
+                                      onchange="onChangeCountryHandler"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Store"/>
+                    <apex:outputPanel >
+                        <apex:inputText onkeypress="enterPress(event)" id="searchBar" value="{!searchText}" required="false"/> 
+                        <apex:commandButton styleclass="searchByMe" value="{!$Label.LBL_Search}" action="{!search}" rerender="countryGridPanel" status="search_reset" />
+                        <apex:commandButton value="{!$Label.LBL_Reset}" action="{!resetStores}" rerender="countryGridPanel,filterSection" status="search_reset" />
+                        <apex:actionStatus id="search_reset" >
+                            <apex:facet name="start" >
+                                <img src="/img/loading.gif" />                    
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSection id="valueSection" columns="1">
+                    <apex:outputText value="{!countryLookup}" style="display:none;" />
+                </apex:pageBlockSection>
+            </apex:pageBlockSection>
+            <apex:outputPanel id="countryGridPanel" layout="block" style="width:100%;">
+                <apex:repeat value="{!wCountryMap}" var="key">
+                    <apex:pageBlockSection id="countrySection" title="{!wCountryMap[key].country.Name}" collapsible="true" columns="1" rendered="{!wCountryMap[key].noOfStoresRecords > 0}">
+                        <apex:outputPanel layout="block" style="overflow:auto;width:100%;">                            
+                            <!-------------- STORES Grid -------------->
+                            <apex:outputPanel id="storesGridPanel" layout="block" style="width:100%;">
+                                <!-- loading message -->
+                                <apex:outputPanel >
+                                    <apex:actionStatus id="storesStatus" >
+                                        <apex:facet name="start" >
+                                            <img src="/img/loading.gif" />
+                                        </apex:facet>
+                                    </apex:actionStatus>
+                                </apex:outputPanel>
+                                <apex:pageBlockTable id="currentClusterTable" styleClass="clusterTable tablesorter" headerClass="header" value="{!wCountryMap[key].wStores}" var="wStore">
+                                    <!-- STATIC COLUMNS -->
+                                    <apex:column headerValue="Case Status" style="text-align:left;">
+                                        <apex:facet name="header">
+                                            <apex:outputText styleClass="header" value="{!$ObjectType.Orga_BU__c.fields.Name.Label}"/>
+                                        </apex:facet>
+                                        <apex:outputLink target="_blank" value="/{!wStore.store.Id}">
+                                            <apex:outputText value="{!wStore.store.Name}"/>
+                                        </apex:outputLink>
+                                        <apex:facet name="footer">
+                                            <apex:outputText value="{!$Label.LBL_Total} : {!wCountryMap[key].totalStores}" />
+                                        </apex:facet>
+                                    </apex:column>
+                                    <apex:column style="text-align:left;">
+                                        <apex:facet name="header">
+                                            <apex:outputText styleClass="header" value="{!$ObjectType.Orga_BU__c.fields.BU_Code__c.Label}"/>
+                                        </apex:facet>
+                                        <apex:outputText value="{!wStore.store.BU_Code__c}"/>
+                                    </apex:column>
+                                    <apex:column style="text-align:left;">
+                                        <apex:facet name="header">
+                                            <apex:outputText value="{!$ObjectType.Orga_BU__c.fields.Format_Origin__c.Label}"/>
+                                        </apex:facet>
+                                        <apex:outputText value="{!wStore.store.Format_Origin__c}"/>
+                                    </apex:column>
+                                    <apex:column style="text-align:left;">
+                                        <apex:facet name="header">
+                                            <apex:outputText value="{!$ObjectType.Orga_BU__c.fields.Country_origin__c.Label}"/>
+                                        </apex:facet>
+                                        <apex:outputText value="{!wCountryMap[key].country.Name}"/>
+                                    </apex:column>
+                                    <apex:column Id="wdColumn" headerClass="TableTitle" >
+                                        <apex:facet name="header">
+                                            <apex:outputText value="{!$Label.LBL_Weighted_Distribution_abbr}" style="text-align:center; background-color:#FFA500;"/>
+                                        </apex:facet>
+                                        <apex:outputText value="{!wStore.weightedDistributionValue}"/>
+                                        <apex:facet name="footer">
+                                            <apex:outputText style="float: center;">{!wCountryMap[key].weightedDistributionValue}</apex:outputText>
+                                        </apex:facet>
+                                    </apex:column>
+                                    <!------------ CURRENT STRAT --------->
+                                    <apex:repeat var="strat" value="{!stratsPicklist}">
+                                        <apex:column styleClass="colored-groupCol1" headerValue="My header">
+                                            <apex:facet name="header">
+                                                <div style="text-align:center; background-color:#e2f3ec;">
+                                                    {!IF(wCountryMap[key].countryStratsMap[strat], wCountryMap[key].countryHeaderMap[strat],'')}
+                                                </div>
+                                            </apex:facet>
+                                            <apex:outputText value="{!IF(AND(wCountryMap[key].countryStratsMap[strat], wStore.store.Assortment_Strat__c = strat), 'X', '')}"/>
+                                            <apex:facet name="footer">
+                                                <div style="text-align:center;">
+                                                    {!wCountryMap[key].currentStoresTotalWDMap[strat]} / {!wCountryMap[key].currentStratsTotalMap[strat]}
+                                                </div>
+                                            </apex:facet>
+                                        </apex:column>                            
+                                    </apex:repeat>
+                                    <!---------- NEW STRAT ---------->
+                                    <apex:repeat value="{!stratsPicklist}" var="strat">
+                                        <apex:column Id="newAssort" styleClass="colored-groupCol2">
+                                            <apex:facet name="header">
+                                                <div style="text-align:center; background-color:#FBFBA0;">
+                                                    {!$Label.LBL_New} {!IF(wCountryMap[key].countryStratsMap[strat], wCountryMap[key].countryHeaderMap[strat],strat)}
+                                                </div>
+                                            </apex:facet>
+                                            <apex:facet name="footer">
+                                                <div style="text-align:center;"> {!wCountryMap[key].newStoresTotalWDMap[strat]} / {!wCountryMap[key].newStratsTotalMap[strat]} </div>
+                                            </apex:facet>
+                                            <apex:inputCheckbox Id="checkBoxStrat" rendered="{!wCountryMap[key].countryStratsMap[strat]}" value="{!wStore.storeStratsMap[wStore.store.Id][strat]}" styleClass="toggle checkBoxStrat0 checkBox" onclick="toggleCheckboxes(this)"></apex:inputCheckbox>
+                                        </apex:column>
+                                    </apex:repeat>
+                                    <apex:facet name="footer">
+                                        <apex:outputPanel layout="table">
+                                            <apex:outputText rendered="{!NULLVALUE(wCountryMap[key].noOfStoresRecords,0)==0}" value="{!$Label.LBL_No_Record_To_Display}"/>
+                                            <apex:outputPanel layout="table" rendered="{!wCountryMap[key].noOfStoresRecords > 0}">
+                                                <apex:selectList value="{!wCountryMap[key].recPerPageStores}" multiselect="false" size="1">
+                                                    <apex:actionSupport event="onchange" action="{!refreshPageSizeStores}" status="fetchStatusStoresGrid" reRender="countryGridPanel">
+                                                        <apex:param name="countryId" value="{!wCountryMap[key].country.Id}" assignTo="{!countryId}" />
+                                                    </apex:actionSupport>
+                                                    <apex:selectOptions value="{!recPerPageOptions}"/>
+                                                </apex:selectList>
+                                                <apex:commandButton status="fetchStatusStoresGrid" reRender="countryGridPanel" value="{!$Label.LBL_First}" action="{!firstStoresPage}" disabled="{!!wCountryMap[key].StdSetControllerStores.hasPrevious}" title="{!$Label.LBL_First}" >
+                                                    <apex:param name="countryId" value="{!wCountryMap[key].country.Id}" assignTo="{!countryId}" />
+                                                </apex:commandButton>
+                                                <apex:commandButton status="fetchStatusStoresGrid" reRender="countryGridPanel" value="{!$Label.LBL_Previous}" action="{!previousStoresPage}" disabled="{!!wCountryMap[key].StdSetControllerStores.hasPrevious}" title="{!$Label.LBL_Previous}" >
+                                                    <apex:param name="countryId" value="{!wCountryMap[key].country.Id}" assignTo="{!countryId}" />
+                                                </apex:commandButton>
+                                                <apex:commandButton status="fetchStatusStoresGrid" reRender="countryGridPanel" value="{!$Label.LBL_Next}" action="{!nextStoresPage}" disabled="{!!wCountryMap[key].StdSetControllerStores.hasNext}" title="{!$Label.LBL_Next}" >
+                                                    <apex:param name="countryId" value="{!wCountryMap[key].country.Id}" assignTo="{!countryId}" />
+                                                </apex:commandButton>
+                                                <apex:commandButton status="fetchStatusStoresGrid" reRender="countryGridPanel" value="{!$Label.LBL_Last}" action="{!lastStoresPage}" disabled="{!!wCountryMap[key].StdSetControllerStores.hasNext}" title="{!$Label.LBL_Last}" >
+                                                    <apex:param name="countryId" value="{!wCountryMap[key].country.Id}" assignTo="{!countryId}" />
+                                                </apex:commandButton>
+                                                <apex:outputText style="text-align: right" >{!(wCountryMap[key].StdSetControllerStores.pageNumber * wCountryMap[key].recPerPageStores)+1-wCountryMap[key].recPerPageStores}-{!IF((wCountryMap[key].StdSetControllerStores.pageNumber * wCountryMap[key].recPerPageStores)>wCountryMap[key].noOfStoresRecords, wCountryMap[key].noOfStoresRecords,
+                                                    (wCountryMap[key].StdSetControllerStores.pageNumber * wCountryMap[key].recPerPageStores))} {!$Label.LBL_Of} {!wCountryMap[key].noOfStoresRecords}
+                                                </apex:outputText> 
+                                                <apex:outputPanel >                      
+                                                    <apex:actionStatus id="fetchStatusStoresGrid" >
+                                                        <apex:facet name="start" >
+                                                            <img src="/img/loading.gif" />                    
+                                                        </apex:facet>
+                                                    </apex:actionStatus>
+                                                </apex:outputPanel>                                 
+                                            </apex:outputPanel>
+                                        </apex:outputPanel>
+                                    </apex:facet>
+                                </apex:pageBlockTable>
+                            </apex:outputPanel>                            
+                        </apex:outputPanel>
+                        <!-- Mohammad -->
+                        <!-------- Update Weight Distribution COUNTRY SECTION -------->
+                        <apex:pageBlockSection id="weightDistributionBlockSection" title="{!$Label.LBL_Weighted_Distribution}" collapsible="true" columns="1" rendered="{!wCountryMap[key].totalStores > 0}">
+                            <apex:pageBlockTable id="wdCountryTable" styleClass="wdCountryTable" headerClass="header"
+                                                 value="{!wCountryMap[key]}" var="item"
+                                                 columnsWidth="9%,9%,10%,9%,9%,9%,9%,9%,9%,9%,9%">
+                                <apex:column style="text-align:left;">
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="header" value="{!$ObjectType.Orga_BU__c.fields.Name.Label}"/>
+                                    </apex:facet>
+                                    <apex:outputField value="{!item.country.Name}"/>
+                                </apex:column>
+                                <apex:column style="text-align:left;">
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="header" value="{!$ObjectType.Orga_BU__c.fields.BU_Code__c.Label}"/>
+                                    </apex:facet>
+                                    <apex:outputField value="{!item.country.BU_Code__c}"/>
+                                </apex:column>
+                                <apex:column headerValue="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_forecasting_Ass__c.Label}" style="background-color:#FBFBA0;">
+                                    <apex:selectList id="cWDforecastingAssInput" value="{!item.weightedDistributionforecastingAss}"
+                                                     onChange="setWDForecastingAssortmentForCountry('{!item.country.Id}')" multiselect="false" size="1">
+                                        <apex:selectOptions value="{!weightedDistributionforecastingPicklist}"/>
+                                    </apex:selectList>
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="percentageCols" value="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SellOut_Fact__c.Label}" />
+                                    </apex:facet>
+                                    <apex:outputField value="{!item.country.Weighted_Distribution_SellOut_Fact__c}"/>
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="percentageCols" value="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SellOut_Forecast__c.Label}" />
+                                    </apex:facet>
+                                    <apex:outputField value="{!item.country.Weighted_Distribution_SellOut_Forecast__c}"/>
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="percentageCols" value="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SellIn_Fact__c.Label}" />
+                                    </apex:facet>
+                                    <apex:outputField value="{!item.country.Weighted_Distribution_SellIn_Fact__c}"/>
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="percentageCols" value="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SellIn_Forecast__c.Label}" />
+                                    </apex:facet>
+                                    <apex:outputField value="{!item.country.Weighted_Distribution_SellIn_Forecast__c}"/>
+                                </apex:column>
+                                <apex:column headerValue="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SelloutWDWeight__c.Label}" style="background-color:#FBFBA0;">                            
+                                    <apex:inputText style="width:50%;display:block;text-align:right;" value="{!item.weightedDistributionSelloutWDWeight}" id="cWDSelloutWDWeightInput"
+                                                    onChange="setWDSelloutWDWeightOnStoreLevel('{!item.country.Id}');" onkeyup="decimalOnly(this);" />
+                                </apex:column>
+                                <apex:column headerValue="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SellinWDWeight__c.Label}" style="background-color:#FBFBA0;">                            
+                                    <apex:inputText style="width:50%;display:block;text-align:right;" value="{!item.weightedDistributionSellinWDWeight}" id="cWDSellinWDWeightInput"
+                                                    onkeypress="return allowNumberKeys(event)" onChange="setWDSellinWDWeightOnStoreLevel('{!item.country.Id}');" onkeyup="decimalOnly(this);" />
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="percentageCols" value="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_Weighted__c.Label}" />
+                                    </apex:facet>
+                                    <apex:outputField value="{!item.country.Weighted_Distribution_Weighted__c}"/>
+                                </apex:column>
+                                <apex:column headerValue="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_Manual__c.Label}" style="background-color:#FBFBA0;">                            
+                                    <apex:inputText style="width:50%;display:block;text-align:right;" value="{!item.weightedDistributionManual}" id="cWDManualInput"
+                                                    onkeypress="return allowNumberKeys(event)" onChange="setWDManualForCountry('{!item.country.Id}');" onkeyup="decimalOnly(this);" />
+                                </apex:column>
+                            </apex:pageBlockTable>
+                            <!-------- Update Weight Distribution STORES SECTION -------->
+                            <apex:pageBlockTable id="wdTable" styleclass="wdStoreTable" headerClass="header" value="{!wCountryMap[key].wStores}" var="wStore"
+                                                 columnsWidth="9%,9%,10%,9%,9%,9%,9%,9%,9%,9%,9%">								  
+                                <apex:column style="text-align:left;">
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="header" value="{!$ObjectType.Orga_BU__c.fields.Name.Label}"/>
+                                    </apex:facet>
+                                    <apex:outputField value="{!wStore.store.Name}"/>
+                                </apex:column>
+                                <apex:column style="text-align:left;">
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="header" value="{!$ObjectType.Orga_BU__c.fields.BU_Code__c.Label}"/>
+                                    </apex:facet>
+                                    <apex:outputField value="{!wStore.store.BU_Code__c}"/>
+                                    <apex:facet name="footer">
+                                        <apex:outputText value="{!$Label.LBL_Total}" />
+                                    </apex:facet>
+                                </apex:column>
+                                <apex:column headerValue="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_forecasting_Ass__c.Label}" style="background-color:#FBFBA0;">
+                                    <apex:selectList id="sWDforecastingAssInput" value="{!wStore.weightedDistributionforecastingAss}"
+                                                     onChange="setWDForecastingForStore('{!wCountryMap[key].country.Id}','{!wStore.store.Id}');" multiselect="false" size="1">
+                                        <apex:selectOptions value="{!weightedDistributionforecastingPicklist}"/>
+                                    </apex:selectList>
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="percentageCols" value="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SellOut_Fact__c.Label}" />
+                                    </apex:facet>
+                                    <apex:outputField value="{!wStore.store.Weighted_Distribution_SellOut_Fact__c}"/>
+                                    <apex:facet name="footer">
+                                        <apex:outputText styleClass="percentageCols" value="{!wCountryMap[key].sTotalWDSellOutFact}%"/>
+                                    </apex:facet>
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="percentageCols" value="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SellOut_Forecast__c.Label}" />
+                                    </apex:facet>
+                                    <apex:outputField style="display: block; text-align: left;" value="{!wStore.store.Weighted_Distribution_SellOut_Forecast__c}"/>
+                                    <apex:facet name="footer">
+                                        <apex:outputText styleClass="percentageCols" value="{!wCountryMap[key].sTotalWDSellOutForecast}%"/>
+                                    </apex:facet>
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="percentageCols" value="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SellIn_Fact__c.Label}" />
+                                    </apex:facet>
+                                    <apex:outputField value="{!wStore.store.Weighted_Distribution_SellIn_Fact__c}"/>
+                                    <apex:facet name="footer">
+                                        <apex:outputText styleClass="percentageCols" value="{!wCountryMap[key].sTotalWDSellInFact}%"/>
+                                    </apex:facet>
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="percentageCols" value="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SellIn_Forecast__c.Label}" />
+                                    </apex:facet>
+                                    <apex:outputField value="{!wStore.store.Weighted_Distribution_SellIn_Forecast__c}"/>
+                                    <apex:facet name="footer">
+                                        <apex:outputText styleClass="percentageCols" value="{!wCountryMap[key].sTotalWDSellInForecast}%"/>
+                                    </apex:facet>
+                                </apex:column>
+                                <apex:column headerValue="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SelloutWDWeight__c.Label}" style="background-color:#FBFBA0;">                            
+                                    <apex:inputText style="width:50%;display:block;text-align:right;" value="{!wStore.weightedDistributionSelloutWDWeight}" id="sWDSelloutWDWeightInput"
+                                                    onkeyup="decimalOnly(this);" />
+                                </apex:column>
+                                <apex:column styleClass="percentageCols" headerValue="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_SellinWDWeight__c.Label}" style="background-color:#FBFBA0;">                            
+                                    <apex:inputText style="width:50%;display:block;text-align:right;" value="{!wStore.weightedDistributionSellinWDWeight}" id="sWDSellinWDWeightInput"
+                                                    onkeyup="decimalOnly(this);" />
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputText styleClass="percentageCols" value="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_Weighted__c.Label}" />
+                                    </apex:facet>
+                                    <apex:outputField value="{!wStore.store.Weighted_Distribution_Weighted__c}"/>
+                                    <apex:facet name="footer">
+                                    </apex:facet>
+                                </apex:column>
+                                <apex:column styleClass="percentageCols" headerValue="{!$ObjectType.Orga_BU__c.fields.Weighted_Distribution_Manual__c.Label}" style="background-color:#FBFBA0;">                            
+                                    <apex:inputText style="width:50%;display:block;text-align:right;" value="{!wStore.weightedDistributionManual}" id="sWDManualInput"
+                                                    onkeypress="return allowNumberKeys(event)" onChange="setWDManualForStore('{!wCountryMap[key].country.Id}','{!wStore.store.Id}')" onkeyup="decimalOnly(this);" />
+                                    <apex:facet name="footer">
+                                        <apex:outputText styleClass="percentageCols" value="{!wCountryMap[key].sTotalWDManual}%"/>
+                                    </apex:facet>
+                                </apex:column>
+                            </apex:pageBlockTable>
+                        </apex:pageBlockSection>
+                        <!-- /Mohammad -->
+                    </apex:pageBlockSection>
+                </apex:repeat>
+            </apex:outputPanel>
+            <!-- Action functions: Front end Save -->
+            <apex:actionFunction name="callSetWDSelloutWDWeight" action="{!setWDSelloutWDWeight}" rerender="countryGridPanel,message" status="globalloading">
+                <apex:param value="countryId" name="countryId" assignTo="{!countryId}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="callSetWDSellinWDWeight" action="{!setWDSellinWDWeight}" rerender="countryGridPanel,message" status="globalloading">
+                <apex:param value="countryId" name="countryId" assignTo="{!countryId}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="callSetWDsForecastingForCountry" action="{!setWDForecastingForCountry}" rerender="countryGridPanel,message" status="globalloading">
+                <apex:param value="countryId" name="countryId" assignTo="{!countryId}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="callSetWDManualForCountry" action="{!setWDManualForCountry}" rerender="countryGridPanel,message" status="globalloading">
+                <apex:param value="countryId" name="countryId" assignTo="{!countryId}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="callSetWDForecastingForStore" action="{!setWDForecastingForStore}" rerender="countryGridPanel,message" status="globalloading">
+                <apex:param value="countryId" name="countryId" assignTo="{!countryId}"/>
+                <apex:param value="storeId" name="storeId" assignTo="{!storeId}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="callSetWDManualForStore" action="{!setWDManualForStore}" rerender="countryGridPanel,message" status="globalloading">
+                <apex:param value="countryId" name="countryId" assignTo="{!countryId}"/>
+                <apex:param value="storeId" name="storeId" assignTo="{!storeId}"/>
+            </apex:actionFunction>
+        </apex:pageBlock>
+    </apex:form>
+    <!-- Mohammad -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script>
+        function decimalOnly(e) {
+        e.value = e.value.replace(/[^0-9\.]/g,'');
+        if(e.value.split('.').length>2) e.value = e.value.replace(/\.+$/,"");
+    };
+    
+    $("div[id$='weightDistributionBlockSection']").each(function(i, obj) {
+        console.log($(this).attr('id'));
+        var e = document.getElementById($(this).attr('id')).childNodes[0].childNodes[0];
+        if(e.className == 'hideListButton')
+            twistSection(e);
+    });
+    
+    // Set WD Forecasting Assortment On Store Level. Event on WD forecasting Assortment selected list on Country level.
+    function setWDForecastingAssortmentForCountry(countryId) {
+        callSetWDsForecastingForCountry(countryId);
+    }
+    
+    // Set WD Sellout WD Weight OnStore Level. Event on WD Sellout WD Weight input field on country level.
+    function setWDSelloutWDWeightOnStoreLevel(countryId) {
+        // Call SetSellOutFields method from the controller.
+        callSetWDSelloutWDWeight(countryId);
+    }
+    
+    // Set WD Sellin WD Weight On Store Level. Event on WD Sellin WD Weight input field on Country level.
+    function setWDSellinWDWeightOnStoreLevel(countryId) {
+        // Call SetSellInFields method from the controller.
+        callSetWDSellinWDWeight(countryId);
+    }
+    
+    // Set the WD on store level on the first grid. Event on WD Forecasting Assortment select list on store level.
+    function setWDForecastingForStore(countryId, storeId) {
+        callSetWDForecastingForStore(countryId, storeId);
+    }
+    
+    // Allow number keys only.
+    function allowNumberKeys(evt) {
+        var charCode = (evt.which) ? evt.which : event.keyCode;
+        // Allow '.' and ',' characters.
+        if (charCode == 46 || charCode == 44) return true;
+        // Allow Number Keys.
+        if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+            return false;
+        } else {
+            // Ignore Enter Key in order to prevent the page load.
+            return enterKeyEvent(evt);
+        }
+        return true;
+    }
+    
+    // Ignore Enter Key in order to prevent the page load.
+    function enterKeyEvent(evt) {
+        if ((window.event && window.event.keyCode==13) || evt.which==13) {
+            return false;
+        } else {
+            return true;
+        };
+    }
+        
+    // Set the WD value on the footer. (Event on WD Manualinput on store level)
+    function setWDManualForCountry(countryId) {
+        callSetWDManualForCountry(countryId);
+    }
+    
+    // Set the WD value (for each store) on the footer. (Event on WD Manualinput on store level)
+    function setWDManualForStore(countryId, storeId) {
+        callSetWDManualForStore(countryId, storeId);
+    }
+    
+    </script>
+    <!-- /Mohammad -->
+    <style type="text/css">
+        .percentageCols {
+        display: block;
+        text-align: center;
+        }
+        <!-- Mohammad -->
+        .headerRow .TableTitle {
+        background-color: #FFA500 !important;
+        background-image: none !important; //This is needed if you want to overwrite the header background
+        color: #CC0000 !important; 
+        font-size:100% !important; 
+        }
+        <!-- /Mohammad -->
+        
+        .colored-groupCol1 {
+        background-color:#e2f3ec;
+        vertical-align:center;
+        text-align:center;
+        min-width: 30px;
+        }
+        .colored-groupCol2 {
+        background-color:#FBFBA0;
+        vertical-align:center;
+        text-align:center;
+        }
+        .countrySection-table {
+        border-collapse: collapse; /* Single line. */
+        border: 2px solid black;
+        width: 100%;
+        }
+        .countrySection-table td {
+        width: 0px;
+        height: 0px;
+        vertical-align: middle;
+        }
+        .theHeader-div {
+        
+        }
+        .subHeader-div {
+        width: 100%;
+        height: 100%;
+        background-color: yellow;
+        }
+        .subHeader-table {
+        border-collapse: collapse; /* Single line. */
+        border: 1px solid black;
+        width: 100%;
+        table-layout:fixed;
+        }
+        .subHeader-table td {
+        border-style: solid;
+        border-width: 1px;
+        text-align: center;
+        overflow: hidden;
+        }
+        .repeatColumns-div {
+        border-collapse: collapse;
+        border: 1px solid black;
+        width: 150px;
+        height: 24px;
+        text-align: center;
+        
+        }
+        .repeat-outerDiv {
+        height:100%;
+        }
+        .repeat-innerTable {
+        width: 100%;
+        height: 100%;
+        table-layout:fixed;
+        }
+        .repeat-innerTable td {
+        border-style: solid;
+        border-width: 1px;
+        width: 10%;
+        height: 20px;
+        text-align: center;
+        overflow: hidden;
+        display: table-cell; /* !!! fix cell size! */
+        }
+        .gridHeader {
+        vertical-align: middle;
+        }
+        
+        .wdCountryTable td {
+        text-align:center;
+        }
+        
+        .wdStoreTable td {
+        text-align:center;
+        }
+        
+        .clusterTable td {
+        text-align:center;
+        }
+        
+    </style>
+</apex:page>

@@ -1,0 +1,233 @@
+<apex:page controller="RebatesVarianceReportController">
+
+	<style>
+.up {
+	color: green;
+	font-weight: bold;
+}
+
+.down {
+	color: red;
+	font-weight: bold;
+}
+
+.empty-space {
+	height: 38px;
+}
+
+.row-height {
+	height: 25px;
+}
+
+
+body .bPageBlock .pbBody .dataCol {
+	width: 50%;
+}
+</style>
+	<apex:sectionHeader title="{!$Label.LBL_Reports}"
+		subtitle="{!$Label.LBL_Audit}" />
+	<apex:form id="varianceReportForm">
+		<apex:pageMessages id="reportMessages" />
+		<apex:pageBlock title="{!$Label.LBL_Rebates_Variance_Contract}">
+			<apex:pageBlockSection title="Field Filter" collapsible="false"
+				columns="1">
+				<apex:outputPanel >
+					<apex:outputText value="{!$Label.LBL_Reports}"
+						style="font-weight:bold;" />
+					<apex:selectList multiselect="false" size="1" required="true"
+						value="{!selectCountry}" style="margin-left: 50px;">
+						<apex:selectOptions value="{!buOptions}" />
+					</apex:selectList>
+				</apex:outputPanel>
+				<apex:outputPanel >
+					<apex:outputText value="{!$Label.LBL_Year}"
+						style="font-weight:bold;" />
+					<apex:selectList value="{!year}" multiselect="false" size="1"
+						required="true" style="margin-left: 70px;">
+						<apex:selectOptions value="{!Years}" />
+					</apex:selectList>
+				</apex:outputPanel>
+			</apex:pageBlockSection>
+			<apex:pageBlockButtons >
+				<apex:commandButton value="{!$Label.LBL_Run_Report}"
+					action="{!submitReport}"
+					reRender="varianceReportForm,reportMessages" status="dataSearch"
+					style="width:90px;" />
+				<apex:actionStatus id="dataSearch">
+					<apex:facet name="start">
+						<img src="/img/loading.gif" />
+					</apex:facet>
+				</apex:actionStatus>
+				<apex:commandButton value="{!$Label.LBL_Export_Details}"
+					action="{!exportReport}"
+					reRender="varianceReportForm,reportMessages" style="width:90px;" />
+			</apex:pageBlockButtons>
+
+			<apex:pageBlockSection rendered="{!isDataExist==true}" title="{!$Label.LBL_Reports}"
+				collapsible="false" columns="3">
+				<apex:outputPanel >
+					<apex:repeat value="{!listWrapperRebatesCondition}" var="item">
+
+						<apex:pageBlockSection rendered="{!item.isExist==true}" title=""
+							collapsible="false" columns="1">
+							<apex:outputPanel >
+								<apex:outputLabel style="font-weight: bold;"
+									value="{!$ObjectType.Contract__c.fields.Name.Label} " />
+								<apex:outputText id="contract_name"
+									value="{!item.contractRef.Name}"></apex:outputText>
+							</apex:outputPanel>
+							<apex:outputPanel >
+								<apex:outputLabel style="font-weight: bold;"
+									value="{!$ObjectType.Sup_Supplier__c.fields.Name.Label} " />
+								<apex:outputText value="{!item.contractRef.Supplier__r.Name}"></apex:outputText>
+
+							</apex:outputPanel>
+						</apex:pageBlockSection>
+
+						<apex:pageBlockTable rendered="{!item.isExist==true}"
+							headerClass="hidden-table-header" value="{!item.lstConditionRef}"
+							var="itemCond" width="100%">
+							<apex:column styleClass="row-height">
+								<apex:facet name="header">
+
+									<apex:outputLabel style="font-weight: bold;"
+										value="{!$ObjectType.Contract_Discount__c.fields.Condition_Type__c.Label}" />
+								</apex:facet>
+
+								<apex:outputText value="{!itemCond.Condition_Type__r.Name}"></apex:outputText>
+							</apex:column>
+							<apex:column styleClass="row-height">
+								<apex:facet name="header">
+									<apex:outputLabel style="font-weight: bold;"
+										value="{!$ObjectType.Contract_Discount__c.fields.Product_Scope__c.Label}" />
+
+
+								</apex:facet>
+
+								<apex:outputText value="{!itemCond.Product_Scope__r.Name}"></apex:outputText>
+							</apex:column>
+							<apex:column styleClass="row-height">
+								<apex:facet name="header">
+									<apex:outputLabel style="font-weight: bold;"
+										value="{!$ObjectType.Contract_Discount__c.fields.BU_Scope__c.Label}" />
+
+
+								</apex:facet>
+
+								<apex:outputText value="{!itemCond.BU_Scope__r.Name}"></apex:outputText>
+							</apex:column>
+							<apex:column styleClass="row-height">
+								<apex:facet name="header">
+									<apex:outputLabel style="font-weight: bold;"
+										value="{!$ObjectType.Contract_Discount__c.fields.Value_per__c.Label}" />
+
+
+								</apex:facet>
+
+								<apex:outputText value="{!itemCond.Value_per__c}"></apex:outputText>
+							</apex:column>
+
+
+						</apex:pageBlockTable>
+
+					</apex:repeat>
+				</apex:outputPanel>
+				<apex:outputPanel >
+					<apex:repeat value="{!listWrapperRebatesCondition}" var="item">
+
+						<apex:pageBlockSection rendered="{!item.isExist==true}" title=""
+							collapsible="false" columns="1">
+							<apex:outputPanel >
+								<apex:outputLabel style="font-weight: bold;"
+									value="{!$ObjectType.Contract__c.fields.Name.Label} " />
+								<apex:outputText id="contract_name"
+									value="{!item.contractNew.Name}"></apex:outputText>
+							</apex:outputPanel>
+							<apex:outputPanel >
+								<apex:outputLabel style="font-weight: bold;"
+									value="{!$ObjectType.Sup_Supplier__c.fields.Name.Label} " />
+								<apex:outputText value="{!item.contractNew.Supplier__r.Name}"></apex:outputText>
+
+							</apex:outputPanel>
+						</apex:pageBlockSection>
+
+						<apex:pageBlockTable rendered="{!item.isExist==true}"
+							headerClass="hidden-table-header" value="{!item.lstConditionNew}"
+							var="itemCond" width="100%">
+							<apex:column styleClass="row-height">
+								<apex:facet name="header">
+
+									<apex:outputLabel style="font-weight: bold;"
+										value="{!$ObjectType.Contract_Discount__c.fields.Condition_Type__c.Label}" />
+								</apex:facet>
+
+								<apex:outputText value="{!itemCond.Condition_Type__r.Name}"></apex:outputText>
+							</apex:column>
+							<apex:column styleClass="row-height">
+								<apex:facet name="header">
+									<apex:outputLabel style="font-weight: bold;"
+										value="{!$ObjectType.Contract_Discount__c.fields.Product_Scope__c.Label}" />
+
+
+								</apex:facet>
+
+								<apex:outputText value="{!itemCond.Product_Scope__r.Name}"></apex:outputText>
+							</apex:column>
+							<apex:column styleClass="row-height">
+								<apex:facet name="header">
+									<apex:outputLabel style="font-weight: bold;"
+										value="{!$ObjectType.Contract_Discount__c.fields.BU_Scope__c.Label}" />
+
+
+								</apex:facet>
+
+								<apex:outputText value="{!itemCond.BU_Scope__r.Name}"></apex:outputText>
+							</apex:column>
+							<apex:column styleClass="row-height">
+								<apex:facet name="header">
+									<apex:outputLabel style="font-weight: bold;"
+										value="{!$ObjectType.Contract_Discount__c.fields.Value_per__c.Label}" />
+								</apex:facet>
+
+								<apex:outputText value="{!itemCond.Value_per__c}"></apex:outputText>
+							</apex:column>
+						</apex:pageBlockTable>
+
+					</apex:repeat>
+				</apex:outputPanel>
+				<apex:outputPanel styleClass="variance-wrapper">
+					<apex:repeat value="{!listWrapperRebatesCondition}" var="item">
+						<apex:pageBlockSection rendered="{!item.isExist==true}" title=""
+							collapsible="false" columns="1">
+							<div class="empty-space"></div>
+						</apex:pageBlockSection>
+
+						<apex:pageBlockTable styleClass="variance-table"
+							rendered="{!item.isExist==true}"
+							headerClass="hidden-table-header" value="{!item.lstVariance}"
+							var="varianceItem" width="100%">
+
+							<apex:column style="text-align: center;" styleClass="row-height">
+								<apex:facet name="header">
+                                    {!$Label.LBL_Variance}
+                                </apex:facet>
+
+								<apex:outputText rendered ="{!IF(varianceItem > 0,true,false)}" styleClass="{!IF(varianceItem > 0,'up','down')}"
+									value="+{!IF(varianceItem > 0,varianceItem,0)}"></apex:outputText>
+								<apex:outputText rendered="{!IF(varianceItem < 0,true,false)}"  styleClass="{!IF(varianceItem > 0,'up','down')}"
+									value="{!varianceItem}"></apex:outputText>	
+									<apex:outputText rendered="{!IF(varianceItem == 0,true,false)}"  
+									value="{!varianceItem}"></apex:outputText>	
+							</apex:column> 
+
+						</apex:pageBlockTable>
+					</apex:repeat>
+				</apex:outputPanel>
+			</apex:pageBlockSection>
+
+
+		</apex:pageBlock>
+
+	</apex:form>
+
+</apex:page>

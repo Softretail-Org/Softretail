@@ -1,0 +1,401 @@
+<aura:component controller="MassBatchControllerForLightning" implements="force:appHostable,flexipage:availableForAllPageTypes,lightning:actionOverride,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="countr" type="Orga_BU__c[]"/>
+    <aura:attribute name="groupBu" type="Orga_BU__c[]"/>
+    <aura:attribute name="reminders" type="Integer[]" default="0,1,2,3"/>
+    <aura:attribute name="jobs" type="Object"/>	
+    <aura:attribute name="today" type="Date" default=""/>
+    <aura:attribute name="SectionAssortmentSFPlanning" type="String"/>
+    <aura:attribute name="SectionBatches" type="String"/>            
+    <aura:attribute name="SectionCallingWebServices" type="String"/>
+    <aura:attribute name="SectionContractCounterpartyDetail" type="String"/>
+    <aura:attribute name="SectionContractDuplication" type="String"/>
+    <aura:attribute name="SectionContractRates" type="String"/>
+    <aura:attribute name="SectionContractTOProcedures" type="String"/>
+    <aura:attribute name="SectionGroupScanAndSynchro" type="String"/>
+    <aura:attribute name="SectionInvoiceReminder" type="String"/>
+    <aura:attribute name="SectionLastActiveContractProcedure" type="String"/>
+    <aura:attribute name="SectionMarketDataCollection" type="String"/>
+    <aura:attribute name="SectionMassDistribution" type="String"/>
+    <aura:attribute name="SectionPenaltiesProcedure" type="String"/>
+    <aura:attribute name="SectionPromoDetailProcedure" type="String"/>
+    <aura:attribute name="SectionSellInProcedure" type="String"/>
+    
+    <lightning:card footer="" title="{!$Label.c.LBL_Nego_Dashboard}">
+        <div  class="articleStyle">
+            <div class="slds-box">
+                <table class="margin305">
+                    <tr>
+                        <td style="height:70px;">{!$Label.c.LBL_Country} :</td>
+                        <td>
+                            <lightning:select aura:id="mySelect" label="" required="false"  onchange="{!c.changevalue}" class="slds-size_3-of-12">
+                                <option value="">----</option>
+                                <aura:iteration items="{!v.countr}" var="countries">
+                                    <option value="{!countries.Id}">{!countries.Name}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="height:70px;">{!$Label.c.LBL_Date}:</td>
+                        <td>
+                            <ui:inputDate aura:id="expdate"
+                                          label="" 
+                                          value="{!v.today}"
+                                          displayDatePicker="true"
+                                          class="slds-size_3-of-12 expdate"/> 
+                        </td>
+                    </tr>
+                </table>
+                
+            </div>
+            <br/>
+            <br/>
+            <div>
+                <!-- section for contracts and conditions procedures-->
+                <span style="{!v.SectionContractTOProcedures == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Contracts_and_Conditions_Procedures}</h3><br/> 
+                    <div class="margin40">
+                        <table class="tableContract">
+                            <tr>
+                                <td style="height:55px;">
+                                    <ui:outputText value="{!$Label.c.LBL_GenerateInvoice}"/>
+                                </td>
+                                <td>
+                                    <lightning:button label="{!$Label.c.LBL_Run}" onclick="{!c.run}"/>
+                                </td>
+                                <td style="height:55px;">
+                                    <ui:outputText value="{!$Label.c.LBL_Calculate_Contracts}"/>
+                                </td>
+                                <td>
+                                    <lightning:button  label="{!$Label.c.LBL_Run}" onclick="{!c.CalculateTo}"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height:55px;">
+                                    <ui:outputText value="{!$Label.c.LBL_Dispatch}"/>
+                                </td>
+                                <td>
+                                    <lightning:button  label="{!$Label.c.LBL_Run}" onclick="{!c.dispatching}"/>
+                                </td>
+                                <td style="height:55px;">
+                                    <ui:outputText  value="{!$Label.c.LBL_Dispatching_Based_On_Redistribution_Model}"/>
+                                </td>
+                                <td>
+                                    <lightning:button  label="{!$Label.c.LBL_Run}" onclick="{!c.baseRedistribution}"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <br/>
+                <!-- section for Contracts Duplication-->
+                <span style="{!v.SectionContractDuplication == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Contracts_Duplication}</h3><br/>
+                    <div class="margin40">
+                        <table class="tableDuplication">
+                            <tr>
+                                <td style="max-width:200px;"><ui:outputText value="{!$Label.c.LBL_Duplicate_Contract}"/></td>
+                                <td><lightning:button label="{!$Label.c.LBL_Run}" onclick="{!c.duplicateContract}"/></td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <br/>
+                <span style="{!v.SectionLastActiveContractProcedure == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Last_Active_Contract_Procedure}</h3><br/>
+                    <div class="margin40">
+                    <table>
+                        <tr>
+                            <td>
+                                <ui:outputText value="Last active contract"/>
+                                <lightning:button class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.lastActiveContract}"/>
+                            </td>
+                        </tr>
+                    </table>
+                    </div>
+                </span>
+                <!-- section for GRC Contract Rates-->
+                <span style="{!v.SectionContractRates == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_GRC_Contract_Rates}</h3><br/>
+                    <div class="margin40">
+                        <table class="tableContractRates">
+                            <tr>
+                                <td>
+                                    <ui:outputText value="{!$Label.c.LBL_Last_Active_Contract}"/>
+                                    <ui:inputCheckbox class="margin10" aura:id="checkbox" change="{!c.onCheck}"/>
+                                </td>
+                                <td>
+                                    <ui:outputText  value="{!$Label.c.LBL_Calculate_Rates}"/>
+                                    <lightning:button class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.generateCRCRate}"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <br/>
+                <!-- section for Group Scan and Synchro-->
+                <span style="{!v.SectionGroupScanAndSynchro == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Group_Scan_and_Synchro}</h3><br/>
+                    <div class="margin40">
+                        <lightning:select aura:id="mySelectBu" label="{!$Label.c.LBL_Group_BU}" required="false"  onchange="{!c.changevalueBu}"  class="bt1  slds-size_2-of-12">
+                            <option value="">----</option>
+                            <aura:iteration items="{!v.groupBu}" var="groupBus">
+                                <option value="{!groupBus.BU_Code__c}">{!groupBus.Name}</option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </div>
+                </span>
+                <br/>
+                <!-- section for Contract Group-->
+                <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Contract_Group}</h3><br/>
+                <div class="margin40">
+                    <table>
+                        <tr>
+                            <td>
+                                <ui:outputText value="{!$Label.c.LBL_Scan}"/>
+                                <lightning:button class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.groupContractScan}"/>
+                            </td>
+                            <td>
+                                <ui:outputText value="{!$Label.c.LBL_Synchro}"/>
+                                <lightning:button class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.groupContractSynchr}"/>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <br/>
+                <!-- section for Invoice Group-->
+                <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Invoice_Group}</h3><br/>
+                <div class="margin40">
+                    <table>
+                        <tr>
+                            <td>
+                                <ui:outputText value="{!$Label.c.LBL_Invoice_Group}"/>
+                                <lightning:button  class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.groupInvoiceScan}"/>
+                            </td>
+                            <td>
+                                <ui:outputText  value="{!$Label.c.LBL_Synchro}"/>
+                                <lightning:button   class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.groupInvoiceSynchr}"/>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <br/>
+                <!-- section for Invoice Payment Group-->
+                <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Invoice_Payment_Group}</h3><br/>
+                <div class="margin40">
+                    <table>
+                        <tr>
+                            <td><ui:outputText value="{!$Label.c.LBL_Scan}"/>
+                                <lightning:button   class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.groupInvoicePayScan}"/></td>
+                            <td><ui:outputText  value="{!$Label.c.LBL_Synchro}"/>
+                                <lightning:button  class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.groupInvoicePaySynchr}"/></td>
+                        </tr>
+                    </table>
+                </div>
+                <br/>
+                <!-- section for Rebate Payment Group-->
+                <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Rebate_Payment_Group}</h3><br/>
+                <div class="margin40">
+                    <table>
+                        <tr>
+                            <td><ui:outputText value="{!$Label.c.LBL_Scan}"/>
+                                <lightning:button   class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.groupRebatePayScan}"/></td>
+                            <td><ui:outputText  value="{!$Label.c.LBL_Synchro}"/>
+                                <lightning:button   class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.groupRebatePaySynchr}"/></td>
+                        </tr>
+                    </table>
+                </div>
+                <br/>
+                <!-- section for commercial plan detail-->
+                <span style="{!v.SectionPromoDetailProcedure == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">Promo detail</h3>
+                    <br/>
+                    <div class="margin40">
+                        <table>
+                            <tr>
+                                <td><ui:outputText value="{!$Label.c.LBL_Scan_Update_Contracts}"/>
+                                    <lightning:button  class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.commercialPlanScanContract}"/>
+                                </td>
+                                <td><ui:outputText value="{!$Label.c.LBL_Scan_Update_Status}"/>
+                                    <lightning:button  class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.commercialPlanScanStatus}"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <br/>
+                <span style="{!v.SectionContractCounterpartyDetail == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">Contrat d'application 4xNet</h3><br/>
+                    <div class="margin40">
+                        <table>
+                            <tr>
+                                <td>
+                                    <ui:outputText value="{!$Label.c.LBL_Scan_Update_Contracts}"/>
+                                    <lightning:button  class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.CounterpartiesScanContractBatch}"/>
+                                </td>
+                                <td>
+                                    <ui:outputText value="{!$Label.c.LBL_Scan_Update_Extraction_Status}"/>
+                                    <lightning:button  class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.CounterpartiesScanStatusBatch}"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                
+                 <span style="{!v.SectionMarketDataCollection == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle"> Market Data Collection</h3><br/>
+                    <div class="margin40">
+                        <table>
+                            <tr>
+                                <td>
+                                    <ui:outputText value="{!$Label.c.LBL_Scan}"/>
+                                    <lightning:button  class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.MarketDataCollectionScanBatch}"/>
+                                </td>
+                                <td>
+                                    <ui:outputText value="{!$Label.c.LBL_Synchro}"/>
+                                    <lightning:button  class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.MarketDataCollectionSynchroBatch}"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <span style="{!v.SectionSellInProcedure == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle"> {!$Label.c.LBL_Sell_In_Procedure}</h3><br/>
+                    <div class="margin40">
+                        <table>
+                            <tr>
+                                <td>
+                                     <ui:outputText value="{!$Label.c.LBL_Consolidate_Sell_in_Flow_Purchase_Flow_PG}"/>
+                                    <lightning:button  class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.sellinToPurchase}"/>
+                                </td>
+                                <td>
+                                     <ui:outputText value="{!$Label.c.LBL_Re_Scan_Sell_in_Flow}"/>
+                                    <lightning:button  class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.reparentingSellin}"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <!-- section for Manually Jobs-->
+                <h3 class="slds-section-title--divider titleStyle">Manually Jobs</h3><br/>
+                <div class="margin40">
+                    <table>
+                        <tr>
+                            <td style="width:300px;height:55px;"><ui:outputText value="submit Close Supplier Batch"/></td>
+                            <td><lightning:button label="{!$Label.c.LBL_Run}" onclick="{!c.closeSuppBatch}"/></td>
+                            <td style="width:300px;height:55px;"><ui:outputText  value="submit Last Active Contract Batch"/></td>
+                            <td><lightning:button  label="{!$Label.c.LBL_Run}" onclick="{!c.lastActiveContract}"/></td>
+                        </tr>
+                        <tr>
+                            <td style="width:300px;height:55px;"><ui:outputText value="submit Sellin To Purchase Batch"/></td>
+                            <td><lightning:button label="{!$Label.c.LBL_Run}" onclick="{!c.sellinToPurchase}"/></td>
+                            <td style="width:300px;height:55px;"><ui:outputText value="submit Reparenting Sellin Batch"/></td>
+                            <td><lightning:button  label="{!$Label.c.LBL_Run}" onclick="{!c.reparentingSellin}"/></td>
+                        </tr>
+                    </table>
+                </div>
+                <br/>
+                <!-- section for Invoice Reminder-->
+                <span style="{!v.SectionInvoiceReminder == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Invoice_Reminder}</h3><br/>
+                    <div class="margin40">
+                        <table>
+                            <tr>
+                                <td style="width:975px;">
+                                    <lightning:select aura:id="mySelectReminder" label="{!$Label.c.LBL_Level_of_reminder_managed}" required="false"  onchange="{!c.changevalueReminder}"  class="bt1  slds-size_2-of-12">
+                                        <option value="">----</option>
+                                        <aura:iteration items="{!v.reminders}" var="reminder">
+                                            <option value="{!reminder}">{!reminder}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </td>
+                                <td><ui:outputText  value="submit Invoice Reminder Batch"/>
+                                    <lightning:button class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.invoiceReminder}"/></td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <br/>
+                <!-- section for Mass Distribution-->
+                <span style="{!v.SectionMassDistribution == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Mass_Distribution}</h3><br/>
+                    <div class="margin40">
+                        <table class="tableradio">
+                            <tr>
+                                <td><ui:inputRadio aura:id="r0" name="others" label="Monthly&nbsp;&nbsp;" change="{!c.changeRadio}" value="true"/></td>
+                                <td><ui:inputRadio aura:id="r1" name="others" label="Yearly&nbsp;&nbsp;" change="{!c.changeRadio}"/></td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <br/>
+                <!-- section for Penalite-->
+                <span style="{!v.SectionPenaltiesProcedure == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">Pénalité</h3>
+                    <br/>
+                    <div class="margin40">
+                        <table>
+                            <tr>
+                                <td>
+                                    <ui:outputText value="penalties Scan Synchro Batch"/>
+                                    <lightning:button class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.penaltyScanSynchr}"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <br/>
+                <span style="{!v.SectionBatches == 'true' ? 'display:block' : 'display:none'}">
+                    <h3 class="slds-section-title--divider titleStyle">{!$Label.c.LBL_Batches}</h3>
+                    <div class="margin40">
+                        <table>
+                            <tr>
+                                <td>
+                                    <ui:outputText value="{!$Label.c.LBL_Close_Supplier}"/>
+                                    <lightning:button class="margin10" label="{!$Label.c.LBL_Run}" onclick="{!c.CloseSupplierBatch}"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <br/>
+            </div>
+            <h1 class="slds-section-title--divider titleStyle">Job in progress</h1>
+            <table class="slds-table slds-table_bordered slds-table_striped slds-table_cell-buffer">
+                <thead>
+                    <tr class="slds-text-heading_label">
+                        <th scope="col"><div class="slds-truncate" title="createdDate">Created Date</div></th>
+                        <th scope="col"><div class="slds-truncate" title="JobType">Job Type</div></th>
+                        <th scope="col"><div class="slds-truncate" title="status">status</div></th>
+                        <th scope="col"><div class="slds-truncate" title="TotalBatches">Total Batches</div></th>
+                        <th scope="col"><div class="slds-truncate" title="BatchesProcessed">Batches Processed</div></th>
+                        <th scope="col"><div class="slds-truncate" title="Failures">Failures</div></th>
+                        <th scope="col"><div class="slds-truncate" title="CreatedByID">Created By ID</div></th>
+                        <th scope="col"><div class="slds-truncate" title="CompletionDate">Completion Date</div></th>
+                        <th scope="col"><div class="slds-truncate" title="ClassName">Class Name</div></th>
+                        <th scope="col"><div class="slds-truncate" title="ApexJobID">Apex Job ID</div></th>
+                        <th scope="col"><div class="slds-truncate" title="ApexJobID">Log</div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.jobs}" var="job">
+                        <tr>
+                            <td scope="col" class="fontStyle">{!job.CreatedDate}</td>
+                            <td scope="col" class="fontStyle">{!job.JobType}</td>
+                            <td scope="col" class="fontStyle">{!job.Status}</td>
+                            <td scope="col" class="fontStyle">{!job.TotalJobItems}</td>
+                            <td scope="col" class="fontStyle">{!job.JobItemsProcessed}</td>
+                            <td scope="col" class="fontStyle">{!job.NumberOfErrors}</td>
+                            <td scope="col" class="fontStyle">{!job.submitterFullName}</td>
+                            <td scope="col" class="fontStyle">{!job.CompletedDate}</td>
+                            <td scope="col" class="fontStyle">{!job.ApexClassName}</td>
+                            <td scope="col" class="fontStyle">{!job.Id}</td>
+                            <td scope="col" class="fontStyle"><a href="{!'/' +job.logId}">view Log</a></td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </div>
+    </lightning:card>
+</aura:component>

@@ -1,0 +1,3 @@
+<apex:component >
+ This is org {!$Organization.Name}
+</apex:component>

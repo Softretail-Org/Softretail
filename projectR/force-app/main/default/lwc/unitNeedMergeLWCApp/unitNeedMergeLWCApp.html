@@ -1,0 +1,291 @@
+<template>
+  <template if:true={saveComplete}>
+    <template if:false={globalErrorMessageBool}>
+      <lightning-card>
+        <div>
+          <lightning-icon icon-name="action:approval"></lightning-icon>
+          {MSG_Products_Merged_Successfully}<br />
+        </div>
+      </lightning-card>
+    </template>
+    <lightning-card>
+      <template if:true={globalErrorMessageBool}>
+        <div>
+          <lightning-icon icon-name="utility:error" alternative-text="Error!" variant="error"></lightning-icon>
+          {MSG_Error_Occurred}<br />
+        </div>
+      </template>
+      <div>
+        <table class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered">
+          <thead>
+            <tr>
+              <th>{LBL_Unit_Needs}</th>
+              <th>{LBL_Product_Code}</th>
+              <th>{Status}</th>
+              <th>{Comments}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={InformationMessage} for:item='item'>
+              <tr key={item.uniteNeedName}>
+                <td>
+                  {item.uniteNeedName}
+                </td>
+                <td>
+                  {item.ProductCode}
+                </td>
+                <td>
+                  {item.status}
+                </td>
+                <td>
+                  {item.comment}
+                </td>
+              </tr>
+            </template>
+            <template for:each={ErrorMessage} for:item='item'>
+              <tr key={item.uniteNeedName}>
+                <td>
+                  {item.uniteNeedName}
+                </td>
+                <td>
+                  {item.ProductCode}
+                </td>
+                <td>
+                  {item.status}
+                </td>
+                <td>
+                  {item.comment}
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+        {globalErrorMessage}
+      </div>
+    </lightning-card>
+  </template>
+  <template if:false={saveComplete}>
+    <template if:true={ErrorMessage}>
+      <lightning-card>
+        <div>
+          <lightning-icon icon-name="utility:error" alternative-text="Error!" variant="error"></lightning-icon>
+          {MSG_Error_Occurred}<br />
+        </div>
+      </lightning-card>
+      <lightning-card>
+        <div>
+          <table class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered">
+            <thead>
+              <tr>
+                <th>{LBL_Unit_Needs}</th>
+                <th>{LBL_Product_Code}</th>
+                <th>{Status}</th>
+                <th>{Comments}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={InformationMessage} for:item='item'>
+                <tr key={item.uniteNeedName}>
+                  <td>
+                    {item.uniteNeedName}
+                  </td>
+                  <td>
+                    {item.ProductCode}
+                  </td>
+                  <td>
+                    {item.status}
+                  </td>
+                  <td>
+                    {item.comment}
+                  </td>
+                </tr>
+              </template>
+              <template for:each={ErrorMessage} for:item='item'>
+                <tr key={item.uniteNeedName}>
+                  <td>
+                    {item.uniteNeedName}
+                  </td>
+                  <td>
+                    {item.ProductCode}
+                  </td>
+                  <td>
+                    {item.status}
+                  </td>
+                  <td>
+                    {item.comment}
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          {globalErrorMessage}
+        </div>
+      </lightning-card>
+    </template>
+    <template if:true={loading}>
+      <div>
+        <lightning-spinner size="large" variant="brand"></lightning-spinner>
+      </div>
+    </template>
+    <template if:false={loading}>
+      <div class="slds-clearfix slds-card slds-m-vertical_x-small">
+        <lightning-button class="slds-m-around_x-small slds-float_right" label={Save} onclick={saveUnitNeed}>
+        </lightning-button>
+        <lightning-button class="slds-m-around_x-small slds-float_right" label={Cancel} onclick={handleCancel}>
+        </lightning-button>
+      </div>
+      <div class="slds-grid slds-gutters">
+        <div class="slds-col slds-size_1-of-2">
+          <lightning-card title={LBL_Unit_Needs}>
+            <lightning-button-group>
+              <lightning-input type="search" class="slds-p-around_x-small" placeholder={LBL_Search_Unit_Need}
+                variant="label-hidden" name="searchTermUnitNeed" onchange={changeInputHandler}
+                onkeypress={changeInputHandler}>
+              </lightning-input>
+            </lightning-button-group>
+            <div data-id="divUnitNeed" class="slds-scrollable  slds-m-bottom_x-small" style="height: 40vh;">
+              <template if:true={UnitNeedtableLoadingState}>
+                <div>
+                  <lightning-spinner size="large" variant="brand"></lightning-spinner>
+                </div>
+              </template>
+              <table class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered">
+                <thead>
+                  <tr class="slds-line-height_reset">
+                    <template for:each={UnitNeedcolumns} for:item='item'>
+                      <th key={item.fieldName} class="" scope="col" style="position: sticky; top: 0px; z-index: 2;">
+                        <div class="slds-truncate" title={item.label}>{item.label}</div>
+                      </th>
+                    </template>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template if:true={isUnitNeedDataPresent}>
+                    <template for:each={UnitNeedNormalTableDataInOutByCategory} for:item='Category'>
+                      <tr key={Category.categoryName}>
+                        <th colspan={colspanProduct}
+                          style="background-color: turquoise;position: sticky;top:20px;z-index:1;">
+                          <a href={Category.URL} target="_blank"> {Category.categoryName}</a>
+                        </th>
+                      </tr>
+                      <template for:each={Category.listUnitNeed} for:item="UnitNeed" for:index="index">
+                        <tr key={UnitNeed}>
+                          <template for:each={UnitNeed} for:item="item">
+                            <td key={item}>
+                              <template if:true={item.isInput}>
+                                <lightning-input name={item.Id} data-id={item.Id} onkeydown={unitNeedInputSubmitHandler}
+                                  onblur={onBlurUnitNeedInputSubmitHandler} variant="label-hidden" value={item.data}>
+                                </lightning-input>
+                              </template>
+                              <template if:false={item.isInput}>
+                                {item.data}
+                              </template>
+                            </td>
+                          </template>
+                        </tr>
+                      </template>
+                    </template>
+                  </template>
+                  <template if:false={isUnitNeedDataPresent}>
+                    <tr>
+                      <td colspan={colspanUniteNeed}>
+                        <div><b>{LBL_No_Item_To_Display}</b></div>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+            <lightning-button-group>
+              <lightning-combobox class="slds-m-horizontal_x-small" variant="label-hidden" name="PageSize"
+                placeholder="Page Size" value={pageSizeString} options={getPageSizeOptions}
+                onchange={pageSizeChangeHandler}>
+              </lightning-combobox>
+              <lightning-button label={LBL_First} name="First-UnitNeed" disabled={disabledFirstPreviousUnitNeed}
+                onclick={pageChangeHandler}></lightning-button>
+              <lightning-button label={LBL_Previous} name="Previous-UnitNeed" disabled={disabledFirstPreviousUnitNeed}
+                onclick={pageChangeHandler}></lightning-button>
+              <lightning-button label={LBL_Next} name="Next-UnitNeed" onclick={pageChangeHandler}
+                disabled={disabledLastNextUnitNeed}></lightning-button>
+              <lightning-button label={LBL_Last} name="Last-UnitNeed" onclick={pageChangeHandler}
+                disabled={disabledLastNextUnitNeed}></lightning-button>
+              <lightning-badge class="slds-m-horizontal_x-small slds-p-around_x-small" label={unitNeedPagesBadge}>
+              </lightning-badge>
+            </lightning-button-group>
+          </lightning-card>
+        </div>
+        <div class="slds-col slds-size_1-of-2">
+          <lightning-card title={Products}>
+            <lightning-button-group>
+              <lightning-input type="search" class="slds-p-around_x-small" placeholder={LBL_Search_Product}
+                variant="label-hidden" name="searchTermProduct" onchange={changeInputHandler}
+                onkeypress={changeInputHandler}>
+              </lightning-input>
+            </lightning-button-group>
+            <div data-id="divProduct" class="slds-scrollable  slds-m-bottom_x-small" style="height: 40vh;">
+              <template if:true={ProducttableLoadingState}>
+                <div>
+                  <lightning-spinner size="large" variant="brand"></lightning-spinner>
+                </div>
+              </template>
+              <table class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered">
+                <thead>
+                  <tr class="slds-line-height_reset">
+                    <template for:each={Productcolumns} for:item='item'>
+                      <th key={item.fieldName} scope="col" style="position: sticky; top: 0px; z-index: 2;">
+                        <div class="slds-truncate" title={item.label}>{item.label}</div>
+                      </th>
+                    </template>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template if:true={isProductDataPresent}>
+                    <template for:each={ProductNormalTableDataByCategory} for:item='Category'>
+                      <tr key={Category.categoryName}>
+                        <th colspan={displayedUnitNeedFieldsAPIs.length}
+                          style="background-color: turquoise;position: sticky;top:20px;z-index:1;">
+                          <a href={Category.URL} target="_blank"> {Category.categoryName}</a>
+                        </th>
+                      </tr>
+                      <template for:each={Category.listProduct} for:item="Product">
+                        <tr key={Product}>
+                          <template for:each={Product} for:item="Colvalue" for:index='index'>
+                            <td key={Colvalue}>
+                              {Colvalue}
+                            </td>
+                          </template>
+                        </tr>
+                      </template>
+                    </template>
+                  </template>
+                  <template if:false={isProductDataPresent}>
+                    <tr>
+                      <td colspan={colspanProduct}>
+                        <div><b>{LBL_No_Item_To_Display}</b></div>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+              <!--lightning-datatable key-field="Id" resize-column-disabled data={DisplayedProductData}
+                    columns={Productcolumns} hide-checkbox-column="true" suppress-bottom-bar="true">
+                  </lightning-datatable-->
+            </div>
+            <lightning-button-group>
+              <lightning-button label={LBL_First} class="slds-m-left_x-small" name="First-Product"
+                disabled={disabledFirstPreviousProduct} onclick={pageChangeHandler}></lightning-button>
+              <lightning-button label={LBL_Previous} name="Previous-Product" disabled={disabledFirstPreviousProduct}
+                onclick={pageChangeHandler}></lightning-button>
+              <lightning-button label={LBL_Next} name="Next-Product" onclick={pageChangeHandler}
+                disabled={disabledLastNextProduct}></lightning-button>
+              <lightning-button label={LBL_Last} name="Last-Product" onclick={pageChangeHandler}
+                disabled={disabledLastNextProduct}></lightning-button>
+              <lightning-badge class="slds-m-horizontal_x-small slds-p-around_x-small" label={productPagesBadge}>
+              </lightning-badge>
+            </lightning-button-group>
+          </lightning-card>
+        </div>
+      </div>
+    </template>
+  </template>
+</template>

@@ -1,0 +1,112 @@
+<apex:page controller="Nego360_Main_Selection_Controller_v2">
+
+  <apex:form id="negoContractForm">
+
+    <apex:pageBlock title="{!$Label.Negotiate}">
+
+      <apex:pageMessages id="messagesNegoContract" />
+
+      <apex:pageBlockSection columns="1">
+          <apex:selectList value="{!selectedNegoYear}" multiselect="false" size="1" label="{!$Label.SelectNegoYear}" required="true">
+              <apex:selectOptions value="{!listYears}"/>
+          </apex:selectList>
+          
+          <apex:inputText styleClass="supplier" html-placeholder="{!$Label.EnterCodeOrName}" label="{!$Label.SelectSupplier}" required="true" />
+      </apex:pageBlockSection>
+
+      <!--<apex:pageBlockButtons >
+                <apex:commandButton value="{!$Label.OK}" action="{!goToConditionScreen}" />
+      </apex:pageBlockButtons>-->
+
+    </apex:pageBlock>
+
+    <apex:actionFunction name="selectSupplier" action="{!goToConditionScreen}" reRender="">
+      <apex:param name="supplierId" assignTo="{!selectedSupplierId}" value="" />
+    </apex:actionFunction>
+
+    <!-- JAVASCRIPT -->
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="{!URLFOR($Resource.typeahead, 'typeahead.js')}" />
+    <script>
+        // Get the prefix/namespace
+        var prefix = "{!prefix}";
+      $(document).ready(function() {
+        initTypeaheadSupplier();
+      });
+
+      function initTypeaheadSupplier() {
+        $('.supplier').typeahead(
+          {
+            hint: true,
+            highlight: true,
+            minLength: 2,
+          },
+          {
+            name: 'suppliers',
+            displayKey: 'Name',
+            source: getSuppliers,
+            templates: {
+              empty:  '<div class="search-result">' +
+                        '<p>{!JSENCODE($Label.NoSupplierFound)}</p>' +
+                      '</div>',
+              suggestion: function(supplier) {
+                return  '<div class="search-result" style="cursor:pointer;">' +
+                          '<p>' + supplier[prefix + "Code__c"] + ' - ' + supplier.Name + '</p>' +
+                        '</div>';
+              }
+            }
+          }
+        ).on('typeahead:selected', function(obj, datum, name) {
+            selectSupplier(datum.Id);
+        }).on('keydown', function(event, datum, name) {
+			if(event.keyCode == 13) {
+                //$(".tt-suggestion:first-child", this).trigger('click');
+                //$('input[id="{!$Component.supplier}"]').val(datum.Id)
+              event.preventDefault();
+              return false;
+            }
+        });
+      }
+
+      var getSuppliers = debounce(function(query, process) {
+          var q = query;
+          Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.Nego360_Main_Selection_Controller_v2.findSupplier}',
+            q,
+            function(result, event) {
+              var res = JSON.parse(result);
+              process(res);
+            },
+            {escape: false}
+          );
+      }, 1);
+
+      function debounce(func, wait, immediate) {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            var later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+      };
+
+        </script>
+
+        <!-- STYLE -->
+        <style>
+            .search-result {
+                background-color: white;
+                border: 1px solid #cccccc;
+                width: 350px;
+                padding: 3px;
+            }
+        </style>
+    </apex:form>
+</apex:page>

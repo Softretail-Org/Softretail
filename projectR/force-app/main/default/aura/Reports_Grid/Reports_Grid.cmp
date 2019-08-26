@@ -1,0 +1,61 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,lightning:actionOverride,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global" 
+                controller="ReportsGridCmpController">
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!-- External -->
+    <aura:attribute name="folderName" type="String"/>
+    <aura:attribute name="height" type="Integer"/>
+    <!-- Internal -->
+    <aura:attribute name="listOfReport" type="List"/>
+    <aura:attribute name="allCategoryList" type="List"/>
+    <aura:attribute name="allBanners" type="List"/>
+    <aura:attribute name="selectedFolder" type="String"/>
+    <aura:attribute name="selectedFolderApiName" type="String"/>
+    
+    <lightning:card footer="" title="{!v.selectedFolder}">
+        <div class="slds-scrollable" style="{!'height:'+v.height+'px'}">
+            <aura:iteration items="{!v.listOfReport}" var="report">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-scrollable_y">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th scope="col" class="headerStyle">{!report.Name}</th>
+                            <aura:iteration items="{!v.allBanners}" var="circuit">
+                                <th scope="col" class="headerStyle">{!circuit.Name}</th>
+                            </aura:iteration>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.allCategoryList}" var="categories">
+                            <tr class="slds-hint-parent">
+                                <td scope="row" class="categoryMinWidth">{!categories.Name}</td>
+                                <aura:iteration items="{!v.allBanners}" var="circuit">
+                                    <aura:if isTrue="{!v.selectedFolderApiName == 'A'}">
+                                        <td scope="row" class="cellStyle">
+                                            <a href="{!'/lightning/r/Report/'+report.Id+'/view?fv0='+categories.Path__c+'&amp;fv2='+circuit.NameEncode}" target="_blank">{!$Label.c.view}</a>
+                                        </td>
+                                    </aura:if>
+                                    <aura:if isTrue="{!report.DeveloperName == 'Mensualisation_DV_Compote_2019_par_circuit'}">
+                                        <td scope="row" class="cellStyle">
+                                            <a href="{!'/lightning/r/Report/'+report.Id+'/view?fv0='+circuit.NameEncode+'&amp;fv3='+categories.Path__c}" target="_blank">{!$Label.c.view}</a>
+                                        </td>
+                                    </aura:if>
+                                    <aura:if isTrue="{!report.DeveloperName == 'Mensualisation_DV_Compote_2019_par_ensg_Jh3'}">
+                                        <td scope="row" class="cellStyle">
+                                            <a href="{!'/lightning/r/Report/'+report.Id+'/view?fv0='+circuit.NameEncode+'&amp;fv1='+categories.Name}" target="_blank">{!$Label.c.view}</a>
+                                        </td>
+                                    </aura:if>
+                                    <aura:if isTrue="{!or(report.DeveloperName == 'Suivi_en_DV_compoteAss_Matrix_zYO', report.DeveloperName == 'Suivi_en_DV_compoteColumn_Chart_vJ6')}">
+                                        <td scope="row" class="cellStyle">
+                                            <a href="{!'/lightning/r/Report/'+report.Id+'/view?fv0='+circuit.NameEncode+'&amp;fv2='+categories.Path__c}" target="_blank">{!$Label.c.view}</a>
+                                        </td>
+                                    </aura:if>
+                                </aura:iteration>
+                            </tr>
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </aura:iteration>
+        </div>
+    </lightning:card>
+</aura:component>

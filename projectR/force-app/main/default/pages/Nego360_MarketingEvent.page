@@ -1,0 +1,95 @@
+<apex:page standardController="Commercial_Plan__c" extensions="Nego360_MarketingEvent_Controller" standardStylesheets="true"
+           lightningStylesheets="true" tabStyle="Marketing_Event__tab">
+    <apex:stylesheet value="{!URLFOR($Resource.FullCalendar, 'fullcalendar/fullcalendar.min.css') }"/>
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }"/>
+    <apex:includeScript value="{!URLFOR($Resource.FullCalendar, 'fullcalendar/lib/moment.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.FullCalendar, 'fullcalendar/lib/jquery.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.FullCalendar, 'fullcalendar/fullcalendar.min.js')}"/>
+    
+    <apex:sectionHeader title="{!$ObjectType.Commercial_Plan__c.Label}" subtitle="Calendar" />
+    <apex:form id="eventsForm">
+        <apex:pageBlock title="{!IF(Commercial_Plan__c.Id != NULL, Commercial_Plan__c.Name + ': ' + TEXT(Commercial_Plan__c.Start_Date__c) + ' / ' + TEXT(Commercial_Plan__c.End_Date__c), '')}" >
+            <div style="width:100%; overflow: hidden;">
+                <!-- Filters -->
+            	<div class="filters">
+                	<apex:pageBlockSection title="Filters" columns="1" collapsible="false">
+	                	<apex:outputPanel >
+	                		<apex:outputLabel styleClass="label" value="Record Type"/>
+		                    <apex:selectcheckboxes layout="pageDirection" value="{!valuesRecordType}">
+	                            <apex:selectoptions value="{!recordTypeOptions}"/>
+	                            <apex:actionSupport action="{!loadEvents}" event="onchange" rerender="eventsForm" status="loadingStatus"/>
+	                        </apex:selectcheckboxes>
+	                	</apex:outputPanel>
+	                	<apex:outputPanel >
+	                		<apex:outputLabel styleClass="label" value="Event Type"/>
+	                       	<apex:selectcheckboxes styleClass="eventtype" layout="pageDirection" value="{!valuesEventType}">
+	                            <apex:selectoptions value="{!eventsTypeOptions}"/>
+	                            <apex:actionSupport action="{!loadEvents}" event="onchange" rerender="eventsForm" status="loadingStatus"/>
+	                        </apex:selectcheckboxes>
+	                	</apex:outputPanel>
+                    </apex:pageBlockSection>
+                    <div class="resetBtn">
+                        <apex:commandButton value="Reset" action="{!resetFilter}" rerender="eventsForm" status="loadingStatus"/>
+                    </div>
+                    <apex:actionStatus id="loadingStatus">
+                        <apex:facet name="start">
+                            <img src="/img/loading.gif"/>
+                        </apex:facet>
+                    </apex:actionStatus>
+            	</div>
+                <!-- Calendar -->
+        		<div id="calendar" class="calendar" style=""></div>
+            </div>
+        </apex:pageBlock>
+        
+        <script type="text/javascript">
+            $(document).ready(function() {
+                $('#calendar').fullCalendar({
+                    header: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'month,basicWeek,basicDay,listWeek'
+                    },
+                    displayEventTime: false,
+                    firstDay:1,
+                    eventLimit: true,
+                    navLinks: true,
+                    editable: false,
+                    events:
+                    [
+                        //At run time, this APEX Repeat will reneder the array elements for the events array
+                        <apex:repeat value="{!listEventsWrapper}" var="e">
+                        {
+                        title: "{!e.event.Name}",
+                        start: '{!e.eBDate}',
+                        end: '{!e.eEDate}',
+                        url: '{!e.url}',
+                        className: '{!e.className}',
+                        color: '#{!e.colorCode}'
+                        },
+                        </apex:repeat>
+                    ]
+                });
+            });
+        </script>
+        <!-- STYLE -->
+		<style type="text/css">
+			.filters {
+				width:18%;
+				padding-right:1%;
+				float:left;
+			}
+			.calendar {
+				width:81%;
+				float:right;
+			}
+			.label {
+				font-weight: bold;
+			}
+			.resetBtn {
+				padding-right: 2px;
+				float:left;
+			}
+		</style>
+    </apex:form>
+</apex:page>

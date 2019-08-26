@@ -1,0 +1,13 @@
+<template>
+     <center>
+        <div class="slds-form slds-form_stacked">
+            <lightning-layout horizontal-align=true>
+                <c-lookup-component onfieldchange={handleFieldChange} style="width:90%" onsearchtermchange={handleChangedTerm} path={path}     errors={errors}
+                    onsearch={handleSearch} onselectionchange={handleSelectionChange}
+                    label="Search" onsubmit={handleSubmit} placeholder="Search Products" is-multi-entry={isMultiEntry}>
+                </c-lookup-component>
+                <lightning-button variant="brand"   label="Reset" onclick={handleReset}></lightning-button>
+            </lightning-layout>
+        </div>
+    </center>
+</template>

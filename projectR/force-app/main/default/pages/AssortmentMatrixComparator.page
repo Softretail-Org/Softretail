@@ -1,0 +1,1272 @@
+<apex:page tabStyle="Assortment_BU__c" controller="AssortmentMatrixComparatorController" sidebar="false" setup="false" >
+    <apex:slds />
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}" />
+    <style>
+        .sticky-category-row td {
+        background-color: #d4bdfa !important;
+        position: sticky !important;
+        z-index: 3;
+        }
+        .blank-cell {
+        background: repeating-linear-gradient(
+        45deg,
+        #7ad4ef 10px,
+        #ffffff 15px
+        );
+        width: 100%;
+        height: 15px;
+        display: inline-block;
+        }
+        .client-status-null {
+        color: #0c92ba !important;
+        }
+        .dateFormat {
+        display: none;
+        }
+        .dateOnlyInput input {
+        width: unset;
+        }
+        .inputField {
+        width: 95% !important
+        }
+        .consoCell {
+        background-color: #fbefdf !important;
+        }
+        .treegrid-container {
+        overflow: auto;
+        padding-bottom: 10px;
+        font-size: 9pt;
+        }
+        .grid-container {
+        font-size: 9pt;
+        overflow: auto;
+        }
+        
+        .sticky-thead th {
+        position: sticky !important;
+        z-index: 4;
+        }
+        
+        .header-row-1 th {
+        top:0;
+        }
+        
+        .grid-container thead {
+        min-height: 115px;
+        height: 115px;
+        }
+        
+        .grid-container td, .treegrid-container td {
+        text-align:right !important;
+        vertical-align:middle !important;
+        }
+        
+        .grid-container td input {
+        text-align:right !important;
+        }
+        
+        .grid-container th, .treegrid-container th {
+        text-align:center !important;
+        vertical-align:middle !important;
+        font-weight: normal;
+        }
+        .hide {
+        display: none !important;
+        }
+        .invisible {
+        visibility: hidden !important;
+        }
+        .innoProduct a {
+        color: green;
+        }
+        .stopProduct a {
+        color: red;
+        }
+        #searchBox {
+        width:500px;
+        }
+        .WhiteBG {
+        background-color: white;
+        }
+        .WhiteBG::selection {
+        background-color: rgb(216, 237, 255) !important;
+        }
+    </style>
+    <apex:pageMessages id="messages" showDetail="true" />
+    <apex:actionStatus id="globalloading">
+        <apex:facet name="start">
+            <div class="loading-overlay">
+                <div class="loader-img"></div>
+                <div class="loading-block">{!$Label.Loading}</div>
+            </div>
+        </apex:facet>
+    </apex:actionStatus>
+    <!--apex:sectionHeader title="{!$ObjectType.Assortment_BU__c.labelPlural}" subtitle="{!subtitle}" id="sectionHeader" /-->
+    <div class="slds-m-around_small">
+        <apex:outputPanel id="filterSectionPanel">
+            <div class="slds-page-header">
+                <div class="slds-page-header__row">
+                    <div class="slds-page-header__col-title">
+                        <div class="slds-media">
+                            <div class="slds-media__figure">
+                                <span class="slds-icon_container" title="{!$label.LBL_Assortment_Conso}">
+                                    <!--svg xmlns="http://www.w3.org/2000/svg"
+                                    xmlns:xlink="http://www.w3.org/1999/xlink"
+                                    class="slds-icon slds-icon-text-default" aria-hidden="true" st.
+                                    yle="transform: rotate(90deg);" >
+                                    <use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/action-sprite/svg/symbols.svg#user_activation')}"/>
+                                    </svg
+                                    <span class="slds-icon slds-icon-text-default">
+                                    <img src="{!URLFOR($Action.Attachment.Download,imgUrl)}" />
+                                    </span>-->
+                                    <span class="slds-assistive-text">{!$label.LBL_Assortment_Conso}</span>
+                                </span>
+                            </div>
+                            <div class="slds-media__body">
+                                <div class="slds-page-header__name">
+                                    <div class="slds-page-header__name-title">
+                                        <h1>
+                                            <span class="slds-page-header__title slds-truncate" title="{!title}">{!title}</span>
+                                        </h1>
+                                    </div>
+                                </div>
+                                <p class="slds-page-header__name-meta">{!$ObjectType.Assortment_BU__c.labelPlural}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- filter section -->
+            <div class="slds-grid slds-m-top_x-small slds-m-bottom_x-small">
+                <!-- show/hide totals tree -->
+                <div class="slds-form-element slds-m-top_x-small slds-m-bottom_x-small slds-m-right_x-small {!IF(noOfRecords==0, 'hide', '')}">
+                    <label class="slds-checkbox_toggle slds-grid">
+                        <span class="slds-form-element__label slds-m-bottom_none">{!$Label.LBL_Show_Total}</span>
+                        <input type="checkbox" name="checkbox-toggle" value="checkbox-toggle" aria-describedby="checkbox-toggle" onchange="toggleTotalsTree();" />
+                        <span id="checkbox-toggle" class="slds-checkbox_faux_container" aria-live="assertive">
+                            <span class="slds-checkbox_faux"></span>
+                            <span class="slds-checkbox_on"></span>
+                            <span class="slds-checkbox_off"></span>
+                        </span>
+                    </label>
+                </div>
+                <!-- search box -->
+                <div style="margin-left: .25rem;" class="{!IF(noOfRecords==0, 'hide', '')}">
+                    <input class="slds-input" id="searchBox" autocomplete="off"
+                           type="text" placeholder="{!$Label.Search}..." value="" />
+                </div>
+                <!-- apply filters button --> 
+                <div class="slds-col {!IF(noOfRecords==0, 'invisible', '')}" style="margin-left: .75rem;">
+                    <button class="slds-button slds-button_neutral" onclick="applyFilters();">{!$Label.Search}</button>
+                </div>
+                
+                <!-- buttons -->
+                <button id="previousBtn" class="slds-button slds-button_neutral {!IF(noOfRecords==0, 'hide','slds-col_bump-right')}" onclick="backToFilterPage();">{!$Label.LBL_Back_To_Filter_Page}</button>
+                <button id="saveBtn" class="slds-button slds-button_neutral {!IF(noOfRecords==0, 'hide','')}" onclick="save();" >{!$Label.Save}</button>
+                <button id="changeScopehBtn" class="slds-button slds-button_neutral {!IF(noOfRecords!=0, 'hide','slds-col_bump-right')}" onclick="applyScopeFilters();" >{!$Label.Search}</button>
+                <button class="slds-button slds-button_neutral" onclick="cancel();return false;">{!$Label.LBL_Back_To_Home_Page}</button>
+            </div>
+        </apex:outputPanel>
+        <apex:form id="theForm">
+            <apex:actionFunction action="{!first}" name="first" status="globalloading" reRender="thePageBlock" oncomplete="afterRerender();">
+                <apex:param name="changedAssortmentDetailsIdSet_serialized" assignTo="{!changedAssortmentDetailsIdSet_serialized}" value="" />
+            </apex:actionFunction>
+            <apex:actionFunction action="{!next}" name="next" status="globalloading" reRender="thePageBlock" oncomplete="afterRerender();">
+                <apex:param name="changedAssortmentDetailsIdSet_serialized" assignTo="{!changedAssortmentDetailsIdSet_serialized}" value="" />
+            </apex:actionFunction>
+            <apex:actionFunction action="{!previous}" name="previous" status="globalloading" reRender="thePageBlock" oncomplete="afterRerender();">
+                <apex:param name="changedAssortmentDetailsIdSet_serialized" assignTo="{!changedAssortmentDetailsIdSet_serialized}" value="" />
+            </apex:actionFunction>
+            <apex:actionFunction action="{!last}" name="last" status="globalloading" reRender="thePageBlock" oncomplete="afterRerender();">
+                <apex:param name="changedAssortmentDetailsIdSet_serialized" assignTo="{!changedAssortmentDetailsIdSet_serialized}" value="" />
+            </apex:actionFunction>
+            <apex:actionFunction action="{!refreshPageSize}" name="refreshPageSize" status="globalloading" reRender="thePageBlock" oncomplete="afterRerender();">
+                <apex:param name="changedAssortmentDetailsIdSet_serialized" assignTo="{!changedAssortmentDetailsIdSet_serialized}" value="" />
+            </apex:actionFunction>
+            <apex:actionFunction action="{!validateAssortment}" name="validateAssortment" status="globalloading" reRender="thePageBlock" oncomplete="afterRerender();">
+                <apex:param name="assortmentToValidateId" assignTo="{!assortmentToValidateId}" value="" />
+            </apex:actionFunction>
+            <apex:actionFunction name="search" action="{!search}" reRender="thePageBlock" oncomplete="afterRerender();" status="globalloading">
+                <apex:param name="searchTerm" assignTo="{!searchTerm}" value="" />
+            </apex:actionFunction>
+            <apex:actionFunction name="changePageScope" action="{!changePageScope}" reRender="theForm, filterSectionPanel" oncomplete="scopeReady();" status="globalloading">
+                <apex:param name="selectedRecordType" assignTo="{!selectedRecordType}" value="" />
+            </apex:actionFunction>
+            <apex:actionFunction name="backToFilterPage" action="{!backToFilterPage}" reRender="theForm, filterSectionPanel" oncomplete="setFilterSection()" status="globalloading" />
+            <apex:pageBlock id="thePageBlock">
+                <apex:pageBlockSection collapsible="false" columns="2" rendered="{!noOfRecords == 0}">
+                    <apex:pageBlockSection columns="1">
+                        <apex:inputField value="{!orgaBU.Format_Origin__c}" id="formatOrigin_scope" required="true" />
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="{!$ObjectType.RecordType.label}" for="relatedClient_scope" styleClass="slds-form-element__label" />
+                            <div class="slds-form-element__control">
+                                <div class="slds-radio_button-group">
+                                    <span class="slds-button slds-radio_button">
+                                        <input name="radio" type="radio" id="Nego" value="Nego" checked="true" />
+                                        <label class="slds-radio_button__label" for="Nego">
+                                            <span class="slds-radio_faux">{!negoRecordType}</span>
+                                        </label>
+                                    </span>
+                                    <span class="slds-button slds-radio_button">
+                                        <input name="radio" type="radio" id="Target" value="Target" />
+                                        <label class="slds-radio_button__label" for="Target">
+                                            <span class="slds-radio_faux">{!targetRecordType}</span>
+                                        </label>
+                                    </span>
+                                </div>
+                            </div>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection columns="1">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="{!$Label.LBL_Filter_Country}" for="relatedClient_scope" styleClass="slds-form-element__label" />
+                            <apex:inputField value="{!orgaBU.Country_origin__c}" required="true" id="relatedClient_scope" styleClass="slds-input inputField" />
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="{!$ObjectType.Assortment_BU__c.fields.Orga_HE__c.label}" for="orgaHE_scope" styleClass="slds-form-element__label" />
+                            <apex:inputField value="{!assortmentBU.Orga_HE__c}" required="true" id="orgaHE_scope" styleClass="slds-input inputField" />
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="{!$ObjectType.Assortment_BU__c.fields.Year__c.label}" for="year_scope" styleClass="slds-form-element__label" />
+                            <apex:inputField value="{!assortmentBU.Year__c}" required="true" id="year_scope" styleClass="slds-input inputField" />
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:pageBlockSection>
+                <apex:outputPanel rendered="{!noOfRecords != 0}">
+                    <div class="treegrid-container hide">
+                        <table id="treegrid" class="slds-table">
+                            <thead>
+                                <tr>
+                                    <th style="display:none;"></th>
+                                    <th style="display:none;"></th>
+                                    <th style="min-width:200px;"></th>
+                                    
+                                    <th colspan="{!fieldsToSum.size}" class="slds-text-title_caps slds-border_right slds-border_left">
+                                        {!$Label.LBL_Assortment_Conso}
+                                    </th>
+                                    <apex:repeat value="{!assortmentsIdList}" var="assortmentId">
+                                        <th colspan="{!fieldsToSum.size}" class="slds-border_right slds-border_left">
+                                            <apex:outputLink target="_blank" value="/{!assortmentId}">
+                                                {!assortmentsMap[assortmentId].Name}
+                                            </apex:outputLink>
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                                <tr class="slds-border_top slds-border_bottom">
+                                    <th style="display:none;"></th>
+                                    <th style="display:none;"></th>
+                                    <th style="text-align:left;"></th>
+                                    <!-- conso fields -->
+                                    <apex:repeat value="{!fieldsToSum}" var="field">
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$ObjectType.Assortment_Detail__c.fields[field].label}
+                                        </th>
+                                    </apex:repeat>
+                                    
+                                    <apex:repeat value="{!assortmentsIdList}" var="assortmentId">
+                                        <apex:repeat value="{!fieldsToSum}" var="field">
+                                            <th class="slds-border_right slds-border_left">
+                                                {!$ObjectType.Assortment_Detail__c.fields[field].label}
+                                            </th>
+                                        </apex:repeat>
+                                    </apex:repeat>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="display:none;"></td>
+                                    <td style="display:none;"></td>
+                                    <td style="text-align:left !important;"></td>
+                                    <!-- conso fields -->
+                                    <apex:repeat value="{!fieldsToSum}" var="field">
+                                        <td class="slds-border_right slds-border_left"></td>
+                                    </apex:repeat>
+                                    <apex:repeat value="{!assortmentsIdList}" var="assortmentId">
+                                        <apex:repeat value="{!fieldsToSum}" var="field">
+                                            <td class="slds-border_right slds-border_left"></td>
+                                        </apex:repeat>
+                                    </apex:repeat>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="grid-container">
+                        <table class="slds-table slds-no-cell-focus">
+                            <thead >
+                                <tr class="slds-border_top slds-border_bottom sticky-thead header-row-1">
+                                    <th class="slds-border_right slds-border_left WhiteBG" rowspan="2">
+                                        {!$ObjectType.Product2.fields.ProductCode.label}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left WhiteBG" rowspan="2">
+                                        {!$ObjectType.Product2.fields.Name.label}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left WhiteBG" rowspan="2">
+                                        {!$ObjectType.Product2.fields.Product_EAN__c.label}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left WhiteBG" rowspan="2">
+                                        {!$ObjectType.Product2.fields.VIP__c.label}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left WhiteBG" rowspan="2">
+                                        {!$ObjectType.Product2.fields.Gold__c.label}
+                                    </th>
+                                    <th class="slds-border_right slds-border_left" colspan="{!fieldsToSum.size}">
+                                        {!$Label.LBL_Assortment_Conso}
+                                    </th>
+                                    <apex:repeat value="{!assortmentsIdList}" var="assortmentId">
+                                        <th class="slds-border_right slds-border_left" colspan="{!gridSettingsManager.GRID_FIELDS.size}">
+                                            <apex:outputLink target="_blank" value="/{!assortmentId}">
+                                                {!assortmentsMap[assortmentId].Name}
+                                            </apex:outputLink>
+                                            (<apex:outputField value="{!assortmentsMap[assortmentId].Status__c}" label="" />)
+                                            <apex:commandButton styleClass="slds-button slds-button_brand slds-m-left_small" value="{!$Label.Validate}"
+                                                                style="line-height: 1rem;"
+                                                                onclick="confirmAssortmentValidation('{!assortmentId}', '{!assortmentsMap[assortmentId].Name}'); return false;"
+                                                                rendered="{!assortmentsMap[assortmentId].status__c != 'Validated'}" />
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                                <tr class="slds-border_top slds-border_bottom sticky-thead header-row-2">
+                                    <!-- conso fields -->
+                                    <apex:repeat value="{!fieldsToSum}" var="field">
+                                        <th class="slds-border_right slds-border_left">
+                                            {!$ObjectType.Assortment_Detail__c.fields[field].label}
+                                        </th>
+                                    </apex:repeat>
+                                    
+                                    <apex:repeat value="{!assortmentsIdList}" var="assortmentId">
+                                        <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="field">
+                                            <th class="slds-border_right slds-border_left">
+                                                {!field.fieldLabel}
+                                            </th>
+                                        </apex:repeat>
+                                    </apex:repeat>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <apex:repeat value="{!categoryWrapperList}" var="categoryWrapper" >
+                                    <tr class="sticky-category-row">
+                                        <td colspan="5" style="text-align: left !important;">
+                                            <apex:outputLink value="/{!categoryWrapper.referenceDetail.Category__c}" target="_blank">
+                                                {!categoryWrapper.referenceDetail.Category__r.Long_Name__c}
+                                            </apex:outputLink>
+                                        </td>
+                                        <!--td colspan="3"></td-->
+                                        <apex:repeat value="{!fieldsToSum}" var="field">
+                                            <td class="conso-{!categoryWrapper.referenceDetail.Category__c}-{!field}">
+                                                <span></span>
+                                            </td>
+                                        </apex:repeat>
+                                        <apex:repeat value="{!assortmentsIdList}" var="assortmentId">
+                                            <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="field">
+                                                <td class="{!assortmentId}-{!categoryWrapper.referenceDetail.Category__c}-{!field.fieldName}"
+                                                    style="text-align: right !important;">
+                                                    <apex:variable var="isTextField" value="{!OR(field.stringFieldType == 'DATE', field.stringFieldType == 'DATETIME', field.stringFieldType == 'TIME',
+                                                                                            field.stringFieldType == 'PICKLIST', field.stringFieldType == 'MULTIPICKLIST', field.stringFieldType == 'STRING',
+                                                                                            field.stringFieldType == 'REFERENCE')}" />
+                                                    <span>{!IF(isTextField, '', '0')}</span>
+                                                </td>
+                                            </apex:repeat>
+                                        </apex:repeat>
+                                    </tr>
+                                    <apex:repeat value="{!categoryWrapper.products}" var="productWrapper">
+                                        <tr class="slds-border_top slds-border_bottom">
+                                            <td class="slds-border_right slds-border_left WhiteBG" style="text-align: left !important;">
+                                                <apex:outputField value="{!productWrapper.referenceDetail.Product__r.ProductCode}" />
+                                            </td>
+                                            <td class="slds-border_right slds-border_left WhiteBG
+                                                       {!IF(OR(productWrapper.referenceDetail.Product__r.IsInnovation__c, productWrapper.referenceDetail.Product__r.recordType.developerName == 'Unit_Need'), 'innoProduct', '')}
+                                                       {!IF(YEAR(productWrapper.referenceDetail.Product__r.Market_End_of_Life_Date__c) == AssortmentBU.Year__c, 'stopProduct', '')}"
+                                                style="text-align: left !important;">
+                                                <apex:outputField value="{!productWrapper.referenceDetail.Product__c}" />
+                                            </td>
+                                            <td class="slds-border_right slds-border_left WhiteBG" style="text-align: left !important;">
+                                                <apex:outputField value="{!productWrapper.referenceDetail.Product__r.Product_EAN__c}" />
+                                            </td>
+                                            <td class="slds-border_right slds-border_left WhiteBG" style="text-align: left !important;">
+                                                <apex:outputField value="{!productWrapper.referenceDetail.Product__r.VIP__c}" />
+                                            </td>
+                                            <td class="slds-border_right slds-border_left WhiteBG" style="text-align: left !important;">
+                                                <apex:outputField value="{!productWrapper.referenceDetail.Product__r.Gold__c}" />
+                                            </td>
+                                            <apex:repeat value="{!fieldsToSum}" var="field">
+                                                <td class="{!productWrapper.referenceDetail.Product__c}-{!field} consoCell">
+                                                    <span></span>
+                                                </td>
+                                            </apex:repeat>
+                                            <apex:repeat value="{!assortmentsIdList}" var="assortmentId">
+                                                <apex:outputPanel layout="none" rendered="{!CONTAINS(productWrapper.keySet, assortmentId)}">
+                                                    <!--apex:variable var="detail" value="{!productWrapper.detailsMap[assortmentId]}" /-->
+                                                    <apex:variable var="count" value="{!0}"/>
+                                                    <apex:repeat value="{!gridSettingsManager.GRID_FIELDS}" var="field">
+                                                        <apex:variable var="isTextField" value="{!OR(field.stringFieldType == 'DATE', field.stringFieldType == 'DATETIME', field.stringFieldType == 'TIME',
+                                                                                                field.stringFieldType == 'PICKLIST', field.stringFieldType == 'MULTIPICKLIST', field.stringFieldType == 'STRING',
+                                                                                                field.stringFieldType == 'REFERENCE', field.stringFieldType == 'BOOLEAN')}" />
+                                                        <td class="{!productWrapper.detailsMap[assortmentId].detail.Id}-{!field.fieldName}
+                                                                   {!IF(count == 0, 'slds-border_left', '')}
+                                                                   {!IF(count == gridSettingsManager.GRID_FIELDS.size - 1, 'slds-border_right', '')}
+                                                                   {!IF(productWrapper.detailsMap[assortmentId].detail.Client_Status__c == null, 'client-status-null', '')}"
+                                                            style="{!IF(isTextField, '', 'text-align: right !important;')}" >
+                                                            <apex:inputField value="{!productWrapper.detailsMap[assortmentId].detail[field.fieldName]}" rendered="{!AND (field.fieldName != 'Ass_BU_Cluster__c', field.isInputField)}"
+                                                                             styleClass="inputNoEnter {!IF(field.fieldName == 'Client_Status__c', 'Client_Status__c', '')}
+                                                                                         {!IF(field.stringFieldType == 'DATE', 'datepicker', '')}"
+                                                                             style="{!IF(isTextField, '', 'text-align: right !important; width: 70px;')}" showDatePicker="false"
+                                                                             onchange="registerChange(this, '{!productWrapper.detailsMap[assortmentId].detail.Id}', '{!field.fieldName}');" />
+                                                            <apex:outputField value="{!productWrapper.detailsMap[assortmentId].detail[field.fieldName]}" rendered="{!!field.isInputField}" />
+                                                            <apex:selectList size="1" multiselect="false" value="{!productWrapper.detailsMap[assortmentId].detail.Ass_BU_Cluster__c}"
+                                                                             rendered="{!AND(field.fieldName == 'Ass_BU_Cluster__c', field.isInputField)}"
+                                                                             onchange="registerChange(this, '{!productWrapper.detailsMap[assortmentId].detail.Id}', 'Ass_BU_Cluster__c')">
+                                                                <apex:selectOptions value="{!productWrapper.detailsMap[assortmentId].clustersSelectOptions}" />
+                                                            </apex:selectList>
+                                                            <apex:outputText styleClass="{!productWrapper.detailsMap[assortmentId].detail.Id}-{!field.fieldName}-oldValue"
+                                                                             value="{!productWrapper.detailsMap[assortmentId].detail[field.fieldName]}"
+                                                                             style="display:none" />
+                                                        </td>
+                                                        <apex:variable value="{!count + 1}" var="count"/>
+                                                    </apex:repeat>
+                                                </apex:outputPanel>
+                                                <apex:outputPanel layout="none" rendered="{!!CONTAINS(productWrapper.keySet, assortmentId)}">
+                                                    <td class="slds-border_right slds-border_left" colspan="{!gridSettingsManager.GRID_FIELDS.size}">
+                                                        <span class="blank-cell"/>
+                                                    </td>
+                                                </apex:outputPanel>
+                                            </apex:repeat>
+                                        </tr>
+                                    </apex:repeat>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                    <apex:outputPanel >
+                        <apex:selectList value="{!pageSize}" multiselect="false" size="1" onchange="refreshPageSize_js();" styleClass="slds-select" style="width:70px">
+                            <apex:selectOptions value="{!pageSizeOptions}" />
+                        </apex:selectList>
+                        <apex:commandButton status="globalloading" value="{!$Label.LBL_First}" onclick="firstPage();return false;" disabled="{!!productsListIterable.hasPrevious}"
+                                            styleClass="slds-button slds-button_neutral" />
+                        <apex:commandButton status="globalloading" value="{!$Label.LBL_Previous}" onclick="previousPage();return false;" disabled="{!!productsListIterable.hasPrevious}"
+                                            styleClass="slds-button slds-button_neutral" />
+                        <apex:commandButton status="globalloading" value="{!$Label.LBL_Next}" onclick="nextPage();return false;" disabled="{!!productsListIterable.hasNext}"
+                                            styleClass="slds-button slds-button_neutral" />
+                        <apex:commandButton status="globalloading" value="{!$Label.LBL_Last}" onclick="lastPage();return false;" disabled="{!!productsListIterable.hasNext}"
+                                            styleClass="slds-button slds-button_neutral" />
+                        <apex:outputText style="text-align: right">
+                            {!(productsListIterable.pageNumber * pageSize)+1-pageSize}-{!IF((productsListIterable.pageNumber * pageSize)>noOfRecords,
+                            noOfRecords, (productsListIterable.pageNumber * pageSize))} {!$Label.LBL_Of} {!noOfRecords}
+                        </apex:outputText>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!noOfRecords == 0}">
+                    <center> 
+                        <div class="slds-media__body">
+                            <h2 class="slds-card__header-title">
+                                <span>{!$Label.LBL_No_Item_To_Display}</span>
+                            </h2>
+                        </div>
+                    </center>
+                </apex:outputPanel>
+                <script>
+                var categoriesIdSet = JSON.parse('{!JSENCODE(categoriesIdSet_serialized)}');
+                var assortmentDetailsMap_serialized = '{!JSENCODE(assortmentDetailsMap_serialized)}';
+                </script>
+            </apex:pageBlock>
+            
+            <apex:outputPanel id="jsPanel">
+                <script>
+                // serialized data from controller
+                var assortmentsIdSet = JSON.parse('{!JSENCODE(assortmentsIdSet_serialized)}');
+                var gridFields_serialized = '{!JSENCODE(gridFields_serialized)}'
+                var gridFields = JSON.parse(gridFields_serialized);
+                var subTotalsMap = JSON.parse('{!JSENCODE(subTotalsMap_serialized)}');
+                var treeFields = JSON.parse('{!JSENCODE(treeFields_serialized)}');
+                var categoryTree_serialized = '{!JSENCODE(categoryTree_serialized)}';
+                
+                var recordType = '{!JSENCODE(selectedRecordType)}';
+                </script>
+            </apex:outputPanel>
+        </apex:form>
+    </div>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"/>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"/>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/i18n/jquery-ui-i18n.min.js"/>
+    
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/dist/jquery.fancytree-all-deps.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/dist/modules/jquery.fancytree.filter.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/src/jquery.fancytree.table.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/src/jquery.fancytree.gridnav.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.fancytree, 'fancytree/dist/skin-win8/ui.fancytree.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}" />
+    
+    <apex:stylesheet value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css" />
+    
+    <apex:includeScript value="{!URLFOR($Resource.Assets, 'assets/js/app.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.FullCalendar, 'fullcalendar/lib/moment.min.js')}"/>
+    <script>
+    // variable decleration
+    var decimalSeparator = '{!localeDecimalSeparator}';
+    var local = '{!locale}';
+    negoptimApp = new App('{!locale}', '{!localeDecimalSeparator}');
+    var totalColumnsMap = new Map();
+    
+    var assortmentDetailsMap;
+    //
+    var gridFieldsMap = new Map();
+    var changedAssortmentDetailsIdSet = [];
+    var changedAssortmentDetails = [];
+    var initialAssortmentDetailsMap = new Map();
+    var showGrid = true;
+    
+    document.addEventListener('DOMContentLoaded', setFilterSection, false);
+    window.onresize = function(){
+        setTableDimensions();
+        setSticky();
+    }
+    
+    function setFilterSection() {
+        if (recordType === 'Target') {
+            document.getElementById('Nego').checked = false;
+            document.getElementById('Target').checked = true;
+        }
+        var formatOrigin_unselected = $('[id*=formatOrigin_scope_unselected]');
+        if (formatOrigin_unselected.length != 0) {
+            $(formatOrigin_unselected).parent().css('width', '175px');
+        }
+        var lookupInput = $('a.inputField');
+        if (lookupInput.length != 0) {
+            $(lookupInput).toggleClass('slds-input');
+            $(lookupInput).css('padding-left', '5px');
+        }
+    }
+    
+    function scopeReady() {
+        var gridField;
+        for (var index = 0; index < gridFields.length; index++) {
+            gridField = gridFields[index]
+            gridFieldsMap.set(gridField.fieldName, gridField);
+        }
+        afterRerender();
+    }
+    
+    function afterRerender() {
+        
+        $(".inputNoEnter").on('keypress', function(e) {
+            code = e.keyCode ? e.keyCode : e.which;
+            if (code.toString() == 13) {
+                e.preventDefault();
+            }
+        });
+        
+        $("#searchBox").on('keypress', function(e) {
+            code = e.keyCode ? e.keyCode : e.which;
+            if (code.toString() == 13) {
+                e.preventDefault();
+                applyFilters();
+            }
+        });
+        
+        setFilterSection();
+        setTableDimensions();
+        //setStickyTop();
+        setSticky();
+        renderTotalsTree();
+        fillSubTotalRows();
+        renderTree();
+        // make sure all links (lookups) in the table will open in a new tab
+        var links = document.getElementsByClassName('grid-container')[0].getElementsByTagName('a');
+        for (var i = 0; i < links.length; i++) {
+            links[i].setAttribute('target', '_blank');
+        }
+        //
+        var detailsMap = JSON.parse(assortmentDetailsMap_serialized);
+        assortmentDetailsMap = JSON.parse(assortmentDetailsMap_serialized);
+        for (var key in detailsMap) {
+            initialAssortmentDetailsMap.set(key, detailsMap[key]);
+        }
+        //
+        $('.grid-container').find('.datepicker').datepicker({
+            dateFormat: getDateFormat().toLowerCase().replace('yyyy', 'yy')
+            /*minDate: beginDate,
+            maxDate: endDate*/
+        });
+        $.datepicker.setDefaults($.datepicker.regional['fr']);
+        disableClientStatusOptions();
+    }
+    
+    // expand and collapse tree to render all rows
+    function renderTotalsTree() {
+        var i = 3;
+        for (var index = 0; index < treeFields.length; index++)
+            totalColumnsMap.set(treeFields[index], i++);
+        
+        // Attach the fancytree widget to an existing <div id="treegrid"> element
+        // and pass the tree options as an argument to the fancytree() function:
+        $("#treegrid").fancytree({
+            extensions: ["table", "filter", "gridnav"],
+            checkbox: false,
+            filter: {
+                // mode: "hide"
+            },
+            gridnav: {
+                // autofocusInput: true, // focus first embedded input if node gets activated
+                // handleCursorKeys: true,   // Allow UP/DOWN in inputs to move to prev/next node
+            },
+            table: {
+                indentation: 20,      // indent 20px per node level
+                nodeColumnIdx: 2,     // render the node title into the 2nd column
+                checkboxColumnIdx: 1  // render the checkboxes into the 1st column
+            },
+            source: JSON.parse(categoryTree_serialized),
+            titlesTabbable: true, // Add all node titles to TAB chain
+            lazyLoad: function(event, data) { },
+            renderColumns: function(event, data) {
+                var node = data.node, $tdList = $(node.tr).find(">td");
+                i = 3;
+                for (var index = 0; index < treeFields.length; index++) {
+                    var field = treeFields[index];
+                    if (node.data.sums[field] != null) {
+                        $tdList.eq(i++).text(node.data.sums[field]);
+                    }
+                }
+            }
+        });
+        
+        $("#treegrid").fancytree("getTree").expandAll();
+        $("#treegrid").fancytree("getTree").expandAll(false);
+    }
+    
+    function setTableDimensions() {
+        if (document.getElementsByClassName('grid-container').length == 0) return;
+        // width
+        var bodyWidth = document.body.clientWidth;
+        _97 = bodyWidth * 97 / 100;
+        document.getElementsByClassName('grid-container')[0].style.width = _97 + "px";
+        document.getElementsByClassName('treegrid-container')[0].style.width = _97 + "px";
+        // height
+        var window_h = window.innerHeight;
+        var body_h = document.body.clientHeight;
+        var delta_h = body_h - window_h;
+        var grid_h = document.getElementsByClassName('grid-container')[0].offsetHeight;
+        var new_grid_h = grid_h - delta_h;
+        document.getElementsByClassName('grid-container')[0].style.height = new_grid_h + "px";
+    }
+    
+    function setStickyTop() {
+        var row1Height = $('.header-row-1')[0].offsetHeight;
+        var row2 = $('.header-row-2');
+        var row2Cells = $(row2).find('th');
+        var row2Height = row2[0].offsetHeight;
+        var categoryRowCells = $('.sticky-category-row').find('td');
+        
+        for (var index = 0; index < row2Cells.length; index++) {
+            $(row2Cells[index]).css('top', row1Height+'px');
+        }
+        for (var index = 0; index < categoryRowCells.length; index++) {
+            $(categoryRowCells[index]).css('top', (row1Height + row2Height) + 'px');
+        }
+    }
+    
+    function disableClientStatusOptions(e, assortmentDetailId) {
+        var clientStatusSelectList = typeof e !== 'undefined' ? clientStatusSelectList = $(e) : clientStatusSelectList = $('select.inputNoEnter.Client_Status__c');
+        clientStatusSelectList.each(function() {
+            var detail = initialAssortmentDetailsMap.get($(this).parent().attr('class').split('-')[0]);
+            value = this.value;
+            var initialValue = detail['Client_Status__c'];
+            var lastHistoryValue = detail['Last_History__c'];
+            $(this).children('option').each(function() {
+                //// initialValue = typeof assortmentDetailId !== 'undefined' ? initialAssortmentDetailsMap.get(assortmentDetailId)['Client_Status__c'] : value;
+                this.disabled = isDisabled(this, initialValue , value, lastHistoryValue);
+            });
+        });
+    }
+    
+    function isDisabled(element, initialValue, currentValue, lastHistoryValue) {
+        if (initialValue != currentValue) {
+            if (element.value == initialValue || element.value == currentValue)
+                return false;
+            return true;
+        }
+        if (element.value == currentValue) return false;
+        
+        switch (initialValue) {
+            case '':
+                if (element.value == 'Opportunity') {
+                    return false;
+                }
+                break;
+            case 'Increase':
+            case 'Decrease':
+            case 'New':
+            case 'Keep':
+                if (element.value == 'Probably deleted' || element.value == 'Opportunity' || element.value == 'Delete') {
+                    return false;
+                }
+                break;
+            case 'Delete':
+                if (element.value == 'Keep') {
+                    return false;
+                }
+                break;
+            case 'Opportunity':
+                if (element.value == 'Keep' || element.value == 'Probably deleted' || element.value == 'Delete' || (lastHistoryValue == null && element.value == 'New')) {
+                    return false;
+                }
+                break;
+            case 'Probably deleted':
+                if (element.value == 'Keep' || element.value == 'Delete') {
+                    return false;
+                }
+                break;
+        }
+        return true;
+    }
+    // calculation related functions
+    function fillSubTotalRows() {
+        for (var key in subTotalsMap){
+            for (var fieldIndex = 0; fieldIndex < gridFields.length; fieldIndex++) {
+                var field = gridFields[fieldIndex];
+                assignSubTotal(key, field.fieldName);
+                if (key.includes('-')) {
+                    var subTotal = subTotalsMap[key][field.fieldName];
+                    var splitKey = key.split('-');
+                    calculateParentTotalSum(splitKey[1], splitKey[0] + '-' + field.fieldName, subTotal);
+                }
+            }
+        }
+    }
+    
+    function assignSubTotal(key, fieldName) {
+        var subTotal = subTotalsMap[key][fieldName];
+        var subTotalCell = document.getElementsByClassName(key + '-' + fieldName);
+        if (subTotal != null && subTotalCell != null && typeof subTotalCell !== 'undefined' && subTotalCell.length > 0) {
+            subTotalCell[0].getElementsByTagName('span')[0].textContent = formatNumber(subTotal, gridFieldsMap.get(fieldName).scale);
+        }
+    }
+    
+    function updateFieldSubTotal(result, fieldName) {
+        var key = result.Assortment_BU__c + '-' + result.Category__c;
+        var newValue = 0;
+        var oldValue = 0;
+        var diffValue = 0;
+        var cell = $('.' + result.Id + '-' + fieldName)[0];
+        if (cell != null && cell !== 'undefined') {
+            var newValueElement = cell.childNodes[0];
+            if (newValueElement.tagName === 'INPUT') {
+                newValue = stringToDecimal(newValueElement.value);
+            } else if (newValueElement.tagName === 'SPAN') {
+                newValue = stringToDecimal(newValueElement.textContent);
+            }
+            span = $('.' + result.Id + '-' + fieldName + '-oldValue')[0];
+            if (span != null && span !== 'undefined') {
+                oldValue = stringToDecimal(span.textContent);
+            }
+            diffValue  = newValue - oldValue;
+            var total = subTotalsMap[key][fieldName];
+            // set the current value as the old value
+            if (span != null && span !== 'undefined') {
+                span.textContent = formatNumber(newValue, gridFieldsMap.get(fieldName).scale);
+            }
+            var keys = [key, result.Product__c, 'conso-' + result.Category__c];
+            for (var keyIndex = 0; keyIndex < keys.length; keyIndex++) {
+                key = keys[keyIndex];
+                if (subTotalsMap.hasOwnProperty(key) && subTotalsMap[key].hasOwnProperty(fieldName)) {
+                    var total = subTotalsMap[key][fieldName];
+                    subTotalsMap[key][fieldName] = total + diffValue;
+                    assignSubTotal(key, fieldName);
+                }        
+            }
+        }
+    }
+    
+    function calculateParentTotalSum(categoryId, columnName, newValue) {
+        var nodeKey = categoryId;
+        var tree = $("#treegrid").fancytree("getTree");
+        var node = tree.getNodeByKey(nodeKey);
+        if (node != null) {
+            $tdList = $(node.tr).find(">td");
+            var oldValue = node.data.sums[columnName];
+            var diffValue = newValue - oldValue;
+            var column = $tdList.eq(totalColumnsMap.get(columnName));
+            var fieldName = columnName.split('-')[1];
+            column.text(formatNumber(newValue, gridFieldsMap.get(fieldName).scale));
+            node.data.sums[columnName] = newValue;
+            node = node.parent;
+            while(node != null && node.title != 'root') {
+                $tdList = $(node.tr).find(">td");
+                var oldValue = isNaN(node.data.sums[columnName]) ? 0 : node.data.sums[columnName];
+                var newValue = oldValue + diffValue;
+                var column = $tdList.eq(totalColumnsMap.get(columnName));
+                var fieldName = columnName.split('-')[1];
+                column.text(formatNumber(newValue, gridFieldsMap.get(fieldName).scale));
+                node.data.sums[columnName] = newValue;
+                node = node.parent;
+            }
+        }
+    }
+    //
+    function registerChange(e, assortmentDetailId, fieldName) {
+        var field = gridFieldsMap.get(fieldName);
+        var value = e.value;
+        if (fieldName === 'Client_Status__c') {
+            if (value === initialAssortmentDetailsMap.get(assortmentDetailId)['Client_Status__c']) {
+                assortmentDetailsMap[assortmentDetailId]['Ass_BU_Cluster__c'] = initialAssortmentDetailsMap.get(assortmentDetailId)['Ass_BU_Cluster__c'];
+            }
+            if (value === 'Delete') {
+                assortmentDetailsMap[assortmentDetailId]['Ass_BU_Cluster__c'] = null;
+            }
+            disableClientStatusOptions(e, assortmentDetailId);
+        }
+        
+        if (fieldName != 'Ass_BU_Cluster__c') {
+            switch (field.stringFieldType) {
+                case 'REFERENCE':
+                    value = e.parentNode.parentNode.childNodes[0].value;
+                    break;
+                case 'INTEGER':
+                    value = parseInt(value);
+                    break;
+                case 'DOUBLE': case 'CURRENCY':case 'PERCENT':
+                    value = parseFloat(stringToDecimal(value));
+                    break;
+                case 'DATE':
+                    value = moment(value, getDateFormat().toUpperCase()).format('YYYY-MM-DD');
+                    break;
+            }
+        }
+        var initialDetail = initialAssortmentDetailsMap[assortmentDetailId];
+        var changedDetail = assortmentDetailsMap[assortmentDetailId];
+        changedDetail[fieldName] = value;
+        if (JSON.stringify(initialDetail) !== JSON.stringify(changedDetail)) {
+            if (!changedAssortmentDetailsIdSet.includes(assortmentDetailId)) {
+                changedAssortmentDetailsIdSet.push(assortmentDetailId);
+                changedAssortmentDetails.push(changedDetail);
+            }
+        } else if (changedAssortmentDetailsIdSet.includes(assortmentDetailId)) {
+            var index = changedAssortmentDetailsIdSet.indexOf(assortmentDetailId)
+            changedAssortmentDetailsIdSet.splice(index, 1);
+            changedAssortmentDetails.splice(index, 1);
+        }
+        calculateKPI(changedDetail);
+    }
+    
+    function save() {
+        var assortmentDetailsList_serialized = JSON.stringify(changedAssortmentDetails);
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.AssortmentMatrixComparatorController.save}',
+            assortmentDetailsList_serialized, gridFields_serialized, function(result, event) {
+                saveCallback(result);
+            }, 
+            {escape : false}
+        );
+    }
+    
+    function saveCallback(result) {
+        alert(result);
+        for (var index = 0; index < changedAssortmentDetailsIdSet.length; index++) {
+            initialAssortmentDetailsMap.set(changedAssortmentDetailsIdSet[index],
+                                            assortmentDetailsMap[changedAssortmentDetailsIdSet[index]]);
+        }
+        changedAssortmentDetailsIdSet = [];
+        afterRerender();
+    }
+    
+    function calculateKPI(assortmentDetail) {
+        $(document).find('body').css('cursor', 'wait');
+        assortmentDetail = JSON.stringify(assortmentDetail);
+        
+        Visualforce.remoting.Manager
+        .invokeAction(
+            '{!$RemoteAction.AssortmentMatrixComparatorController.calculateKPI}',
+            assortmentDetail, gridFields_serialized, function(
+                result, event) {
+                // change cursor
+                calculateKPICallback(result);
+            }, {
+                escape : false
+            });
+    }
+    
+    function calculateKPICallback(result) {
+        for (var index = 0; index < gridFields.length; index++) {
+            var field = gridFields[index];
+            if (!field.isReference && field.fieldType != 'DATE') {
+                var fieldName = field.fieldName;
+                var childNode = $('.' + result.Id + '-' + fieldName)[0].childNodes[0];
+                if (childNode != null && childNode !== 'undefined') {
+                    if (childNode.tagName === 'INPUT') {
+                        childNode.value = formatNumber(result[fieldName], field.scale);
+                    } else if (childNode.tagName === 'SPAN') {
+                        childNode.textContent = formatNumber(result[fieldName], field.scale);
+                    } else if (childNode.tagName === 'SELECT') {
+                        childNode.value = result[fieldName];
+                        if (fieldName === 'Client_Status__c') {
+                            disableClientStatusOptions(childNode, result.Id);
+                        }
+                    }
+                    updateFieldSubTotal(result, fieldName);
+                }
+            }
+        }
+        $(document).find('body').css('cursor', 'default');
+    }
+    
+    function firstPage() {
+        var changedAssortmentDetailsIdSet_serialized = JSON.stringify(changedAssortmentDetailsIdSet);
+        first(changedAssortmentDetailsIdSet_serialized);
+    }
+    
+    function nextPage() {
+        var changedAssortmentDetailsIdSet_serialized = JSON.stringify(changedAssortmentDetailsIdSet);
+        next(changedAssortmentDetailsIdSet_serialized);
+    }
+    
+    function previousPage() {
+        var changedAssortmentDetailsIdSet_serialized = JSON.stringify(changedAssortmentDetailsIdSet);
+        previous(changedAssortmentDetailsIdSet_serialized);
+    }
+    
+    function lastPage() {
+        var changedAssortmentDetailsIdSet_serialized = JSON.stringify(changedAssortmentDetailsIdSet);
+        last(changedAssortmentDetailsIdSet_serialized);
+    }
+    
+    function refreshPageSize_js() {
+        var changedAssortmentDetailsIdSet_serialized = JSON.stringify(changedAssortmentDetailsIdSet);
+        refreshPageSize(changedAssortmentDetailsIdSet_serialized);
+    }
+    
+    function confirmAssortmentValidation(assortmentId, assortmentName) {
+        var confirmStatus = confirm(assortmentName + ': {!JSENCODE($Label.MSG_Confirm_Change_Status)}');
+        if(confirmStatus) {
+            validateAssortment(assortmentId);
+        }
+    }
+    // remove focus from DatePicker
+    function setFocusOnLoad() {}
+    
+    function applyFilters() {
+        var searchTerm = $('#searchBox').val();
+        search(searchTerm);
+    }
+    
+    function applyScopeFilters() {
+        var selectedRecordType = document.getElementById('Nego').checked ? 'Nego' : 'Target';
+        changePageScope(selectedRecordType);
+    }
+    
+    function toggleTotalsTree() {
+        showGrid = !showGrid;
+        renderTree();
+    }
+    
+    function renderTree() {
+        if (showGrid) {
+            $('.treegrid-container').addClass('hide');
+        } else {
+            $('.treegrid-container').removeClass('hide'); 
+        }
+    }
+    
+    function cancel() {
+        var isClassic = {!$User.UIThemeDisplayed == 'Theme2' || $User.UIThemeDisplayed == 'Theme3'};
+        var returnUrl = isClassic ? '/home/home.jsp' : '/one/one.app';
+        window.open(returnUrl,"_self");
+    }
+    
+    function reload() {
+        location.reload();        
+    }
+    
+    // utils
+    function stringToDecimal(str) {
+        if (str == null) return 0;
+        var d = str.toString().replace(/&nbsp/g, "").replace(/;/g,'');
+        d = d.replace(/\s/g, "");
+        if(decimalSeparator == ',') {
+            d = d.replace(",", ".");
+        }
+        else {
+            d = d.replace(/,/g, "");
+        }
+        if (!isNaN(d) && d.length !== 0) {
+            return parseFloat(d);
+        }
+        return 0;
+    }
+    
+    function formatNumber(num, scale) {
+        if (num == null || isNaN(num) || num.length == 0) num = 0;
+        if (scale == 0)
+            num = parseInt(num);
+        else {
+            num = num.toFixed(scale);
+        }
+        var formatedValue = negoptimApp.formatCurrency(num);
+        if (scale > 0) {
+            formatedValue = formatedValue.split(decimalSeparator)[0] + decimalSeparator + num.split('.')[1];
+        }
+        return formatedValue;
+    }
+    
+    function getDateFormat() {
+        return formats[negoptimApp.locale] || 'dd/MM/yyyy';
+    }
+    
+    var formats = {
+        "ar-SA" : "dd/MM/yy",
+        "bg-BG" : "dd.M.yyyy",
+        "ca-ES" : "dd/MM/yyyy",
+        "zh-TW" : "yyyy/M/d",
+        "cs-CZ" : "d.M.yyyy",
+        "da-DK" : "dd-MM-yyyy",
+        "de-DE" : "dd.MM.yyyy",
+        "el-GR" : "d/M/yyyy",
+        "en-US" : "M/d/yyyy",
+        "fi-FI" : "d.M.yyyy",
+        "fr-FR" : "dd/MM/yyyy",
+        "he-IL" : "dd/MM/yyyy",
+        "hu-HU" : "yyyy. MM. dd.",
+        "is-IS" : "d.M.yyyy",
+        "it-IT" : "dd/MM/yyyy",
+        "ja-JP" : "yyyy/MM/dd",
+        "ko-KR" : "yyyy-MM-dd",
+        "nl-NL" : "d-M-yyyy",
+        "nb-NO" : "dd.MM.yyyy",
+        "pl-PL" : "yyyy-MM-dd",
+        "pt-BR" : "d/M/yyyy",
+        "ro-RO" : "dd.MM.yyyy",
+        "ru-RU" : "dd.MM.yyyy",
+        "hr-HR" : "d.M.yyyy",
+        "sk-SK" : "d. M. yyyy",
+        "sq-AL" : "yyyy-MM-dd",
+        "sv-SE" : "yyyy-MM-dd",
+        "th-TH" : "d/M/yyyy",
+        "tr-TR" : "dd.MM.yyyy",
+        "ur-PK" : "dd/MM/yyyy",
+        "id-ID" : "dd/MM/yyyy",
+        "uk-UA" : "dd.MM.yyyy",
+        "be-BY" : "dd.MM.yyyy",
+        "sl-SI" : "d.M.yyyy",
+        "et-EE" : "d.MM.yyyy",
+        "lv-LV" : "yyyy.MM.dd.",
+        "lt-LT" : "yyyy.MM.dd",
+        "fa-IR" : "MM/dd/yyyy",
+        "vi-VN" : "dd/MM/yyyy",
+        "hy-AM" : "dd.MM.yyyy",
+        "az-Latn-AZ" : "dd.MM.yyyy",
+        "eu-ES" : "yyyy/MM/dd",
+        "mk-MK" : "dd.MM.yyyy",
+        "af-ZA" : "yyyy/MM/dd",
+        "ka-GE" : "dd.MM.yyyy",
+        "fo-FO" : "dd-MM-yyyy",
+        "hi-IN" : "dd-MM-yyyy",
+        "ms-MY" : "dd/MM/yyyy",
+        "kk-KZ" : "dd.MM.yyyy",
+        "ky-KG" : "dd.MM.yy",
+        "sw-KE" : "M/d/yyyy",
+        "uz-Latn-UZ" : "dd/MM yyyy",
+        "tt-RU" : "dd.MM.yyyy",
+        "pa-IN" : "dd-MM-yy",
+        "gu-IN" : "dd-MM-yy",
+        "ta-IN" : "dd-MM-yyyy",
+        "te-IN" : "dd-MM-yy",
+        "kn-IN" : "dd-MM-yy",
+        "mr-IN" : "dd-MM-yyyy",
+        "sa-IN" : "dd-MM-yyyy",
+        "mn-MN" : "yy.MM.dd",
+        "gl-ES" : "dd/MM/yy",
+        "kok-IN" : "dd-MM-yyyy",
+        "syr-SY" : "dd/MM/yyyy",
+        "dv-MV" : "dd/MM/yy",
+        "ar-IQ" : "dd/MM/yyyy",
+        "zh-CN" : "yyyy/M/d",
+        "de-CH" : "dd.MM.yyyy",
+        "en-GB" : "dd/MM/yyyy",
+        "es-MX" : "dd/MM/yyyy",
+        "fr-BE" : "d/MM/yyyy",
+        "it-CH" : "dd.MM.yyyy",
+        "nl-BE" : "d/MM/yyyy",
+        "nn-NO" : "dd.MM.yyyy",
+        "pt-PT" : "dd-MM-yyyy",
+        "sr-Latn-CS" : "d.M.yyyy",
+        "sv-FI" : "d.M.yyyy",
+        "az-Cyrl-AZ" : "dd.MM.yyyy",
+        "ms-BN" : "dd/MM/yyyy",
+        "uz-Cyrl-UZ" : "dd.MM.yyyy",
+        "ar-EG" : "dd/MM/yyyy",
+        "zh-HK" : "d/M/yyyy",
+        "de-AT" : "dd.MM.yyyy",
+        "en-AU" : "d/MM/yyyy",
+        "es-ES" : "dd/MM/yyyy",
+        "fr-CA" : "yyyy-MM-dd",
+        "sr-Cyrl-CS" : "d.M.yyyy",
+        "ar-LY" : "dd/MM/yyyy",
+        "zh-SG" : "d/M/yyyy",
+        "de-LU" : "dd.MM.yyyy",
+        "en-CA" : "dd/MM/yyyy",
+        "es-GT" : "dd/MM/yyyy",
+        "fr-CH" : "dd.MM.yyyy",
+        "ar-DZ" : "dd-MM-yyyy",
+        "zh-MO" : "d/M/yyyy",
+        "de-LI" : "dd.MM.yyyy",
+        "en-NZ" : "d/MM/yyyy",
+        "es-CR" : "dd/MM/yyyy",
+        "fr-LU" : "dd/MM/yyyy",
+        "ar-MA" : "dd-MM-yyyy",
+        "en-IE" : "dd/MM/yyyy",
+        "es-PA" : "MM/dd/yyyy",
+        "fr-MC" : "dd/MM/yyyy",
+        "ar-TN" : "dd-MM-yyyy",
+        "en-ZA" : "yyyy/MM/dd",
+        "es-DO" : "dd/MM/yyyy",
+        "ar-OM" : "dd/MM/yyyy",
+        "en-JM" : "dd/MM/yyyy",
+        "es-VE" : "dd/MM/yyyy",
+        "ar-YE" : "dd/MM/yyyy",
+        "en-029" : "MM/dd/yyyy",
+        "es-CO" : "dd/MM/yyyy",
+        "ar-SY" : "dd/MM/yyyy",
+        "en-BZ" : "dd/MM/yyyy",
+        "es-PE" : "dd/MM/yyyy",
+        "ar-JO" : "dd/MM/yyyy",
+        "en-TT" : "dd/MM/yyyy",
+        "es-AR" : "dd/MM/yyyy",
+        "ar-LB" : "dd/MM/yyyy",
+        "en-ZW" : "M/d/yyyy",
+        "es-EC" : "dd/MM/yyyy",
+        "ar-KW" : "dd/MM/yyyy",
+        "en-PH" : "M/d/yyyy",
+        "es-CL" : "dd-MM-yyyy",
+        "ar-AE" : "dd/MM/yyyy",
+        "es-UY" : "dd/MM/yyyy",
+        "ar-BH" : "dd/MM/yyyy",
+        "es-PY" : "dd/MM/yyyy",
+        "ar-QA" : "dd/MM/yyyy",
+        "es-BO" : "dd/MM/yyyy",
+        "es-SV" : "dd/MM/yyyy",
+        "es-HN" : "dd/MM/yyyy",
+        "es-NI" : "dd/MM/yyyy",
+        "es-PR" : "dd/MM/yyyy",
+        "am-ET" : "d/M/yyyy",
+        "tzm-Latn-DZ" : "dd-MM-yyyy",
+        "iu-Latn-CA" : "d/MM/yyyy",
+        "sma-NO" : "dd.MM.yyyy",
+        "mn-Mong-CN" : "yyyy/M/d",
+        "gd-GB" : "dd/MM/yyyy",
+        "en-MY" : "d/M/yyyy",
+        "prs-AF" : "dd/MM/yy",
+        "bn-BD" : "dd-MM-yy",
+        "wo-SN" : "dd/MM/yyyy",
+        "rw-RW" : "M/d/yyyy",
+        "qut-GT" : "dd/MM/yyyy",
+        "sah-RU" : "MM.dd.yyyy",
+        "gsw-FR" : "dd/MM/yyyy",
+        "co-FR" : "dd/MM/yyyy",
+        "oc-FR" : "dd/MM/yyyy",
+        "mi-NZ" : "dd/MM/yyyy",
+        "ga-IE" : "dd/MM/yyyy",
+        "se-SE" : "yyyy-MM-dd",
+        "br-FR" : "dd/MM/yyyy",
+        "smn-FI" : "d.M.yyyy",
+        "moh-CA" : "M/d/yyyy",
+        "arn-CL" : "dd-MM-yyyy",
+        "ii-CN" : "yyyy/M/d",
+        "dsb-DE" : "d. M. yyyy",
+        "ig-NG" : "d/M/yyyy",
+        "kl-GL" : "dd-MM-yyyy",
+        "lb-LU" : "dd/MM/yyyy",
+        "ba-RU" : "dd.MM.yy",
+        "nso-ZA" : "yyyy/MM/dd",
+        "quz-BO" : "dd/MM/yyyy",
+        "yo-NG" : "d/M/yyyy",
+        "ha-Latn-NG" : "d/M/yyyy",
+        "fil-PH" : "M/d/yyyy",
+        "ps-AF" : "dd/MM/yy",
+        "fy-NL" : "d-M-yyyy",
+        "ne-NP" : "M/d/yyyy",
+        "se-NO" : "dd.MM.yyyy",
+        "iu-Cans-CA" : "d/M/yyyy",
+        "sr-Latn-RS" : "d.M.yyyy",
+        "si-LK" : "yyyy-MM-dd",
+        "sr-Cyrl-RS" : "d.M.yyyy",
+        "lo-LA" : "dd/MM/yyyy",
+        "km-KH" : "yyyy-MM-dd",
+        "cy-GB" : "dd/MM/yyyy",
+        "bo-CN" : "yyyy/M/d",
+        "sms-FI" : "d.M.yyyy",
+        "as-IN" : "dd-MM-yyyy",
+        "ml-IN" : "dd-MM-yy",
+        "en-IN" : "dd-MM-yyyy",
+        "or-IN" : "dd-MM-yy",
+        "bn-IN" : "dd-MM-yy",
+        "tk-TM" : "dd.MM.yy",
+        "bs-Latn-BA" : "d.M.yyyy",
+        "mt-MT" : "dd/MM/yyyy",
+        "sr-Cyrl-ME" : "d.M.yyyy",
+        "se-FI" : "d.M.yyyy",
+        "zu-ZA" : "yyyy/MM/dd",
+        "xh-ZA" : "yyyy/MM/dd",
+        "tn-ZA" : "yyyy/MM/dd",
+        "hsb-DE" : "d. M. yyyy",
+        "bs-Cyrl-BA" : "d.M.yyyy",
+        "tg-Cyrl-TJ" : "dd.MM.yy",
+        "sr-Latn-BA" : "d.M.yyyy",
+        "smj-NO" : "dd.MM.yyyy",
+        "rm-CH" : "dd/MM/yyyy",
+        "smj-SE" : "yyyy-MM-dd",
+        "quz-EC" : "dd/MM/yyyy",
+        "quz-PE" : "dd/MM/yyyy",
+        "hr-BA" : "d.M.yyyy.",
+        "sr-Latn-ME" : "d.M.yyyy",
+        "sma-SE" : "yyyy-MM-dd",
+        "en-SG" : "d/M/yyyy",
+        "ug-CN" : "yyyy-M-d",
+        "sr-Cyrl-BA" : "d.M.yyyy",
+        "es-US" : "M/d/yyyy"
+    };
+    function setSticky() {
+        var tableHeader = $('.grid-container table thead');
+        var trs = $(tableHeader).find('tr');
+        var sumTrHeights = 0;
+        var fixedColumnsCount = 5;
+        for (var index = 0 ; index < trs.length ; index++) {
+            var leftPosition = 0;
+            var ths = $(trs[index]).find('th');
+            for (var index2 = 0 ; index2 < ths.length ; index2++) {
+                var style = {};
+                style["top"] = sumTrHeights;
+                style["position"] = "sticky";
+                if (index === 0 && index2 < fixedColumnsCount) {
+                    style["z-index"] = 6;
+                    style["left"] = leftPosition + 'px';
+                    leftPosition = leftPosition + $(ths[index2]).outerWidth();
+                } else {
+                    style["z-index"] = 5;
+                }
+                $(ths[index2]).css(style);
+            }
+            sumTrHeights += $(trs[index]).outerHeight();
+        }
+        var tableHeaderHeight = tableHeader.outerHeight();
+        var tableBody = $('.grid-container table tbody');
+        trs = $(tableBody).find('tr');
+        for (var index = 0; index < trs.length; index++) {
+            if ($(trs[index]).hasClass('sticky-category-row')) {
+                var tds = $(trs[index]).find('td');
+                for (var i = 0; i < tds.length; i++) {
+                    var Cell = tds[i];
+                    if (i === 0) {
+                        $(Cell).attr('style', 'top: ' + tableHeaderHeight + 'px !important; z-index: 4; text-align:left !important; position: sticky !important; left: 0px !important;');
+                    } else {
+                        $(Cell).attr('style', 'top: ' + tableHeaderHeight + 'px !important; z-index: 2; position: sticky !important;');
+                    }
+                }
+            } else {
+                var leftPosition = 0;
+                var tds = $(trs[index]).find('td');
+                for (var j = 0; j < tds.length && j < fixedColumnsCount; j++) {
+                    $(tds[j]).css({left: leftPosition, "position" : 'sticky', 'z-index' : 3});
+                    leftPosition = leftPosition + $(tds[j]).outerWidth();
+                }
+            }
+        }
+    }
+    </script>
+</apex:page>

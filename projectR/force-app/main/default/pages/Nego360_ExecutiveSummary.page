@@ -1,0 +1,253 @@
+<apex:page controller="Nego360_ExecutiveSummary_Controller" lightningStylesheets="true" tabStyle="Negotiate__tab">
+    <apex:stylesheet value="{!URLFOR($Resource.fontawesome, 'css/font-awesome.min.css') }" />
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css') }" />
+    
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"/>
+    <apex:includeScript value="{!URLFOR($Resource.Assets, 'assets/js/app.js')}"/>
+    <script type="text/javascript">
+    	negoptimApp = new App('{!locale}', '{!localeDecimalSeparator}');
+    </script>
+    
+    <apex:pageMessages id="messages" />
+    
+    <apex:sectionHeader title="{!$ObjectType.Contract__c.Label}" subtitle="{!$Label.LBL_Executive_Summary}" />
+    
+    <apex:form rendered="{!errors.size == 0}">
+        <apex:pageBlock id="pageBlock" title="{!simulationContract.Name}">
+            <apex:pageBlockButtons style="float: right;">
+                <apex:commandButton action="{!back}" value="{!$Label.Cancel}" />
+                <apex:outputLink style="font-size: 20px;" value="/" target="_blank" title="Print" >
+                    <i class="fa fa-print"></i>
+                </apex:outputLink>
+                <apex:outputLink style="font-size: 20px;" value="/apex/Nego360_ExecutiveSummary_Pdf?id={!simulationContract.Id}" target="_blank" title="Preview" >
+                    <i class="fa fa-eye"></i>
+                </apex:outputLink>
+                <apex:commandLink rendered="{!showSendApprovalButton}" reRender="pageBlock,messages" style="font-size: 20px;" action="{!submitApproval}" title="Submit Approval" status="globalloading">
+                    <i class="fa fa-send"></i>
+                </apex:commandLink>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection rendered="{!errors.size == 0}" collapsible="false" columns="2">
+                <apex:outputField value="{!simulationContract.Contract_BU__c}" />
+                <apex:outputText value="{!simulationContract.Reference_Year__c}" />
+                <apex:outputField value="{!simulationContract.Supplier__c}" />
+                <apex:outputText label="{!$Label.LBL_Date_of_Submit_for_approval}"
+                                 value="{!IF(contractProcessInstance != null && contractProcessInstance.Status == 'Pending', contractProcessInstance.CreatedDate, '')}" />
+                <apex:outputField value="{!simulationContract.Supplier_Nego_Scope__c}" />
+                <apex:outputText label="{!$Label.LBL_Status_validation}" value="1/2" />
+            </apex:pageBlockSection>
+            <apex:pageBlockSection rendered="{!errors.size == 0}" columns="2">
+                <apex:pageBlockSection showHeader="false" collapsible="false" columns="2">
+                    <apex:outputText label="{!$Label.LBL_NS_Dpt_rank}" value="1" />
+                    <apex:outputText label="{!$Label.LBL_Dpt_Weight}" value="35.2%" />
+                    <apex:outputText label="{!$Label.LBL_NS_Supplier_rank}" value="1" />
+                    <apex:outputText label="{!$Label.LBL_Supplier_Weight}" value="35.2%" />
+                </apex:pageBlockSection>
+                <apex:pageBlockSection showHeader="false" collapsible="false" columns="1">
+                    <apex:pageBlockSectionItem dataStyle="color:green">
+                        <apex:outputText value="{!$Label.LBL_Catman}: " />
+                        <i class="fa fa-smile-o" aria-hidden="true"></i>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem dataStyle="color:green">
+                        <apex:outputText value="{!$Label.LBL_Head_Of_Department}: " />
+                        <i class="fa fa-smile-o" aria-hidden="true"></i>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem dataStyle="color:blue">
+                        <apex:outputText value="{!$Label.LBL_Country_Finance}: " />
+                        <i class="fa fa-meh-o" aria-hidden="true"></i>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+            </apex:pageBlockSection>
+            
+            <apex:panelGrid columnClasses="column-left,column-right" columns="2">
+                <apex:pageBlock rendered="{!errors.size == 0}" id="blockA">
+                    <apex:pageBlockButtons rendered="{!currentContract.Secure_Multiyear__c == '2 years' || currentContract.Secure_Multiyear__c == '3 years'}"
+                                           location="top" style="float: right;">
+                        <apex:actionRegion >
+                            <apex:selectRadio value="{!selectedMultiYearOption}" layout="">
+                                <apex:actionSupport event="onchange"  rerender="conditionSummary,conditionDetails" status="globalloading" action="{!changeYear}" />
+                                <apex:selectOptions value="{!ListMultiYear}"/>
+                            </apex:selectRadio>
+                        </apex:actionRegion>
+                    </apex:pageBlockButtons>
+                    <apex:pageBlockTable value="{!gswList}" var="item">
+                        <apex:column width="40%" value="{!item.label}">
+                        </apex:column>
+                        <apex:column width="30%">
+                            <apex:outputText value="{!item.sValueRef}" />
+                        </apex:column>
+                        <apex:column width="30%">
+                            <apex:outputText value="{!item.sValueNew}" />
+                        </apex:column>
+                        <!-- Header Generated automatically -->
+                    </apex:pageBlockTable>
+                    <apex:pageBlockTable id="conditionSummary" style="min-width: 500px;" value="{!executiveSummaryMap}" var="item">
+                        <apex:column width="20%" value="{!item.conditionName}">
+                            <apex:facet name="header">{!$Label.LBL_Type}</apex:facet>
+                        </apex:column>
+                        <apex:column width="20%" value="{!item.negoscopeName}">
+                            <apex:facet name="header">{!$ObjectType.Contract__c.fields.Supplier_Nego_Scope__c.Label}</apex:facet>
+                        </apex:column>
+                        <apex:column width="25%">
+                            <apex:facet name="header">{!$Label.LBL_Reference_contract}</apex:facet>
+                            <apex:outputText value="{!item.sPercentageRef}" />
+                            <apex:outputText rendered="{!item.valueRef != 0}">&nbsp;|&nbsp;</apex:outputText>
+                            <apex:outputText rendered="{!item.valueRef != 0}" value="{!item.sValueRef}" />
+                        </apex:column>
+                        <apex:column width="25%">
+                            <apex:facet name="header">{!$Label.LBL_New_contract}</apex:facet>
+                            <apex:outputText value="{!item.sPercentageNew}" />
+                            <apex:outputText rendered="{!item.valueNew != 0}">&nbsp;|&nbsp;</apex:outputText>
+                            <apex:outputText rendered="{!item.valueNew != 0}" value="{!item.sValueNew}" />
+                        </apex:column>
+                        <apex:column >
+                            <apex:outputPanel rendered="{!item.percentageStatus != NULL}">
+                                <apex:outputText rendered="{!item.percentageStatus > 0}"><i class="fa fa-arrow-circle-up" style="color:green" aria-hidden="true"></i></apex:outputText>
+                                <apex:outputText rendered="{!item.percentageStatus < 0}"><i class="fa fa-arrow-circle-down" style="color:red" aria-hidden="true"></i></apex:outputText>
+                                <apex:outputText rendered="{!item.percentageStatus == 0}"><i class="fa fa-arrow-right" style="color:grey" aria-hidden="true"></i></apex:outputText>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!item.valueStatus != NULL}">
+                                &nbsp;
+                                <apex:outputText rendered="{!item.valueStatus > 0}"><i class="fa fa-arrow-circle-up" style="color:green" aria-hidden="true"></i></apex:outputText>
+                                <apex:outputText rendered="{!item.valueStatus < 0}"><i class="fa fa-arrow-circle-down" style="color:red" aria-hidden="true"></i></apex:outputText>
+                                <apex:outputText rendered="{!item.valueStatus == 0}"><i class="fa fa-arrow-right" style="color:grey" aria-hidden="true"></i></apex:outputText>
+                            </apex:outputPanel>
+                        </apex:column>
+                        <!-- Header Generated automatically -->
+                    </apex:pageBlockTable>
+                    <apex:outputPanel id="conditionDetails">
+                        <apex:repeat value="{!executiveSummaryMap}" var="key">
+                            <apex:pageBlockTable headerClass="hidden-table-header" value="{!executiveSummaryMap[key]}" var="keyvalue">
+                                <apex:facet name="caption"><br /><strong style="float:left">{!key.conditionName} - ({!key.negoscopeName})</strong></apex:facet>
+                                <apex:column width="40%" value="{!keyvalue.conditionName}">
+                                </apex:column>
+                                <apex:column width="25%">
+                                    <apex:outputText value="{!keyvalue.sPercentageRef}" />
+                                    <apex:outputText rendered="{!keyvalue.valueRef != 0}">&nbsp;|&nbsp;</apex:outputText>
+                                    <apex:outputText rendered="{!keyvalue.valueRef != 0}" value="{!keyvalue.sValueRef}" />
+                                </apex:column>
+                                <apex:column width="25%">
+                                    <apex:outputText value="{!keyvalue.sPercentageNew}" />
+                                    <apex:outputText rendered="{!keyvalue.valueNew != 0}">&nbsp;|&nbsp;</apex:outputText>
+                                    <apex:outputText rendered="{!keyvalue.valueNew != 0}" value="{!keyvalue.sValueNew}" />
+                                </apex:column>
+                                <apex:column >
+                                    <apex:outputPanel rendered="{!keyvalue.percentageStatus != NULL}">
+                                        <apex:outputText rendered="{!keyvalue.percentageStatus > 0}"><i class="fa fa-arrow-circle-up" style="color:green" aria-hidden="true"></i></apex:outputText>
+                                        <apex:outputText rendered="{!keyvalue.percentageStatus < 0}"><i class="fa fa-arrow-circle-down" style="color:red" aria-hidden="true"></i></apex:outputText>
+                                        <apex:outputText rendered="{!keyvalue.percentageStatus == 0}"><i class="fa fa-arrow-right" style="color:grey" aria-hidden="true"></i></apex:outputText>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!keyvalue.valueStatus != NULL}">
+                                        &nbsp;
+                                        <apex:outputText rendered="{!keyvalue.valueStatus > 0}"><i class="fa fa-arrow-circle-up" style="color:green" aria-hidden="true"></i></apex:outputText>
+                                        <apex:outputText rendered="{!keyvalue.valueStatus < 0}"><i class="fa fa-arrow-circle-down" style="color:red" aria-hidden="true"></i></apex:outputText>
+                                        <apex:outputText rendered="{!keyvalue.valueStatus == 0}"><i class="fa fa-arrow-right" style="color:grey" aria-hidden="true"></i></apex:outputText>
+                                    </apex:outputPanel>
+                                </apex:column>
+                            </apex:pageBlockTable>
+                        </apex:repeat>
+                    </apex:outputPanel>
+                </apex:pageBlock>
+                <apex:pageblock rendered="{!errors.size == 0}" id="blockB">
+                    <apex:pageBlockSection title="{!$ObjectType.Nego_Plan__c.fields.NEGO_Keynote_Marketing_Plan__c.Label}" collapsible="false" columns="1">
+                        <apex:outputText style="width: 20%" label="" value="{!negoPlan.NEGO_Keynote_Marketing_Plan__c}" />
+                    </apex:pageBlockSection>
+                </apex:pageblock>
+            </apex:panelGrid>
+            <!-- Progressive Rebates -->
+            <apex:panelGrid rendered="{!errors.size == 0}" title="Details of Progressive Rebates" style="width:100%" columns="1">
+                <apex:facet name="header">Details of Progressive Rebates</apex:facet>
+                <apex:pageBlockTable title="{!$Label.LBL_Reference_contract}" value="{!refProgressiveConditions}" var="item">
+                    <apex:facet name="header"><div style="text-align: left;">{!$Label.LBL_Reference_contract}</div></apex:facet>
+                    <apex:column value="{!item.Condition_Type__r.Name}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_1__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_1__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_2__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_2__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_3__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_3__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_4__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_4__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_5__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_5__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_6__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_6__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Product_Scope__r.Name}">
+                    </apex:column>
+                </apex:pageBlockTable>
+                <apex:pageBlockTable title="{!$Label.LBL_New_contract}" value="{!newProgressiveConditions}" var="item">
+                    <apex:facet name="header"><div style="text-align: left;">{!$Label.LBL_New_contract}</div></apex:facet>
+                    <apex:column value="{!item.Condition_Type__r.Name}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_1__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_1__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_2__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_2__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_3__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_3__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_4__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_4__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_5__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_5__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Slab_6__c}">
+                    </apex:column>
+                    <apex:column value="{!item.slab_per_6__c}">
+                    </apex:column>
+                    <apex:column value="{!item.Product_Scope__r.Name}">
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:panelGrid>
+            <apex:pageBlockSection rendered="{!errors.size == 0}" title="{!$Label.LBL_Exceptions_comments_in_contract}" id="exceptions" columns="1" collapsible="false">
+                <apex:outputField value="{!refContract.Default_Sales_Conditions__r.Return_Authorization1__c}" />
+                <apex:outputField value="{!refContract.Default_Sales_Conditions__r.Merchandiser_Authorization__c}" />
+            </apex:pageBlockSection>
+            <apex:pageBlockSection rendered="{!errors.size == 0}" title="{!$ObjectType.Nego_Plan__c.Label}" id="negotiation" columns="1" collapsible="false">
+                <apex:outputField value="{!negoPlan.NEGO_MOM_RDV1__c}" />
+                <apex:outputField value="{!negoPlan.NEGO_MOM_RDV2__c}" />
+                <apex:outputField value="{!negoPlan.NEGO_MOM_RDV3__c}" />
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+    
+    <apex:actionStatus id="globalloading">
+        <apex:facet name="start">
+            <div class="loading-overlay">
+                <div class="loader-img"></div>
+                <div class="loading-block">
+                    {!$Label.Loading}
+                </div>
+            </div>
+        </apex:facet>
+    </apex:actionStatus>
+    
+    <style>
+        .column-left {
+            width: 60%;
+        }
+        .column-right {
+            width: 40%;
+        }
+    </style>
+</apex:page>

@@ -1,0 +1,546 @@
+<apex:page standardController="Product2" extensions="UnitNeedProductMergeController" tabStyle="Product2"
+           recordSetVar="records" lightningStylesheets="false" showHeader="true" sidebar="false">
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"/>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"/>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/i18n/jquery-ui-i18n.min.js"/>
+    <apex:includeScript value="{!URLFOR($Resource.typeahead, 'typeahead.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}"/>
+    <style>
+        .popupBackground{
+        background-color:black;
+        opacity: 0.20;
+        filter: alpha(opacity = 20);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 9998;
+        }
+        .custPopup{
+        background-color: rgb(236, 235, 234);
+        border-width: 0.2px;
+        border-style: solid;
+        z-index: 9999;
+        left: 50%;
+        padding: 30px;
+        position: absolute;
+        width: 512px;
+        margin-left: -250px;
+        }
+        .popupTable{
+        overflow: auto;
+        max-height: 279px;
+        margin-bottom: 18px;
+        }
+        .popupDiv{
+        margin-bottom: 18px;
+        }
+        .relativeTable {
+        position: relative;
+        top: 0px;
+        }
+        .stickyCell {
+        position: sticky !important;
+        top: 0px;
+        z-index: 3;
+        }
+        .category{
+        background-color: #ccf2fd;
+        position: sticky !important;
+        top: 22.2px;
+        z-index: 3;
+        }
+        .messageCell{
+        vertical-align: middle;
+        line-height: 12px !important;
+        }
+        .text-center {
+        text-align:center !important;
+        vertical-align:middle;
+        }
+        .table-container {
+        overflow: auto;
+        }
+        .data-table-container {
+        overflow: auto;
+        }
+        .nego-logo img {
+        max-width: none !important;
+        width: 25px !important;
+        height: 25px !important;
+        }
+        .nego-logo img:hover {
+        max-width: none !important;
+        width: 200px !important;
+        height: 200px !important;
+        z-index: 5;
+        position: absolute;
+        left: 0;
+        top: -25px;
+        -webkit-transition: all 0.1s ease-in-out;
+        -moz-transition: all 0.1s ease-in-out;
+        -o-transition: all 0.1s ease-in-out;
+        transition: all 0.1s ease-in-out;
+        }
+        .collapsed {
+        display: none !important;
+        }
+        .selected-option {
+        background-color: #c1e0ff;
+        }
+        
+        .blank-cell {
+        background: repeating-linear-gradient(
+        45deg,
+        #7ad4ef 10px,
+        #ffffff 15px
+        );
+        width: 100%;
+        height: 15px;
+        display: inline-block;
+        }
+        .border-blue {
+        border: solid #1b5297 2px !important;
+        }
+        .input-text{
+        background-color: rgb(255, 255, 255);
+        border: 1px solid rgb(221, 219, 218);
+        border-radius: .25rem;
+        transition: border .1s linear,background-color .1s linear;
+        display: inline-block;
+        line-height: 1.875rem;
+        min-height: calc(1.875rem + (1px * 2));
+        padding-right:1px;
+        margin-right:3px !important;
+        }
+        .bPageBlock .detailList .data2Col {
+        padding-top: 1px !important;
+        padding-right: 2px;
+        padding-bottom: 1px !important;
+        padding-left: 0px !important;
+        text-align: left;
+        width: 82%;
+        }
+        .small-margin {
+        margin-right: .5rem !important;
+        }
+        .search-result {
+        background-color: white;
+        border: 1px solid #cccccc;
+        width: 350px;
+        padding: 3px;
+        }
+        
+    </style>
+    <apex:slds />
+    <apex:pageMessages id="messages" escape="false"/>
+    <div class="slds-m-around_small">
+        <div class="slds-page-header">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title slds-m-around_x-small">
+                    <div class="slds-media">
+                        <div class="slds-media__figure small-margin">
+                            <span class="slds-icon_container" title="{!$ObjectType.Product2.Label}">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     xmlns:xlink="http://www.w3.org/1999/xlink"
+                                     class="slds-icon slds-icon-text-default" aria-hidden="true" style="transform: rotate(90deg);" >
+                                    <use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/standard-sprite/svg/symbols.svg#merge')}"></use>
+                                </svg>
+                                <span class="slds-assistive-text">{!$ObjectType.Product2.Label}</span>
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <div class="slds-page-header__name">
+                                <div class="slds-page-header__name-title">
+                                    <h1>
+                                        <span class="slds-page-header__title slds-truncate" title="{!$Label.LBL_Merge_Unit_Need}">{!$Label.LBL_Merge_Unit_Need}</span>
+                                    </h1>
+                                </div>
+                            </div>
+                            <p class="slds-page-header__name-meta">{!$ObjectType.Product2.labelPlural}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> 
+        <apex:form Id="theForm">
+            <!-- global loading action status -->
+            <apex:actionStatus id="globalloading">
+                <apex:facet name="start">
+                    <div class="loading-overlay">
+                        <div class="loader-img"></div>
+                        <div class="loading-block">{!$Label.Loading}</div>
+                    </div>
+                </apex:facet>
+            </apex:actionStatus>
+            <apex:pageBlock Id="UnitNeedProductMergePage">
+                <apex:actionFunction action="{!refreshPageSize}" name="refreshPageSize" rerender="UnitNeedGrid, ProductsGrid, messages" status="globalloading" oncomplete="afterRerender();" />
+                <apex:actionFunction action="{!searchUnitNeed}" name="searchUnitNeeds" rerender="UnitNeedGrid" oncomplete="afterRerender();" status="globalloading"/>
+                <apex:actionFunction action="{!resetUnitNeed}" name="reset" rerender="UnitNeedGrid, messages" status="globalloading" oncomplete="afterRerender();"/>
+                <apex:actionFunction action="{!searchProducts}" name="searchProds" rerender="ProductsGrid" status="globalloading" oncomplete="afterRerender();"/>
+                <apex:actionFunction name="rerenderUnitNeedGid" rerender="UnitNeedGrid" oncomplete="afterRerender();" />
+                <!---------->
+                <apex:outputPanel id="popUp" rendered="{!showPopup}">
+                    <apex:outputPanel styleClass="popupBackground" layout="block" />
+                    <apex:outputPanel styleClass="custPopup" layout="block" >
+                        <center>
+                            <div class="popupDiv">
+                            {!$Label.LBL_Merge_Confirmation}                                
+                            </div>
+                            <div class = "popupTable">
+                            <table>
+                                <thead>
+                                    <tr>
+                                    <th>{!$Label.LBL_Unit_Needs}</th>
+                                    <th>{!$Label.Products}</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                    <apex:repeat value="{!uniNeedWithMergedProducts}" var="key">
+                                        <tr class = "slds-hint-parent">
+                                            <td>{!key}</td>
+                                            <td>{!uniNeedWithMergedProducts[key]}</td>
+                                        </tr>
+                                    </apex:repeat>
+                                </tbody>
+                            </table>
+                             </div>
+                            <div class="popupDiv">
+                            {!$Label.LBL_Are_you_sure_you_want_to_merge}
+                            </div>
+                            <apex:commandButton status="globalloading" styleClass="slds-button slds-button_neutral" value="{!$Label.Save}" action="{!save}"
+                                        reRender="theForm,messages,UnitNeedProductMergePage" oncomplete="afterRerender();"  />
+                            <apex:commandButton styleClass="slds-button slds-button_neutral" value="{!$Label.Cancel}" action="{!hidePopup}" />
+                        </center>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                <!---------->
+                <apex:outputPanel rendered="{!unitNeedOriginalNoOfRecords == 0}" >
+                    <div class="slds-media__body">
+                        <h2 class="slds-card__header-title">
+                            <span>{!$Label.LBL_No_Item_To_Display}</span>
+                        </h2>
+                    </div>
+                </apex:outputPanel>
+                <apex:outputPanel id="dataGrid" rendered="{!unitNeedOriginalNoOfRecords > 0}">
+                    <div class="table-container">
+                        <apex:pageBlockSection id="gridsSection" columns="2">
+                            <apex:pageBlockSection title="{!$Label.LBL_Unit_Needs}" collapsible="false" columns="1">
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputPanel >
+                                        <apex:inputText styleClass="input-text" onkeypress="return noenter(event,'un')"  id="searchBar" value="{!unitNeedSearchString}"
+                                                        html-placeholder="{!$Label.LBL_Search_Unit_Need}" required="false" />
+                                        <apex:outputLabel />
+                                        <apex:commandButton value="{!$Label.LBL_Search}" rerender="UnitNeedGrid, messages, searchBar"
+                                                            status="globalloading" styleClass="slds-button slds-button_neutral" oncomplete="afterRerender()" onclick="return searchUnitNeeds();"/>
+                                        <apex:commandButton value="{!$Label.LBL_Reset}" action="{!resetUnitNeed}" rerender="UnitNeedGrid, messages, searchBar"
+                                                            status="globalloading" styleClass="slds-button slds-button_neutral" oncomplete="afterRerender()"/>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputPanel id="UnitNeedGrid">
+                                        <div class="data-table-container">
+                                            <table id="unTable" class="relativeTable slds-table slds-table_bordered slds-no-cell-focus slds-no-row-hover" >
+                                                <thead>
+                                                    <tr class="slds-line-height_reset">
+                                                        <th class="stickyCell slds-text-title_caps text-center" scope="col">{!$ObjectType.Product2.fields.Name.Label}</th>
+                                                        <th class="stickyCell slds-text-title_caps text-center" scope="col">{!$ObjectType.Product2.fields.ProductCode.Label}</th>
+                                                        <th class="stickyCell slds-text-title_caps text-center" scope="col">{!$ObjectType.Product2.fields.Average_Weekly_Sales_Hyper__c.Label}</th>
+                                                        <th class="stickyCell slds-text-title_caps text-center" scope="col">{!$ObjectType.Product2.fields.Retail_Price_Reco__c.Label}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <apex:repeat value="{!unitNeedsMap}" var="key">
+                                                        <tr class = "slds-hint-parent">
+                                                            <td class="category" colspan = "4"><apex:outputLink value="/{!key}" target="_blank">
+                                                                {!longNameByCategoryIdMap[key]}
+                                                                </apex:outputLink>
+                                                            </td>
+                                                        </tr>
+                                                        <apex:repeat value="{!unitNeedsMap[key]}" var="unitNeedValue">
+                                                            <tr class="slds-hint-parent">      
+                                                                <td><apex:outputLink value="/{!unitNeedValue.Id}" target="_blank">
+                                                                    <apex:outputField value="{!unitNeedValue.Name}" /></apex:outputLink></td>
+                                                                <td id="{!unitNeedValue.Id}">
+                                                                    <apex:inputText styleClass="{!unitNeedValue.Id +'-'+unitNeedValue.Category__c + ' productCode'}" value="{!unProductsMap[unitNeedValue.Id]}" html-placeholder="{!$ObjectType.Product2.fields.ProductCode.Label}" onblur="validate(this);" onkeypress="return noenter(event,'')"  required="false"/>                                                      
+                                                                    <apex:outputText styleClass="{!unitNeedValue.Id}" style="display: none"/>
+                                                                </td>
+                                                                <td><apex:outputField value="{!unitNeedValue.Average_Weekly_Sales_Hyper__c}" /></td>
+                                                                <td><apex:outputField value="{!unitNeedValue.Retail_Price_Reco__c}" /></td>
+                                                            </tr>
+                                                        </apex:repeat>
+                                                    </apex:repeat>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div>
+                                            <apex:selectList value="{!pageSize}" size="1" styleClass="slds-select"
+                                                             onchange="refreshPageSize();" style="width: 50px" >
+                                                <apex:selectOptions value="{!paginationSizeOptions}" />
+                                            </apex:selectList>
+                                            <apex:commandButton status="globalloading" value="{!$Label.LBL_First}" action="{!unitNeedFirst}"
+                                                                disabled="{!!unitNeedStdcontroller.hasPrevious}" reRender="UnitNeedGrid, messages"
+                                                                styleClass="slds-button slds-button_neutral" oncomplete="afterRerender()"
+                                                                rendered="{!unitNeedNoOfRecords>pageSize}"/>
+                                            <apex:commandButton status="globalloading" value="{!$Label.LBL_Previous}" action="{!unitNeedPrevious}"
+                                                                disabled="{!!unitNeedStdcontroller.hasPrevious}" reRender="UnitNeedGrid, messages"
+                                                                styleClass="slds-button slds-button_neutral"  oncomplete="afterRerender()"
+                                                                rendered="{!unitNeedNoOfRecords>pageSize}"/>
+                                            <apex:commandButton status="globalloading" value="{!$Label.LBL_Next}" action="{!unitNeedNext}"
+                                                                disabled="{!!unitNeedStdcontroller.hasNext}" reRender="UnitNeedGrid, messages"
+                                                                styleClass="slds-button slds-button_neutral"  oncomplete="afterRerender()"
+                                                                rendered="{!unitNeedNoOfRecords>pageSize}"/>
+                                            <apex:commandButton status="globalloading" value="{!$Label.LBL_Last}" action="{!unitNeedLast}"
+                                                                disabled="{!!unitNeedStdcontroller.hasNext}" reRender="UnitNeedGrid, messages"
+                                                                styleClass="slds-button slds-button_neutral"  oncomplete="afterRerender()"
+                                                                rendered="{!unitNeedNoOfRecords>pageSize}"/>
+                                            <apex:outputText styleClass="slds-m-left_medium" style="text-align: right" >
+                                                {!(unitNeedStdcontroller.pageNumber * pageSize)+1-pageSize}-{!IF((unitNeedStdcontroller.pageNumber * pageSize)>unitNeedNoOfRecords, unitNeedNoOfRecords,
+                                                (unitNeedStdcontroller.pageNumber * pageSize))} {!$Label.LBL_Of} {!unitNeedNoOfRecords}
+                                            </apex:outputText>
+                                            <apex:outputPanel >
+                                                <apex:actionStatus id="fetchStatus" >
+                                                    <apex:facet name="start" >
+                                                        <img src="/img/loading.gif" />
+                                                    </apex:facet>
+                                                </apex:actionStatus>
+                                            </apex:outputPanel>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                            <apex:pageBlockSection title="{!$Label.Products}" columns="1" collapsible="false">
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputPanel >
+                                        <apex:inputText styleClass="input-text"  onkeypress="return noenter(event,'prod')"  id="productSearchBar" value="{!productSearchString}"
+                                                        html-placeholder="{!$Label.LBL_Search_Product}" required="false" />
+                                        <apex:commandButton value="{!$Label.LBL_Search}" onkeypress="return noenter(event,'prod')"  onclick="return searchProds();" rerender="ProductsGrid, productSearchBar"
+                                                            status="globalloading" styleClass="slds-button slds-button_neutral"/>
+                                        <apex:commandButton value="{!$Label.LBL_Reset}" action="{!resetProduct}" rerender="ProductsGrid, productSearchBar"
+                                                            status="globalloading" styleClass="slds-button slds-button_neutral" oncomplete="afterRerender()"/>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputPanel id="ProductsGrid" style="width : 50%">
+                                        <div class="data-table-container lds-p-around_medium" style="padding:0rem;" >
+                                            <table id ="prodTable" class="relativeTable slds-table slds-table_bordered slds-no-cell-focus slds-no-row-hover" >
+                                                <thead>
+                                                    <tr class="slds-line-height_reset">
+                                                        <th class="stickyCell slds-text-title_caps text-center" scope="col">{!$ObjectType.Product2.fields.Name.Label}</th>
+                                                        <th class="stickyCell slds-text-title_caps text-center" scope="col">{!$ObjectType.Product2.fields.ProductCode.Label}</th>
+                                                        <th class="stickyCell slds-text-title_caps text-center" scope="col">{!$ObjectType.Product2.fields.Product_EAN__c.Label}</th>
+                                                        <th class="stickyCell slds-text-title_caps text-center" scope="col">{!$ObjectType.Product2.fields.Status__c.Label}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <apex:repeat value="{!productsMap}" var="key">
+                                                        <tr class = "slds-hint-parent">
+                                                            <td class="category" colspan = "4"><apex:outputLink value="/{!key}" target="_blank">
+                                                                {!longNameByCategoryIdMap[key]}
+                                                                </apex:outputLink>
+                                                            </td>
+                                                        </tr>
+                                                        <apex:repeat value="{!productsMap[key]}" var="prod">
+                                                            <tr class="slds-hint-parent" style="height:31.4px">                                  
+                                                                <td><apex:outputLink value="/{!prod.Id}" target="_blank"><apex:outputField value="{!prod.Name}" /></apex:outputLink></td>
+                                                                <td><apex:outputField value="{!prod.ProductCode}" /></td>
+                                                                <td scope="row"><apex:outputField value="{!prod.Product_EAN__c}" /></td>
+                                                                <td scope="row"><apex:outputField value="{!prod.Status__c}" /></td>
+                                                            </tr>
+                                                        </apex:repeat>
+                                                    </apex:repeat>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div>
+                                            <apex:commandButton status="globalloading" value="{!$Label.LBL_First}" action="{!first}"
+                                                                disabled="{!!productsStdSetCtrl.hasPrevious}" reRender="ProductsGrid, messages"
+                                                                styleClass="slds-button slds-button_neutral"/>
+                                            <apex:commandButton status="globalloading" value="{!$Label.LBL_Previous}" action="{!previous}"
+                                                                disabled="{!!productsStdSetCtrl.hasPrevious}" reRender="ProductsGrid, messages"
+                                                                styleClass="slds-button slds-button_neutral"/>
+                                            <apex:commandButton status="globalloading" value="{!$Label.LBL_Next}" action="{!next}"
+                                                                disabled="{!!productsStdSetCtrl.hasNext}" reRender="ProductsGrid, messages"
+                                                                styleClass="slds-button slds-button_neutral"/>
+                                            <apex:commandButton status="globalloading" value="{!$Label.LBL_Last}" action="{!last}"
+                                                                disabled="{!!productsStdSetCtrl.hasNext}" reRender="ProductsGrid, messages"
+                                                                styleClass="slds-button slds-button_neutral"/>
+                                            <apex:outputText styleClass="slds-m-left_medium" style="text-align: right" >
+                                                {!(productsStdSetCtrl.pageNumber * pageSize)+1-pageSize}-{!IF((productsStdSetCtrl.pageNumber * pageSize)>noOfRecords, noOfRecords,
+                                                (productsStdSetCtrl.pageNumber * pageSize))} {!$Label.LBL_Of} {!noOfRecords}
+                                            </apex:outputText>
+                                            
+                                            <apex:outputPanel >
+                                                <apex:actionStatus id="fetchStatus2" >
+                                                    <apex:facet name="start" >
+                                                        <img src="/img/loading.gif" />
+                                                    </apex:facet>
+                                                </apex:actionStatus>
+                                            </apex:outputPanel>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:pageBlockSection>
+                    </div>
+                </apex:outputPanel>
+                <!-- buttons section -->
+                <apex:pageBlockButtons >
+                    <apex:commandButton styleClass="slds-button slds-button_neutral" value="{!$Label.Save}" action="{!openPopup}"/>
+                    <apex:commandButton styleClass="slds-button slds-button_neutral" value="{!$Label.Cancel}" action="{!cancel}" />
+                </apex:pageBlockButtons>
+            </apex:pageBlock>
+        </apex:form>
+    </div>
+    <script type="text/javascript">
+    var prefix = "{!JSINHTMLENCODE(prefix)}";
+    var productsMap = JSON.parse("{!JSENCODE(allProductsJson)}");
+    var MSG_Product_Not_Found = '{!JSENCODE($Label.MSG_Product_Not_Found)}';
+    var MSG_Diff_Classification = '{!JSENCODE($Label.MSG_Code_Product_On_Wrong_Product_Classification)}';
+    var MSG_Duplicated_Product_Code = '{!JSENCODE($Label.MSG_Duplicated_Product_Code)}';
+    var LBL_No_Products_Found = '{!JSENCODE($Label.LBL_No_Products_Found)}';
+    
+    window.onresize = function(event) {
+        setContainerWidth();
+    }
+    function setContainerWidth() {
+        if (document.getElementsByClassName('table-container').length == 0) return;
+        // width
+        var bodyWidth = document.body.clientWidth;
+        _97 = bodyWidth * 97 / 100;
+        document.getElementsByClassName('table-container')[0].style.width = _97 + "px";
+        setTablesHeight();
+    }
+    function setTablesHeight() {
+        if (document.getElementsByClassName('data-table-container').length == 0) return;
+        // height
+        var window_h = window.innerHeight;
+        var body_h = document.body.clientHeight;
+        var delta_h = body_h - window_h;
+        var new_grid_heights = 0;
+        for(var i =0; i < document.getElementsByClassName('data-table-container').length; i++){
+            var grid_h = document.getElementsByClassName('data-table-container')[i].offsetHeight;
+            var newHeight = grid_h - delta_h -26;
+            if(newHeight > new_grid_heights)
+                new_grid_heights = newHeight;
+        }
+        document.getElementsByClassName('data-table-container')[0].style.height = new_grid_heights + "px";
+        document.getElementsByClassName('data-table-container')[1].style.height = new_grid_heights + "px";
+    }
+    $(document).ready(function() {
+        initTypeaheadProduct();
+        setContainerWidth();
+    });
+    function resetTypeahead() {
+        $('.productCode').typeahead.empty();
+        initTypeaheadProduct();
+    }
+    function afterRerender() {
+        setContainerWidth();
+        //initTypeaheadProduct();
+    }
+    function initTypeaheadProduct() {    	
+        $('.productCode')
+        .typeahead({
+            hint: true,
+            highlight: true,
+            minLength: 2
+        },
+                   {
+                       name: 'productCode',
+                       displayKey: 'ProductCode',
+                       source: getProducts,
+                       templates: {
+                           empty: [
+                               '<div class="search-result" syle="position: fixed;z-index: 1000;">',
+                               '<p>'+LBL_No_Products_Found+'</p>',
+                               '</div>'
+                           ].join('\n'),
+                           suggestion: function(productCode) {
+                               return [
+                                   '<div class="search-result">',
+                                   '<p>', productCode[prefix + 'ProductCode'] + ' - ' + productCode.Name + '</p>',
+                                   '</div>'
+                               ].join('\n');
+                           }
+                       }
+                   }).on('typeahead:selected',
+                         function(obj, datum, name) {
+                         });
+    }
+    
+    var getProducts = debounce(function(query, process) {
+        var q = query;
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.UnitNeedProductMergeController.findProduct}', q,
+            function(result, event) {
+                var res = JSON.parse(result);
+                process(res);
+            }, {
+                escape: false
+            });
+    }, 1);
+    
+    function debounce(func, wait, immediate) {
+        var timeout;
+        return function() {
+            var context = this,
+                args = arguments;
+            var later = function() {
+                timeout = null;
+                if (!immediate)
+                    func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow)
+                func.apply(context, args);
+        };
+    }
+    function validate(element){
+        var productCode = element.value;
+        if(productCode != null && productCode != ''){
+            var unitNeedId = element.className.split(" ")[0].split("-")[0];
+            var category = element.className.split(" ")[0].split("-")[1];
+            var linkedProducts = productsMap[productCode];
+            var outputElement = getElementsByClassName(unitNeedId)[0] ;
+            if(linkedProducts== null || linkedProducts.length==0 ){
+                outputElement.innerHTML = MSG_Product_Not_Found;
+                outputElement.className = unitNeedId + ' errorMsg';
+                outputElement.style.display = 'block';
+                element.className += ' error';
+            }
+            else if(linkedProducts.length > 1){
+                outputElement.innerHTML = MSG_Duplicated_Product_Code;
+                outputElement.className = unitNeedId + ' errorMsg';
+                outputElement.style.display = 'block';
+                element.className += ' error';
+            }
+                else if(linkedProducts[0].Category__c != category){
+                    outputElement.innerHTML = MSG_Diff_Classification;
+                    outputElement.className = unitNeedId + ' errorMsg';
+                    outputElement.style.display = 'block';
+                    element.className += ' error';
+                }
+                    else{
+                        outputElement.className = unitNeedId;
+                        outputElement.style.display = 'none';
+                        element.className = unitNeedId + '-' + category + ' productCode';
+                    }
+        }
+    }
+    function noenter(ev,evType){
+        if (window.event && window.event.keyCode == 13 || ev.which == 13) {
+            if(evType == 'un')
+                searchUnitNeeds();
+            else if(evType == 'prod')
+                searchProds();
+            return false;
+        } else {
+            return true;
+        }
+    }
+    </script>
+</apex:page>

@@ -1,0 +1,1903 @@
+<apex:page id="thePage" standardController="Assortment_BU__c"
+           extensions="AssortmentBUMatrixController"
+           lightningStylesheets="false" sidebar="false">
+    
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}" />
+
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js" />
+    <!--apex:includeScript value="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.js" /-->
+    
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/dist/jquery.fancytree-all-deps.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/dist/modules/jquery.fancytree.filter.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/src/jquery.fancytree.table.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.fancytree, 'fancytree/src/jquery.fancytree.gridnav.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.fancytree, 'fancytree/dist/skin-win8/ui.fancytree.min.css')}"/>
+    
+    <apex:includeScript value="{!URLFOR($Resource.Assets, 'assets/js/app.js')}" />
+
+    <apex:pageMessages id="messages" />
+    <apex:sectionHeader title="{!$ObjectType.Assortment_BU__c.Label}"
+                        subtitle="{!IF(Assortment_BU__c.Id!=Null,Assortment_BU__c.Long_Name__c,'')}"
+                        rendered="true" html-style="background: rgb(243, 242, 242); padding-bottom: 15px; border-radius: 4px;" />
+    
+    <apex:form Id="theForm" rendered="{!AND(!IsNull(Assortment_BU__c.Id), gridSettingsManager.ERRORS.size == 0)}">
+        <apex:actionStatus id="globalloading">
+            <apex:facet name="start">
+                <div class="loading-overlay">
+                    <div class="loader-img"></div>
+                    <div class="loading-block">{!$Label.Loading}</div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        <!-- search based on filters -->
+        <apex:actionFunction action="{!search}"
+                             name="search" rerender="theForm, messages"
+                             status="globalloading" oncomplete="afterRerender();">
+            <apex:param name="clientSatus" value="" assignTo="{!clientStatus}"/>
+            <apex:param name="Product_Reference_Type__c" assignTo="{!productReferenceType}" value=""/>
+            <apex:param name="isStopProducts" value="" assignTo="{!isStopProducts}"/>
+        </apex:actionFunction>
+        <!-- refreshPageSize -->
+        <apex:actionFunction name="refreshPageSize"
+                             action="{!refreshPageSize}"
+                             reRender="assortmentDetailsGrid,totalsGrid,clientStatus_serialized" status="fetchStatus"
+                             oncomplete="afterRerender();" />
+        <!-- show popup for mass switch-->
+        <apex:actionFunction name="showMultipleSwitchPopup" action="{!showPopup}" rerender="theForm, messages" status="globalloading" oncomplete="afterRerender();">
+            <apex:param name="popupSwitchProduct" assignTo="{!popupSwitchProduct}" value="true" />
+            <apex:param name="singleProductAction" assignTo="{!singleProductAction}" value="false" />
+        </apex:actionFunction>
+        <!-- show popup for single product switch-->
+        <apex:actionFunction name="showSingleSwitchPopup" action="{!showPopup}" rerender="theForm, messages" 
+                             status="globalloading" oncomplete="afterRerender();" >
+            <apex:param name="popupSwitchProduct" assignTo="{!popupSwitchProduct}" value="" />
+            <apex:param name="assortmentDetailId" assignTo="{!assortmentDetailId}" value="" />
+            <apex:param name="assortmentDetailCategory" assignTo="{!assortmentDetailCategory}" value="" />
+            <apex:param name="singleProductAction" assignTo="{!singleProductAction}" value="" />
+        </apex:actionFunction>
+        <!-- show popup for mass stop-->
+        <apex:actionFunction name="showMultipleStopPopup" action="{!showPopup}" rerender="theForm, messages" status="globalloading" oncomplete="afterRerender();">
+            <apex:param name="popupStopProduct" assignTo="{!popupStopProduct}" value="true" />
+            <apex:param name="singleProductAction" assignTo="{!singleProductAction}" value="false" />
+        </apex:actionFunction>
+        <!-- show popup for single product stop-->
+        <apex:actionFunction name="showSingleStopPopup" action="{!showPopup}" rerender="theForm, messages" 
+                             status="globalloading" oncomplete="afterRerender();" >
+            <apex:param name="productToStopId" assignTo="{!productToStopId}" value="" />
+            <apex:param name="popupStopProduct" assignTo="{!popupStopProduct}" value="" />
+            <apex:param name="singleProductAction" assignTo="{!singleProductAction}" value="" />
+        </apex:actionFunction>
+        <apex:actionFunction name="saveAndSearch" action="{!saveAndSearch}" status="globalloading" reRender="theForm, messages" oncomplete="afterRerender(true);" />
+        <apex:actionFunction name="validateAssortment" action="{!validateAssortment}" status="globalloading"  reRender="theForm, assortmentDetailsGrid, messages"
+                             rendered="{!AND(hasDetails, !readOnly)}" oncomplete="afterRerender(true);" />
+        <!-- Assortment Details BLOCK -->
+        <apex:outputPanel styleClass="totalContainer" rendered="{!hasDetails}">
+            <apex:pageBlock id="blockOfTotals" title="{!$Label.LBL_Totals}">
+                <div id="dataGridDiv">
+                    <apex:pageblocksection Id="dataGridBlock" showheader="true"
+                                           collapsible="false" columns="1" rendered="{!hasDetails}">
+                        <apex:outputPanel StyleClass="grid-total-container" layout="block">
+                            <apex:outputPanel >
+                                <!-- Tree Section -->
+                                <table id="treegrid">
+                                    <thead>
+                                        <tr>
+                                            <th style="display:none;"></th>
+                                            <th style="display:none;"></th>
+                                            <th style="min-width:200px;"></th>
+                                            <apex:repeat value="{!totalFields}" var="field" >
+                                                <th>{!$ObjectType.Assortment_Detail__c.fields[field].Label}</th>
+                                            </apex:repeat>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style="text-align:center;">
+                                            <td style="display:none;"></td>
+                                            <td style="display:none;"></td>
+                                            <td style="text-align:left;"></td>
+                                            <apex:repeat value="{!totalFields}" var="field" >
+                                                <td></td>
+                                            </apex:repeat>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </apex:pageblocksection>
+                </div>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <apex:pageBlock Id="AssortDetailSection"
+                        title="{!IF(AND(!IsBlank(Assortment_BU__c.Id), hasDetails),Assortment_BU__c.BU_source__r.Name, 'Assortment Details')}">
+            <apex:actionStatus id="searchloading">
+                <apex:facet name="start">
+                    <img src="/img/loading.gif" />
+                </apex:facet>
+            </apex:actionStatus>
+            <!-- --------------------------------------------------  Save/Cancel block. -->
+            <apex:pageBlockButtons location="top" style="float:right">
+                <!-- legend -->
+                <div class="legend-items">
+                    <div>
+                        <!-- switch icon -->
+                        <span class="lengend-square switchIcon {!IF(CONTAINS(productReferenceType,'Switch'), 'selected', '')}"
+                              onclick="search('{!clientStatus}',
+                                       '{!IF(CONTAINS(productReferenceType,'Switch'),SUBSTITUTE(productReferenceType, 'Switch-', ''),
+                                       productReferenceType & 'Switch-')}',
+                                       {!isStopproducts});"></span>
+                        <span class="legend-label">{!$Label.Switch}</span>
+                        <!-- renno icon -->
+                        <span class="lengend-square renoIcon {!IF(CONTAINS(productReferenceType,'Reno'), 'selected', '')}"
+                              onclick="search('{!clientStatus}',
+                                       '{!IF(CONTAINS(productReferenceType,'Reno'),SUBSTITUTE(productReferenceType, 'Reno-', ''),
+                                       productReferenceType & 'Reno-')}',
+                                       {!isStopproducts});"></span>
+                        <span class="legend-label">{!$Label.Rennovation}</span>
+                        <!-- stop icon -->
+                        <span class="lengend-square stopIcon {!IF(isStopproducts, 'selected', '')}"
+                              onclick="search('{!clientStatus}', '{!productReferenceType}', {!!isStopproducts});"></span>
+                        <span class="legend-label">{!$Label.Stop}</span>
+                        <!-- colored squares -->
+                        <apex:repeat value="{!clientStatusesPickList}" var="clientStatusVal">
+                            <span class="lengend-square highlight-{!clientStatusVal.value} {!IF(CONTAINS(clientStatus, clientStatusVal.value), 'selected', '')}"
+                                  onclick="search('{!IF(CONTAINS(clientStatus,clientStatusVal.value),
+                                           SUBSTITUTE(clientStatus, clientStatusVal.value, ''),
+                                           clientStatus & '-' & clientStatusVal.value)}', '{!productReferenceType}', {!isStopproducts});">
+                            </span>
+                            <span class="legend-label">{!clientStatusVal.Label}</span>
+                        </apex:repeat>
+                    </div>
+                </div>
+                <apex:commandButton value="{!$Label.Save}" action="{!save}"
+                                    status="globalloading" reRender="theForm, messages" rendered="{!AND(hasDetails, !readOnly)}"
+                                    oncomplete="afterRerender(true);" />
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}"
+                                    rendered="true" />
+                <apex:commandButton value="{!$Label.Validate}" onclick="confirmValidation();return false;" disabled="{!Assortment_BU__c.Status__c == 'Validated'}" rendered="{!AND(hasDetails, !readOnly)}"/>
+                <apex:commandButton value="{!$Label.LBL_Send}" action="{!showPopup}"
+                                    style="background-color: #1f744b; color:#FFF !important;"
+                                    reRender="popupGenerateExcelForm, messages" status="globalloading" rendered="{!hasDetails}">
+                    <apex:param name="popupGenerateExcel" assignTo="{!popupGenerateExcel}" value="true" />
+                </apex:commandButton>
+                <apex:commandButton value="{!$Label.LBL_Export_Details}"
+                                    action="{!generateExcel}"
+                                    style="background-color: #1f744b; color:#FFF !important;" rendered="{!hasDetails}"/>
+            </apex:pageBlockButtons>
+            <!-- --------------------------------------------------  Filter -->
+            <apex:pageBlockSection id="filterSection"
+                                   title="{!$Label.LBL_Filter}" collapsible="true" columns="2">
+                <apex:inputField onkeypress="enterPress(event)"
+                                 value="{!product.Category__c}" label=" "
+                                 html-placeholder="{!$ObjectType.Assortment_Detail__c.fields.Category__c.Label}" />
+                <apex:inputCheckbox label="{!$Label.LBL_Show_History}" value="{!isShowHistory}" id="showHistory"
+                                    onchange="search();" />
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel ></apex:outputLabel>
+                    <apex:panelGroup >
+                        <apex:inputText onkeypress="enterPress(event)"
+                                        value="{!productSearch}" label=" "
+                                        html-placeholder="{!$Label.LBL_Search}" />
+                        <apex:commandButton value="{!$Label.LBL_Search}"
+                                            action="{!search}" rerender="theForm, messages"
+                                            status="globalloading" oncomplete="afterRerender();" />
+                        <apex:commandButton Id="resetBtn" value="{!$Label.LBL_Reset}"
+                                            action="{!resetFilters}" rerender="theForm, messages"
+                                            status="globalloading" oncomplete="afterRerender();" />
+                    </apex:panelGroup>
+                </apex:pageBlockSectionItem>
+                <apex:inputCheckbox label="{!$Label.LBL_Include_Nb_Of_Store}" value="{!includeStores}" id="includeStores" onchange="calculateClusterTotals()" />
+                <apex:inputCheckbox label="{!$Label.LBL_Show_Total}" id="showTotal" styleClass="showTotalClass" onchange="showHideTotals();" selected="true"/>
+                <apex:inputCheckbox label="{!$Label.LBL_Show_SubTotal}" id="showSubTotal" styleClass="showSubTotalClass" onchange="showHideSubTotals()" selected="true"/>
+                <apex:inputCheckbox label="{!$Label.LBL_Hide_Blank_Status}" id="hideBlankStatus" value="{!hideBlankStatus}" onchange="search();"/>
+                <apex:inputCheckbox label="{!$Label.LBL_Include_All_Status}" id="includeAllStatus" value="{!includeAllStatus}" onchange="promptToSave();"/>
+                <apex:pageBlockSectionItem rendered="{!hasDetails}">
+                    <apex:outputLabel value="{!$Label.LBL_Number_Of_Fixed_Columns}"/>
+                    <select id="numberOfFixedColumns">
+                    </select>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            <!-- --------------------------------------------------  Grid: Assortment Details grouped by Category. -->
+            <div id="dataGridDiv">
+                 <apex:outputPanel rendered="{!!hasDetails}" >
+                     <center> 
+                         <div class="slds-media__body">
+                             <h2 class="slds-card__header-title">
+                                 <span>{!$Label.LBL_No_Item_To_Display}</span>
+                             </h2>
+                         </div>
+                     </center>
+                </apex:outputPanel>
+                <apex:pageblocksection Id="assortmentDetailsGrid" showheader="true"
+                                       collapsible="false" columns="1" rendered="{!hasDetails}">
+                    <apex:outputPanel StyleClass="grid-container" layout="block">
+                        <apex:pageBlockTable style="width:100%;"
+                                             styleClass="initial-table" id="initial-table"
+                                             value="{!wAssortmentDetailList}" var="group" width="100%"
+                                             onrowmouseover="this.classList.remove('highlight')">
+                            <!-- --------------------  COLUMN 1: CATEGORY -->
+                            <apex:column headerClass="outerColumnHeader">
+                                <div class="text-center" style="min-width: 100px">
+                                    <apex:outputLink value="/{!group.categoryId}" target="_blank">
+                                        <apex:outputText value="{!categoryNamesMap[group.categoryId]}" />
+                                    </apex:outputLink>
+                                </div>
+                            </apex:column>
+                            
+                            <!-- --------------------  COLUMN 2: DESCRIPTION -->
+                            <apex:column headerClass="outerColumnHeader">
+                                <apex:variable value="{!counts[group.categoryId]}" var="categoryCountMap" />
+                                <apex:variable value="{!sums[group.categoryId]}" var="categorySumMap" />
+                                <!-- pageBlockTable for each category -->
+                                <apex:dynamicComponent componentValue="{!DynamicPageBlockTable}" />
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:outputPanel>
+                    <apex:outputPanel >
+                        <apex:selectList value="{!pageSize}" multiselect="false"
+                                         size="1" onchange="refreshPageSize();">
+                            <apex:selectOptions value="{!pageSizes}" />
+                        </apex:selectList>
+                        <apex:commandButton status="fetchStatus"
+                                            value="{!$Label.LBL_First}" action="{!first}"
+                                            disabled="{!!assortmentDetailStdSetCtrl.hasPrevious}"
+                                            reRender="assortmentDetailsGrid,totalsGrid,clientStatus_serialized, messages"
+                                            oncomplete="afterRerender();" />
+                        <apex:commandButton status="fetchStatus"
+                                            value="{!$Label.LBL_Previous}" action="{!previous}"
+                                            disabled="{!!assortmentDetailStdSetCtrl.hasPrevious}"
+                                            reRender="assortmentDetailsGrid,totalsGrid,clientStatus_serialized, messages"
+                                            oncomplete="afterRerender();" />
+                        <apex:commandButton status="fetchStatus"
+                                            value="{!$Label.LBL_Next}" action="{!next}"
+                                            disabled="{!!assortmentDetailStdSetCtrl.hasNext}"
+                                            reRender="assortmentDetailsGrid,totalsGrid,clientStatus_serialized, messages"
+                                            oncomplete="afterRerender();" />
+                        <apex:commandButton status="fetchStatus"
+                                            value="{!$Label.LBL_Last}" action="{!last}"
+                                            disabled="{!!assortmentDetailStdSetCtrl.hasNext}"
+                                            reRender="assortmentDetailsGrid,totalsGrid,clientStatus_serialized, messages"
+                                            oncomplete="afterRerender();" />
+                        <apex:outputText style="text-align: right">
+                            {!(assortmentDetailStdSetCtrl.pageNumber * pageSize)+1-pageSize}-{!IF((assortmentDetailStdSetCtrl.pageNumber * pageSize)>noOfRecords,
+                            noOfRecords, (assortmentDetailStdSetCtrl.pageNumber * pageSize))} {!$Label.LBL_Of} {!noOfRecords}
+                        </apex:outputText>
+                        <input type="hidden"
+                               name="clientStatus_serialized"
+                               id="clientStatus_serialized"
+                               value="{!clientStatus_serialized}" />
+                        <apex:actionStatus id="fetchStatus">
+                            <apex:facet name="start">
+                                <img src="/img/loading.gif" />
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputPanel>
+                </apex:pageblocksection>
+            </div>
+        </apex:pageBlock>
+        
+        <!--popup generate Excel-->
+        <apex:outputPanel id="popupGenerateExcelForm">
+            <apex:outputPanel styleClass="popupBackground" layout="block"
+                              rendered="{!popupGenerateExcel}" />
+            <apex:outputPanel styleClass="uploadPopup" layout="block"
+                              rendered="{!popupGenerateExcel}">
+                <apex:pageBlock id="emailPageBlock" title="{!$Label.Email_Form}">
+                    <apex:pageBlockSection columns="1" collapsible="false">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="{!$Label.EmailTo}" />
+                            <apex:inputText style="width: 70%;" value="{!emailTo}" />
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="{!$Label.emailCc}" />
+                            <apex:inputText style="width: 70%;" value="{!emailCc}" />
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="{!$Label.emailBcc}" />
+                            <apex:inputText style="width: 70%;" value="{!emailBcc}" />
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="{!$Label.Subject}" />
+                            <apex:inputText style="width: 70%;" value="{!emailSubject}" />
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem id="attachmentsBlockSectionItem">
+                            <apex:outputLabel value="{!$ObjectType.Attachment.label}" />
+                            <apex:outputText value="{!IF(Assortment_BU__c.Id != null, Assortment_BU__c.Long_Name__c, '')}{!NOW()}.xls" />
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="{!$Label.Email_Body}" />
+                            <apex:inputTextarea style="width: 70%;" rows="10"
+                                                value="{!emailBody}" />
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockButtons location="bottom">
+                        <apex:outputPanel >
+                            <apex:actionStatus id="popupStatus">
+                                <apex:facet name="start">
+                                    <img src="/img/loading.gif" />
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </apex:outputPanel>
+                        <apex:commandButton value="{!$Label.Send}" action="{!send}">
+                            <apex:param name="popupGenerateExcel"
+                                        assignTo="{!popupGenerateExcel}" value="false" />
+                        </apex:commandButton>
+                        <apex:commandButton value="{!$Label.Cancel}" action="{!cancelPopup}"
+                                            reRender="popupGenerateExcelForm, messages" />
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- popup switch product -->
+        <apex:outputPanel id="popupSwitchProduct">
+            <apex:outputPanel styleClass="popupBackground" layout="block"
+                              rendered="{!popupSwitchProduct}" />
+            <apex:outputPanel id="switchProductPopup" styleClass="uploadPopup" style="width:400px;"
+                              layout="block" rendered="{!popupSwitchProduct}">
+                <apex:pageBlock title="{!popupTitle}">
+                    <apex:pageBlockTable value="{!switchProductsList}" var="item">
+                        <apex:column width="1%" rendered="{!AND(!singleProductAction, !readOnly)}" >
+                            <apex:facet name="header">
+                                <apex:inputCheckbox onchange="toggleSelectAll();" id="selectAll" selected="true" />
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!item.isSelected}" id="switchCheckbox" />
+                        </apex:column>
+                        <apex:column value="{!item.currentProduct}" headerValue="{!$Label.Current_Product}" />
+                        <apex:column value="{!item.newProduct}" headerValue="{!$Label.New_Product}" />
+                    </apex:pageBlockTable>
+                    <apex:pageBlockButtons location="bottom" >
+                        <apex:commandButton value="{!$Label.Switch}" action="{!switchProduct}"
+                                            reRender="theForm, messages" status="switchStatus"
+                                            oncomplete="afterRerender();" rendered="{!!readOnly}" >
+                            <apex:param name="popupSwitchProduct" assignTo="{!popupSwitchProduct}" value="false" />
+                            
+                        </apex:commandButton>
+                        <apex:commandButton value="{!$Label.Cancel}"
+                                            reRender="popupSwitchProduct, messages" status="switchStatus"
+                                            oncomplete="afterRerender();" >
+                            
+                            <apex:param name="popupSwitchProduct" assignTo="{!popupSwitchProduct}" value="false" />
+                        </apex:commandButton>
+                        <apex:actionStatus id="switchStatus">
+                            <apex:facet name="start">
+                                <img src="/img/loading.gif" />
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        
+        <!-- popup stop product -->
+        <apex:outputPanel id="popupStopProduct">
+            <apex:outputPanel styleClass="popupBackground" layout="block"
+                              rendered="{!popupStopProduct}" />
+            <apex:outputPanel id="StopProductPopup" styleClass="uploadPopup"
+                              layout="block" rendered="{!popupStopProduct}">
+                <apex:pageBlock title="{!IF(singleProductAction, 'Stop', 'Stop All')}">
+                    <apex:pageBlockTable value="{!stopProductsList}" var="item">
+                        <apex:column width="1%" rendered="{!AND(!singleProductAction, !readOnly)}" >
+                            <apex:facet name="header">
+                                <apex:inputCheckbox onchange="toggleSelectAll();" id="selectAll" selected="true" />
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!item.isSelected}" id="switchCheckbox" />
+                        </apex:column>
+                        <apex:column value="{!item.history.Product__c}" headerValue="{!$ObjectType.Product_Assortment_Introduction_History__c.fields.Product__c.label}" />
+                        <apex:column headerValue="{!$ObjectType.Product_Assortment_Introduction_History__c.fields.Load_Rules__c.label}" >
+                            <apex:inputField value="{!item.history.Load_Rules__c}" />
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    <apex:pageBlockButtons location="bottom" >
+                        <apex:commandButton value="Stop" action="{!stopProducts}"
+                                            reRender="theForm, messages" status="stopStatus"
+                                            oncomplete="afterRerender();" rendered="{!!readOnly}" >
+                            <apex:param name="popupStopProduct" assignTo="{!popupStopProduct}" value="false" />
+                        </apex:commandButton>
+                        <apex:commandButton value="{!$Label.Cancel}"
+                                            reRender="popupStopProduct, messages" status="stopStatus"
+                                            oncomplete="afterRerender();" >
+                            <apex:param name="popupStopProduct" assignTo="{!popupStopProduct}" value="false" />
+                        </apex:commandButton>
+                        <apex:actionStatus id="stopStatus">
+                            <apex:facet name="start">
+                                <img src="/img/loading.gif" />
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="jsTree">
+            <script>
+            var totalFields = JSON.parse('{!totalFields_serialized}');
+            var jsonCategoryTree = {!jsonCategoryTree};
+            var maxClusterCount = '{!maxClusterCount}'
+            </script>
+        </apex:outputPanel>
+    </apex:form>
+    <script>
+    var clientStatus_initialMap; // Map of initial records positions and statuses in clusters
+    var clientStatus_map;
+    var gridFields = JSON.parse('{!JSENCODE(gridFields_serialized)}');
+    var fieldsToCountList = JSON.parse('{!JSENCODE(fieldsToCountList_serialized)}');
+    var fieldsToSum_serialized = '{!JSENCODE(fieldsToSumList_serialized)}';
+    var fieldsToSumList = JSON.parse(fieldsToSum_serialized);
+    var categoryBUClustersMap = JSON.parse('{!JSENCODE(categoryBUClustersMap_serialized)}');
+    var picklistValuesMap = JSON.parse('{!JSENCODE(picklistValuesMap_serialized)}');
+    var clientStatusPicklistValuesMap = new Map();
+    var assortmentDetailMap = new Map(); // Map of assortmentDetails from remote callback
+    var totalColumnsMap = new Map();
+    var assortmentYear = {!assortmentBU.Year__c};
+    var clientStatusToExcludeFromTotals = ['Probably deleted', 'Opportunity', ''];
+    negoptimApp = new App('{!locale}', '{!localeDecimalSeparator}');
+    var decimalSeparator = '{!localeDecimalSeparator}';
+    var isClassic = {!$User.UIThemeDisplayed == 'Theme2' || $User.UIThemeDisplayed == 'Theme3'};
+    var numberOfFixedColumnsVar = 2 ;
+    var focusedDateInput;
+
+    function getIncludeStores() {
+        return $('[id*=includeStores]')[0].checked;
+    }
+    
+    function calculateClusterTotals() {
+        var categoryIds = Object.keys(categoryBUClustersMap);
+        for (var index = 0; index < categoryIds.length; index++) {
+            var categoryId = categoryIds[index];
+            for (var fieldIndex = 0; fieldIndex < fieldsToCountList.length; fieldIndex++) {
+                var fieldName = fieldsToCountList[fieldIndex];
+                var count = $('.' + categoryId + fieldName).text();
+                var nbStore = getNbStore(categoryId, fieldName);
+                $('.visible_' + categoryId + fieldName).text(stringToDecimal(count) * nbStore);
+                calculateParentTotalCount(categoryId, categoryId + fieldName, 0);
+            }
+        }
+    }
+    
+    function getNbStore(categoryId, fieldName) {
+        var nbStore = 1;
+        if ((fieldName.toLowerCase().startsWith('client_clust') || fieldName.toLowerCase().startsWith('ref_client_clust')) && fieldName.toLowerCase().endsWith('__c')) {
+            var temp = fieldName.replace('__c', '');
+            var stratIndex = parseInt(temp[temp.length - 1]) - 1;
+            var count = $('.' + categoryId + fieldName).text();
+            if (count != null && count != '' && typeof count !== 'undefined') {
+                if (getIncludeStores() && categoryBUClustersMap.hasOwnProperty(categoryId)
+                    && categoryBUClustersMap[categoryId].hasOwnProperty(stratIndex)) {
+                    nbStore = categoryBUClustersMap[categoryId][stratIndex].orgaBU.SiteOfSales_Number__c;
+                }
+            }
+        }
+        return nbStore;
+    }
+    
+    $(document).ready(function() {
+        // fill clientStatusPicklistValuesMap from picklistValuesMap['Client_Status__c'] by mapping value => key
+        for (var key in picklistValuesMap['Client_Status__c']) {
+            clientStatusPicklistValuesMap.set(picklistValuesMap['Client_Status__c'][key], key);
+        }
+        rerenderLegendIcons();
+        $(".inputNoEnter").on('keypress', function(e) {
+            code = e.keyCode ? e.keyCode : e.which;
+            if (code.toString() == 13) {
+                e.preventDefault();
+            }
+        });
+        // expand and collapse tree to render all rows (to show after calculation arrows)
+        renderTotalsTree();
+        setFocusOnLoad();
+        handleClientStatusColors();
+        collapseFilterSection();
+        initClientStatusMap();
+        disableClustForDelete();
+        // hide totals on load
+        $('.showTotalClass')[0].checked = false;
+        showHideTotals();
+        $("img[id$='filterSection']").click(function() {
+            setTableDimensions();
+        });
+        window.onresize = function(event) {
+            setTableDimensions();
+            setStickyColumns();
+        }
+        setTableDimensions();
+        calculateClusterTotals();
+        formatGridNumbers();
+        if ($("[id$=numberOfFixedColumns]").length > 0) {
+            $("[id$=numberOfFixedColumns]").change(function(){
+                setStickyColumns();
+            });
+        }
+        setSelectList();
+        setStickyColumns();
+        DatePicker.prototype.position = function() {
+            for (var a = 0, b = 0, c = this.myElement; null != c && c != this.calendarDiv.offsetParent; )
+                a += c.offsetLeft - c.scrollLeft,
+                    b += c.offsetTop - c.scrollTop,
+                    c = c.offsetParent;
+            !c && this.calendarDiv.offsetParent && (a -= this.calendarDiv.offsetParent.offsetLeft,
+                                                    b -= this.calendarDiv.offsetParent.offsetTop);
+            b = getObjY(this.myElement) + this.calendarDiv.offsetHeight > Sfdc.Window.getScrollY() + Sfdc.Window.getWindowHeight() ? b - (this.calendarDiv.offsetHeight + 1) : b + (this.myElement.offsetHeight + 1);
+            c = "left";
+            LC.isRtlPage() && (c = "right",
+                               a = this.calendarDiv.offsetParent.offsetWidth - a - this.myElement.offsetWidth);
+            var gridContainerDiv = $('.grid-container');
+            a = a - gridContainerDiv.scrollLeft();
+            b = b - gridContainerDiv.scrollTop();
+            this.shim.setStyle(c, a + "px");
+            this.shim.setStyle("top", b + "px");
+        };
+        setHideDatePickerListener();
+        openLinksInNewTab();
+    });
+    
+    function afterRerender(isAfterSave) {
+        isAfterSave = (typeof isAfterSave === 'undefined') ? false : isAfterSave;
+        rerenderLegendIcons();
+        renderTotalsTree();
+        if (isAfterSave) initClientStatusMap();
+        handleClientStatusColors();
+        collapseFilterSection();
+        showHideTotals();
+        showHideSubTotals();
+        if (!isAfterSave) refreshClientStatusMaps();
+        disableClustForDelete();
+        /*if (isAfterSave) {
+            for (const detail of assortmentDetailMap.values()) {
+                mapCalculationToView(detail);
+            }
+        }*/
+        setTableDimensions();
+        calculateClusterTotals();
+        formatGridNumbers();
+        setSelectList();
+        if ($("[id$=numberOfFixedColumns]").length > 0) {
+            $("[id$=numberOfFixedColumns]").change(function(){
+                setStickyColumns();
+            });
+        }
+        setStickyColumns();
+        openLinksInNewTab();
+        setHideDatePickerListener();
+    }
+    
+    function openLinksInNewTab() {
+        // make sure all links (lookups) in the table will open in a new tab
+        var grid = $('.grid-container');
+        if (grid.length > 0) {
+            var links = $('.grid-container').find('a');
+            for (var i = 0; i < links.length; i++) {
+                $(links[i]).attr('target', '_blank');
+            }
+        }
+    }
+    
+    function formatGridNumbers() {
+        var formatNumberFields = $('[class*=formatNumber-]');
+        for (var i = 0; i < formatNumberFields.length; i++) {
+            var fieldName;
+            var classList = $(formatNumberFields[i]).attr('class').split(' ');
+            for (var j = 0; j < classList.length; j++)
+                if (classList[j].includes('formatNumber-'))
+                    fieldName = classList[j].split('-')[1];
+            
+            var formatedValue = formatNumber(parseFloat($(formatNumberFields[i]).text()), gridFields[fieldName].scale);
+            // Conditional formatting for specific field
+            // TODO: define in Grid Settings
+            if (fieldName == 'Ref_Budget_WD_MarketBased_Pts__c' && ($(formatNumberFields[i]).text() == '' || parseFloat($(formatNumberFields[i]).text()) == 0)) {
+                $(formatNumberFields[i]).css({'font-weight': 'bold', 'color': 'red'});
+            }
+            $(formatNumberFields[i]).text(formatedValue);
+        }
+    }
+
+    function setTableDimensions() {
+        if (document.getElementsByClassName('grid-container') == undefined ) return;
+        // width
+        var bodyWidth = document.body.clientWidth;
+        var _97 = bodyWidth * 97 / 100;
+        var _95 = bodyWidth * 95 / 100;
+        document.getElementsByClassName('grid-container')[0].style.width = isClassic ? _97 : _95 + "px";
+        document.getElementsByClassName('grid-total-container')[0].style.width = isClassic ? _97 : _95 + "px";
+        // height
+        var window_h = window.innerHeight;
+        var body_h = document.body.clientHeight;
+        var delta_h = body_h - window_h;
+        var grid_h = document.getElementsByClassName('grid-container')[0].offsetHeight;
+        var new_grid_h = grid_h - delta_h;
+        document.getElementsByClassName('grid-container')[0].style.height = new_grid_h + "px";
+    }
+    
+    // expand and collapse tree to render all rows (to show after calculation arrows)
+    function renderTotalsTree() {
+        if (document.getElementById('treegrid') == undefined) return;
+        var i = 3;
+        for (var index = 0; index < totalFields.length; index++)
+            totalColumnsMap.set(totalFields[index], i++);
+        
+        // Attach the fancytree widget to an existing <div id="treegrid"> element
+        // and pass the tree options as an argument to the fancytree() function:
+        $("#treegrid").fancytree({
+            extensions: ["table", "filter", "gridnav"],
+            checkbox: false,
+            filter: {
+                // mode: "hide"
+            },
+            gridnav: {
+                // autofocusInput: true, // focus first embedded input if node gets activated
+                // handleCursorKeys: true,   // Allow UP/DOWN in inputs to move to prev/next node
+            },
+            table: {
+                indentation: 20,      // indent 20px per node level
+                nodeColumnIdx: 2,     // render the node title into the 2nd column
+                checkboxColumnIdx: 1  // render the checkboxes into the 1st column
+            },
+            source: jsonCategoryTree,
+            titlesTabbable: true,     // Add all node titles to TAB chain
+            lazyLoad: function(event, data) { },
+            renderColumns: function(event, data) {
+                var node = data.node, $tdList = $(node.tr).find(">td");
+                i = 3;
+                for (var index = 0; index < totalFields.length; index++) {
+                    var field = totalFields[index];
+                    if (node.data.counts[field] != null)
+                        $tdList.eq(i++).text(formatNumber(node.data.counts[field], gridFields[field].scale));
+                    else if (node.data.sums[field] != null)
+                        $tdList.eq(i++).text(formatNumber(node.data.sums[field], gridFields[field].scale));
+                }
+            }
+        });
+            
+        $("#treegrid").fancytree("getTree").expandAll();
+        $("#treegrid").fancytree("getTree").expandAll(false);
+    }
+        
+    function refreshClientStatusMaps() {
+        var clientStatus_serialized = $('[id*=clientStatus_serialized')[0].value;
+        clientStatus_map = JSON.parse(clientStatus_serialized);
+        var clientStatus_temp = JSON.parse(clientStatus_serialized);
+        
+        for (var key in clientStatus_temp) {
+            if (clientStatus_initialMap[key] == null)
+                clientStatus_initialMap[key] = clientStatus_temp[key];
+        }
+
+    }
+    
+    function initClientStatusMap() {
+        var clientStatus_serialized = $('[id*=clientStatus_serialized')[0].value;
+        
+        var clientStatus_temp1 = JSON.parse(clientStatus_serialized);
+        var clientStatus_temp2 = JSON.parse(clientStatus_serialized);
+        
+        for (var key in clientStatus_initialMap) 
+            if (clientStatus_temp1[key] == null)
+                clientStatus_temp1[key] = clientStatus_initialMap[key];
+        for (var key in clientStatus_map) 
+            if (clientStatus_temp2[key] == null)
+                clientStatus_temp2[key] = clientStatus_map[key];
+        
+        clientStatus_initialMap = clientStatus_temp1;
+        clientStatus_map = clientStatus_temp2;
+    }
+    
+    function showAfterCalculationTotal() {
+        var afterCalculationTotals = $('table [id*=totalsGrid]').find('tbody').find('tr')[1];
+        $(afterCalculationTotals).css('visibility', '');
+    }
+    
+    function rerenderLegendIcons() {
+        // switch
+        var source = '';
+        source += '<svg xmlns="http://www.w3.org/2000/svg"';
+        source += 'xmlns:xlink="http://www.w3.org/1999/xlink"';
+        source += 'style="width: 12px;height: 12px;float: right;transform: rotate(90deg);" aria-hidden="true">';
+        source += '<use xlink:href="{!URLFOR($Asset.SLDS, "/assets/icons/action-sprite/svg/symbols.svg#user_activation")}"></use>';
+        source += '</svg>';
+        $('.switchIcon').html(source);
+        // stop
+        var source = '';
+        source += '<svg xmlns="http://www.w3.org/2000/svg"';
+        source += 'xmlns:xlink="http://www.w3.org/1999/xlink"';
+        source += 'style="width: 12px;height: 12px;float: right;transform: rotate(90deg);" aria-hidden="true">';
+        source += '<use xlink:href="{!URLFOR($Asset.SLDS, "/assets/icons/utility-sprite/svg/symbols.svg#stop")}"></use>';
+        source += '</svg>';
+        $('.stopIcon').html(source);
+        // renno
+        var source = '';
+        source += '<svg xmlns="http://www.w3.org/2000/svg"';
+        source += 'xmlns:xlink="http://www.w3.org/1999/xlink"';
+        source += 'style="width: 12px;height: 12px;float: right;transform: rotate(90deg);" aria-hidden="true">';
+        source += '<use xlink:href="{!URLFOR($Asset.SLDS, "/assets/icons/utility-sprite/svg/symbols.svg#refresh")}"></use>';
+        source += '</svg>';
+        $('.renoIcon').html(source);
+    }
+    
+    // remove focus from DatePicker
+    function setFocusOnLoad() {}
+    
+    function collapseFilterSection() {
+        $("div[id$='filterSection']").each(function(i, obj) {
+            var e = document.getElementById($(this).attr('id')).childNodes[0].childNodes[0];
+            if(e.className == 'hideListButton')
+                twistSection(e);
+        });
+    }
+    
+    function handleClientStatusColors() {
+        var clientStatusVal = '';
+        $('table tr .clientStatus_col').each(function() {
+            var element = $(this)[0].childNodes[0];
+            clientStatusVal = element.tagName == 'SPAN' ? clientStatusPicklistValuesMap.get($(element).text()) : $(element).val();
+            if (clientStatusVal != 1/* && clientStatusVal != ''*/) {
+                
+                var clientStatusClass = $(this).attr('class').split(/\s+/);
+                var classId = '';
+                for(var i = 0; i < clientStatusClass.length;i++)
+                    if(clientStatusClass[i].match(/\_Client_Status__c/g))
+                        classId = clientStatusClass[i].split('_')[0];
+                var parentTR = $(this).parent().get(0);
+                var classes = $('.' + classId+'_Client_Status__col').attr('class');
+                var classList = classes.match((/highlight-\S+/g) || [] || (/catRow\S+/g));
+                if (classList != null) {
+                    for (var i = 0; i < classList.length; i++) {
+                        $('.' + classId).removeClass(classList[i]);
+                    }
+                }
+                if(clientStatusVal == 'Probably deleted')
+                    clientStatusVal = 'Probablydeleted';
+                $('.' + classId).addClass('highlight-' + clientStatusVal);
+            }
+        });
+    }
+    
+    function setReleaseDate(rd) {
+        var fieldIdArray = rd.getAttribute('id').split(':');
+        fieldIdArray.splice(-1,1);
+        fieldIdArray.push('release-date');
+        var releaseDateFieldId = fieldIdArray.join('\\:');
+        var releaseDateField = $('[id*=' + releaseDateFieldId + "]").val(rd.value);
+    }
+    
+    function enterPress(e) {
+        if (e.keyCode == 13) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            } else {
+                e.returnValue = false;
+            }
+            search();
+        }
+    }
+    
+    function disableClustForDelete() {
+        for (var detailId in clientStatus_map) {
+            var clientStatusWrapper = clientStatus_map[detailId];
+            var initialState_status = clientStatusWrapper['clientStatus'];
+            if (initialState_status == 'Delete') {
+                for (var i = 0; i < clientStatusWrapper['clientClusters'].length; i++)
+                    clientStatusWrapper['clientClusters'][i] = false;
+            }
+            mapDataToView(detailId, false);
+        }
+    }
+    
+    function toggleCheckboxes(element, detailId, field, startIndex) {
+        var clientStatusToExclude = ['Opportunity', 'Delete', 'Probably deleted'];
+        var initialClientStatusWrapper = clientStatus_initialMap[detailId];
+        var clientStatusWrapper = clientStatus_map[detailId];
+        var stratCount = clientStatusWrapper['buClustersCount'];
+        switch (field) {
+            case 'corpClust':
+                // check crop clusters greater than selected
+                for (var i = 0; i < startIndex - 1; i++)
+                    clientStatusWrapper['corpClusters'][i] = false;
+                // uncheck crop clusters less than selected
+                for (var i = startIndex; i < 6; i++)
+                    clientStatusWrapper['corpClusters'][i] = true;
+                clientStatusWrapper['corpClusters'][startIndex - 1] = element.checked;
+                break;
+            case 'clientClust':
+                clientStatusWrapper['strat'] = startIndex;
+                var lastValidClientStatus = clientStatusWrapper['lastValidClientStatus'];
+                var lastValidStratCount = clientStatusWrapper['lastValidStratCount'];
+                var currentStratCount = element.checked ? 1 : 0;
+                var initialClientStatus = initialClientStatusWrapper['clientStatus'];
+                var currentClientStatus = clientStatusWrapper['clientStatus'];
+                // uncheck client clusters less than selected
+                for (var i = 0; i < startIndex - 1; i++) {
+                    clientStatusWrapper['clientClusters'][i] = false;
+                }
+                // check client clusters greater than selected
+                for (var i = startIndex; i < stratCount; i++) {
+                    clientStatusWrapper['clientClusters'][i] = true;
+                    currentStratCount++
+                }
+                clientStatusWrapper['clientClusters'][startIndex - 1] = element.checked;
+                if (lastValidClientStatus == null) {
+                    if (currentStratCount == 0) {
+                        clientStatusWrapper['clientStatus'] = '';
+                        clientStatusWrapper['clientAssortment'] = false;
+                    } else if ((initialClientStatus == null || initialClientStatus == '') && (currentClientStatus == null || currentClientStatus == '')){
+                        clientStatusWrapper['clientStatus'] = 'New';
+                        clientStatusWrapper['clientAssortment'] = true;
+                    }
+                } else {
+                    clientStatusWrapper['clientAssortment'] = false;
+                    if (currentStratCount == 0) {
+                        var response = window.confirm('{!JSENCODE($Label.MSG_After_saving_the_product_will_be_deleted_from_this_client_assortment)}');
+                        if (response) {
+                            clientStatusWrapper['clientStatus'] = 'Delete';
+                        } else {
+                            element.checked = !clientStatusWrapper['clientClusters'][startIndex - 1];
+                            return;
+                        }
+                    } else if (!clientStatusToExclude.includes(currentClientStatus) && !clientStatusToExclude.includes(lastValidClientStatus)) {
+                        if (currentStratCount > lastValidStratCount) {
+                            clientStatusWrapper['clientStatus'] = 'Increase';
+                        } else if (currentStratCount < lastValidStratCount) {
+                            clientStatusWrapper['clientStatus'] = 'Decrease';
+                        } else {
+                            clientStatusWrapper['clientStatus'] = lastValidClientStatus;
+                        }
+                    }
+                }
+                element.checked = !clientStatusWrapper['clientClusters'][startIndex - 1];
+                updateTotals(detailId, clientStatusWrapper['categoryId'], currentClientStatus, clientStatusWrapper['clientStatus']);
+                break;
+            case 'clientStatus':
+                var selectedStatus = element.value;
+                // get initial client status
+                var initialState_status = initialClientStatusWrapper['clientStatus'];
+                
+                updateTotals(detailId, clientStatusWrapper['categoryId'], clientStatusWrapper['clientStatus'], selectedStatus);
+              
+                clientStatusWrapper['clientStatus'] = selectedStatus;
+                if (initialState_status != null && initialState_status != ''
+                    && initialState_status != 'Blank' && initialState_status != 'New'
+                    && selectedStatus === 'New'
+                    && clientStatusToExclude.includes(clientStatusWrapper['clientStatus']))
+                {
+                    clientStatusWrapper['clientStatus'] = initialState_status;
+                    alert('{!JSENCODE($Label.MSG_Cannot_Select_Intro_for_Product_Referenced_in_Assortment)}');
+                }
+                // uncheck all client clusters
+                if (selectedStatus == 'Delete') {
+                    clientStatusWrapper['clientAssortment'] = false;
+                    for (var i = 0; i < stratCount; i++)
+                        clientStatusWrapper['clientClusters'][i] = false;
+                } else if (selectedStatus == initialState_status && initialState_status != 'Delete') {
+                    clientStatusWrapper['clientAssortment'] = initialClientStatusWrapper['clientAssortment'];
+                    for (var i = 0; i < stratCount; i++)
+                        clientStatusWrapper['clientClusters'][i] = initialClientStatusWrapper['clientClusters'][i];
+                }
+                break;
+            case 'clientAss':
+                var lastValidClientStatus = clientStatusWrapper['lastValidClientStatus'];
+                var currentClientStatus = clientStatusWrapper['clientStatus'];
+                if (clientStatusWrapper['clientAssortment']) {
+                    clientStatusWrapper['clientAssortment'] = false;
+                    clientStatusWrapper['clientStatus'] = lastValidClientStatus == null ? '' : lastValidClientStatus;
+                    for (var i = 0; i < stratCount; i++) {
+                        clientStatusWrapper['clientClusters'][i] = false;
+                    }
+                } else if (lastValidClientStatus != null && lastValidClientStatus != 'New') {
+                    alert('{!JSENCODE($Label.MSG_Cannot_Select_Intro_for_Product_Referenced_in_Assortment)}');
+                    clientStatusWrapper['clientAssortment'] = false;
+                } else {
+                    clientStatusWrapper['clientAssortment'] = true;
+                    clientStatusWrapper['clientStatus'] = 'New';
+                    var noStratSelected = true;
+                    for (var i = 0; i < stratCount; i++) {
+                        if (initialClientStatusWrapper['clientClusters'][i]) {
+                            noStratSelected = false;
+                            break;
+                        }
+                    }
+                    if (!noStratSelected) {
+                        for (var i = 0; i < stratCount; i++) {
+                            clientStatusWrapper['clientClusters'][i] = initialClientStatusWrapper['clientClusters'][i];
+                        }
+                    } else {
+                        clientStatusWrapper['clientClusters'][stratCount - 1] = true;
+                    }
+                }
+                updateTotals(detailId, clientStatusWrapper['categoryId'], currentClientStatus, clientStatusWrapper['clientStatus']);
+                break;
+        }
+        clientStatus_map[detailId] = clientStatusWrapper;
+        mapDataToView(detailId, true);
+    }
+    
+    function getClusterCount(clusterList, stratCount) {
+        var count = 0;
+        for (var i = 0; i < stratCount; i++)
+            count += clusterList[i] ? 1 : 0;
+        return count;
+    }
+    
+    function updateTotals(assortmentDetailId, categoryId, previousStatus, currentStatus) {
+        if (previousStatus == currentStatus) return;
+        if (!clientStatusToExcludeFromTotals.includes(currentStatus) && clientStatusToExcludeFromTotals.includes(previousStatus))
+            exclude = false;
+        else if (clientStatusToExcludeFromTotals.includes(currentStatus) && !clientStatusToExcludeFromTotals.includes(previousStatus))
+            exclude = true;
+        else return;
+        for (var index = 0; index < fieldsToCountList.length; index++) {
+            var fieldName = fieldsToCountList[index];
+            var input = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            if (typeof input !== 'undefined' && input != null && input.checked) {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                var value = exclude ? -1 : 1;
+                calculateCount(input, value, categoryId, totalClassname, grandTotalClassname);
+            }
+        }
+        for (var index = 0; index < fieldsToSumList.length; index++) {
+            var fieldName = fieldsToSumList[index];
+            var element = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            var value;
+            if ($(element).is('input')) {
+                value = $(element).val();
+            } else {
+                value = $(element).text();
+            }
+            value = stringToDecimal(value);
+            value = exclude ? value * -1 : value;
+            if (typeof element !== 'undefined' && element != null && value != 0) {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                var oldValueClassname = assortmentDetailId + 'initial' + fieldName;
+                calculateSum(fieldName, assortmentDetailId, categoryId, value);
+            }
+        }
+    }
+    
+    // TODO merge includeRowInTotals and excludeRowFromTotals in one function
+    function includeRowInTotals(assortmentDetailId, categoryId) {
+        for (var index = 0; index < fieldsToCountList.length; index++) {
+            var fieldName = fieldsToCountList[index];
+            var input = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            if (typeof input !== 'undefined' && input != null && input.checked) {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                calculateCount(input, 1, categoryId, totalClassname, grandTotalClassname);
+            }
+        }
+        for (var index = 0; index < fieldsToSumList.length; index++) {
+            var fieldName = fieldsToSumList[index];
+            var element = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            var value;
+            if ($(element).is('input')) {
+                value = $(element).val();
+            } else {
+                value = $(element).text();
+            }
+            value = stringToDecimal(value);
+            if (typeof element !== 'undefined' && element != null && value != 0) {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                var oldValueClassname = assortmentDetailId + 'initial' + fieldName;
+                calculateSum(fieldName, assortmentDetailId, categoryId, value);
+            }
+        }
+    }
+    
+    function excludeRowFromTotals(assortmentDetailId, categoryId) {
+        for (var index = 0; index < fieldsToCountList.length; index++) {
+            var fieldName = fieldsToCountList[index];
+            var input = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            if (typeof input !== 'undefined' && input != null && input.checked)  {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                calculateCount(input, -1, categoryId, totalClassname, grandTotalClassname);
+            }
+        }
+        for (var index = 0; index < fieldsToSumList.length; index++) {
+            var fieldName = fieldsToSumList[index];
+            var element = $('.' + assortmentDetailId + '_' + fieldName)[0];
+            var value;
+            if ($(element).is('input')) {
+                value = $(element).val();
+            } else {
+                value = $(element).text();
+            }
+            value = stringToDecimal(value) * -1;
+            if (typeof element !== 'undefined' && element != null && value != 0) {
+                var totalClassname = categoryId + fieldName;
+                var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+                var oldValueClassname = assortmentDetailId + 'initial' + fieldName;
+                calculateSum(fieldName, assortmentDetailId, categoryId, value);
+            }
+        }
+    }
+    
+    /**
+     * handels changing values and disable/enable columns
+     * doCalculate: Boolean to indicate whether or not subtotals and totals should be updated (set to false when called on load)
+    */
+    function mapDataToView(detailId, doCalculate) {
+        var clientStatusWrapper = clientStatus_map[detailId];
+        var initialStatusWrapper = clientStatus_initialMap[detailId];
+        var stratCount = clientStatusWrapper['clientClusters'].length;
+        var element;
+        var oldValue;
+        var minChecked = 6;
+        var maxChecked = 1;
+        for (var i = 1; i <= 6; i++) {
+            if (i <= stratCount) {
+                element = document.getElementsByClassName(detailId + "_Client_Clust" + i + '__c')[0];
+                if (typeof element !== 'undefined' && element != null) {
+                    //// element = element.childNodes[0];
+                    
+                    // calculate only if value changed
+                    
+                    /*if (doCalculate && oldValue != element.checked && element.checked) {
+                        calculateTotal(element, clientStatusWrapper['assortmentBUId'], detailId,
+                                       clientStatusWrapper['categoryId'], detailId +'_Client_Clust' + i + '__c', '',
+                                       clientStatusWrapper['categoryId'] + 'Client_Clust' + i + '__c', 'clientClust' + i + 'total', true);
+                    }*/
+                    minChecked = (clientStatusWrapper['clientClusters'][i-1] && i < minChecked) ? i : minChecked;
+                    maxChecked = (!clientStatusWrapper['clientClusters'][i-1] && i > maxChecked) ? i : maxChecked;
+                    element.disabled = clientStatusWrapper['clientStatus'] == 'Delete';
+                }
+            }
+            element = document.getElementsByClassName(detailId + '_Corp_Clust' + i + '__c')[0];
+            if (typeof element !== 'undefined' && element != null) {
+                //// element = element.childNodes[0];
+                oldValue = element.checked;
+                element.checked = clientStatusWrapper['corpClusters'][i-1];
+                // calculate only if value changed
+                if (doCalculate && oldValue != element.checked) {
+                    calculateTotal('Corp_Clust' + i + '__c', detailId, clientStatusWrapper['categoryId'], clientStatusWrapper['assortmentBUId']);
+                }
+            }
+        }
+        // for cluster calculations
+        if (doCalculate) {
+            for (var i = 1; i <= stratCount; i++) {
+                element = document.getElementsByClassName(detailId + '_Client_Clust' + i + '__c')[0];
+                if (typeof element !== 'undefined' && element != null) {
+                    oldValue = element.checked;
+                    element.checked = clientStatusWrapper['clientClusters'][i-1];
+                    if (oldValue != element.checked) {
+                        var doRemoteAction = (element.checked && i == minChecked) || (!element.checked && i == maxChecked)
+                        calculateTotal('Client_Clust' + i + '__c', detailId, clientStatusWrapper['categoryId'], clientStatusWrapper['assortmentBUId'], doRemoteAction);
+                    }
+                }
+            }
+        }
+        //
+        element = document.getElementsByClassName(detailId + "_Client_Ass__c")[0];
+        if (typeof element !== 'undefined' && element != null) {
+            //// element = element[0];
+            oldValue = element.checked;
+            element.checked = clientStatusWrapper['clientAssortment'];
+            // calculate only if value changed
+            if (doCalculate && oldValue != element.checked) {
+                calculateTotal('Client_Ass__c', detailId, clientStatusWrapper['categoryId'], clientStatusWrapper['assortmentBUId']);
+            }
+            element.disabled = clientStatusWrapper['clientStatus'] == 'Delete';
+        }
+        element = document.getElementsByClassName(detailId + "_Client_Status__c")[0];
+        if (typeof element !== 'undefined' && element != null) {
+            //// element = element.childNodes[0];
+            if (clientStatusWrapper['clientStatus'] == null) clientStatusWrapper['clientStatus'] = '';
+            var keyNote = document.getElementsByClassName(detailId + "_Key_Note__c")[0];
+            if (typeof keyNote !== 'undefined' && keyNote != null) {
+                keyNote = keyNote.parentElement;
+                if (clientStatusWrapper['clientStatus'] == 'Probably deleted')
+                    keyNote.classList.add('keyNoteAnimate');
+                else
+                    keyNote.classList.remove('keyNoteAnimate');
+            }
+            element.value = clientStatusWrapper['clientStatus'];
+            $(element).children('option').each(function() {
+                if (initialStatusWrapper['clientStatus'] == null) initialStatusWrapper['clientStatus'] = '';
+                var disabled = isDisabled(this, initialStatusWrapper['clientStatus'], clientStatusWrapper['clientStatus'], clientStatusWrapper['hasLastHistory']);
+                this.disabled = disabled;
+            });
+            var includeAllStatus = $('[id*=includeAllStatus]')[0].checked;
+        }
+        if (doCalculate) {
+            calculateClusterTotals();
+        }
+        handleClientStatusColors();
+    }
+    
+    function isDisabled(element, initialValue, currentValue, hasLastHistory) {
+        if (initialValue != currentValue) {
+            if (element.value == initialValue || element.value == currentValue)
+                return false;
+            return true;
+        }
+        if (element.value == currentValue) return false;
+        
+        switch (initialValue) {
+            case '':
+                if (element.value == 'Opportunity') {
+                    return false;
+                }
+                break;
+            case 'Increase':
+                if (element.value == 'Probably deleted' || element.value == 'Opportunity' || element.value == 'Delete') {
+                    return false;
+                }
+                break;
+            case 'Decrease':
+                if (element.value == 'Probably deleted' || element.value == 'Opportunity' || element.value == 'Delete') {
+                    return false;
+                }
+                break;
+            case 'New':
+                if (element.value == 'Probably deleted' || element.value == 'Opportunity' || element.value == 'Delete') {
+                    return false;
+                }
+                break;
+            case 'Keep':
+                if (element.value == 'Probably deleted' || element.value == 'Opportunity' || element.value == 'Delete') {
+                    return false;
+                }
+                break;
+            case 'Delete':
+                if (element.value == 'Keep') {
+                    return false;
+                }
+                break;
+            case 'Opportunity':
+                if (element.value == 'Keep' || element.value == 'Probably deleted' || element.value == 'Delete' || (!hasLastHistory && element.value == 'New')) {
+                    return false;
+                }
+                break;
+            case 'Probably deleted':
+                if (element.value == 'Keep' || element.value == 'Delete') {
+                    return false;
+                }
+                break;
+        }
+        return true;
+    }
+    
+    function stringToDecimal(str) {
+        if (str == null) return 0;
+        var d = removeWhiteSpace(str);
+        if(decimalSeparator == ',') {
+            d = d.replace(",", ".");
+        }
+        else {
+            d = d.replace(/,/g, "");
+        }
+        if (!isNaN(d) && d.length !== 0) {
+            return parseFloat(d);
+        }
+        return 0;
+    }
+    
+    function formatNumber(num, scale, removeWhiteSpaces) {
+        if (num == null || isNaN(num) || num.length == 0) num = 0;
+        if (scale == 0)
+            num = parseInt(num);
+        else {
+            num = num.toFixed(scale);
+        }
+        var formatedValue = negoptimApp.formatCurrency(num);
+        if (scale > 0) {
+            formatedValue = formatedValue.split(decimalSeparator)[0] + decimalSeparator + num.split('.')[1];
+        }
+        if (removeWhiteSpaces) {
+            formatedValue = removeWhiteSpace(formatedValue);
+        }
+        return formatedValue;
+    }
+    
+    function removeWhiteSpace(str) {
+        str = str.toString().replace(/&nbsp/g, "").replace(/;/g,'');
+        str = str.replace(/\s/g, "");
+        return str;
+    }
+    
+    function showColumnArrows(difference, cell) {
+        $(cell).find('span').remove();
+        if (difference > -1 && difference < 1) return;
+        if (difference <= -1) {
+            var arrow = '<span class="arrow down"/>';
+        } else if (difference >= 1) {
+            var arrow = '<span class="arrow up"/>';
+        }
+        cell.append(arrow);
+    }
+    
+    // toggle select all on multiple product switch popup
+    function toggleSelectAll() {
+        var main = $('[id*=selectAll]');
+        var checked = main[0].checked;
+        var productCheckboxs = $('[id*=switchCheckbox]');
+        for (var i =0; i < productCheckboxs.length; i++ ) {
+            productCheckboxs[i].checked = checked;
+        }
+    }
+    
+    // show/hide subtotals
+    function showHideSubTotals() {
+        var isShowSubChecked = $('.showSubTotalClass').is(':checked');
+        if(isShowSubChecked)
+            $('.totalRow').show();
+        else
+            $('.totalRow').hide();
+        setTableDimensions();
+        
+    }
+    // show/hide totals
+    function showHideTotals() {
+        if (document.getElementById('thePage:theForm:blockOfTotals') == undefined) return;
+        var isShowTotalChecked = $('.showTotalClass').is(':checked');
+        if(isShowTotalChecked)
+            document.getElementById('thePage:theForm:blockOfTotals').style.display="block";
+        else
+            document.getElementById('thePage:theForm:blockOfTotals').style.display="none";
+        setTableDimensions();
+    }
+    
+    // functions related to Total caluculations
+    //
+    function Assortment_Detail__c() {
+        this.Id = null;
+        this.Name = null;
+        this.Assortment_BU__c = null;
+        this.Category__c = null;
+        this.Year__c = assortmentYear;
+        for (var index = 0; index < fieldsToCountList.length; index++)
+            this[fieldsToCountList[index]] = false;
+        for (var index = 0; index < fieldsToSumList.length; index++)
+            this[fieldsToSumList[index]] = null;
+    }
+    
+    function calculateTotal(fieldName, assortmentDetailId, categoryId, assortmentBUId, doCallRemote) {
+        var inputClassname = assortmentDetailId + '_' + fieldName;
+        var input = $('.' + inputClassname)[0];
+        var oldValueClassname = assortmentDetailId + 'initial' + fieldName;
+        var totalClassname = categoryId + fieldName;
+        var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+        doCallRemote = (typeof doCallRemote === 'undefined') ? true : doCallRemote;
+        var clientStatus = clientStatus_map[assortmentDetailId]['clientStatus'];
+        var excludeFromCalculation = !$('[id*=includeAllStatus]')[0].checked && clientStatusToExcludeFromTotals.includes(clientStatus);
+        var tr = $(input).closest('tr').get(0);
+        
+        // update Count
+        if (fieldsToCountList.indexOf(fieldName) >= 0 && !excludeFromCalculation)
+            calculateCount(input, null, categoryId, totalClassname, grandTotalClassname);
+        
+        if (fieldName.includes("Client_Clust") || fieldsToSumList.indexOf(fieldName) >= 0) {
+            var assortmentDetail = new Assortment_Detail__c();
+            assortmentDetail.Id = assortmentDetailId;
+            assortmentDetail.Assortment_BU__c = assortmentBUId;
+            assortmentDetail.Category__c = categoryId;
+            for (var index = 0; index < fieldsToCountList.length; index++) {
+                var field = fieldsToCountList[index];
+                assortmentDetail[field] = $('td input:checkbox.' + assortmentDetailId + '_' + field, tr).is(':checked');
+            }
+            for (var index = 0; index < fieldsToSumList.length; index++) {
+                var field = fieldsToSumList[index];
+                var element = document.getElementsByClassName(assortmentDetailId + '_' + field)[0];
+                var fieldValue;
+                if (element.tagName == 'SPAN') {
+                    fieldValue = element.textContent;
+                } else if (element.tagName == 'INPUT') {
+                    fieldValue = element.value;
+                }
+                if (typeof element !== 'undefined' && element != null) {
+                    assortmentDetail[field] = stringToDecimal(fieldValue);
+                }
+            }
+            if (doCallRemote) remoteCallout(assortmentDetail);
+        }
+    }
+    
+    function calculateCount(input, value, categoryId, totalClassname, grandTotalClassname) {
+        var total = parseInt($('.' + totalClassname).text());
+        var grandTotal = parseInt($('.' + grandTotalClassname).text());
+        if (value == null) {
+            if (input.checked) value = 1;
+            else value = -1;
+        }
+        $('.' + totalClassname).text(total + value);
+        $('.' + grandTotalClassname).text(grandTotal + value);
+        
+        // update parent counts
+        calculateParentTotalCount(categoryId, totalClassname, value);
+    }
+    
+    function calculateParentTotalCount(categoryId, totalClassname, value) {
+        var columnName = totalClassname.split(categoryId)[1];
+        var tree = $("#treegrid").fancytree("getTree");
+        var node = tree.getNodeByKey(categoryId);
+        if (node != null) {
+            do {
+                $tdList = $(node.tr).find(">td");
+                var bcNode = tree.getNodeByKey(node.key + '_bc');
+                var oldValue = parseInt(node.data.counts[columnName]);
+                var newValue = oldValue + value;
+                var column = $tdList.eq(totalColumnsMap.get(columnName));
+                var nbStore = getNbStore(categoryId, columnName);
+                column.text(formatNumber(newValue * nbStore, gridFields[columnName].scale));
+                oldValue = bcNode != null ? parseInt(bcNode.data.counts[columnName]) : oldValue;
+                if (oldValue != newValue) {
+                    addBeforeCalculationNode(node);
+                    bcNode = tree.getNodeByKey(node.key + '_bc');
+                }
+                showColumnArrows((newValue - oldValue), column);
+                // update before calculation node if includeStores changes
+                if (bcNode != null) {
+                    $tdList = $(bcNode.tr).find(">td");
+                    column = $tdList.eq(totalColumnsMap.get(columnName));
+                    column.text(parseInt(bcNode.data.counts[columnName]) * nbStore);
+                }
+                //
+                node.data.counts[columnName] = newValue;
+                node = node.parent;
+            } while(node != null && node.title != 'root');
+        }
+    }
+    
+    function calculateSum(fieldName, assortmentDetailId, categoryId, value) {
+        var oldValueClassname = assortmentDetailId + 'initial' + fieldName;
+        var totalClassname = categoryId + fieldName;
+        var grandTotalClassname = assortmentDetailId + fieldName + 'total';
+        var total = stringToDecimal($('.' + totalClassname).text());
+        var grandTotal = stringToDecimal($('.' + grandTotalClassname).text());
+        $('.' + totalClassname).text(formatNumber(parseFloat(total + value), gridFields[fieldName].scale));
+        $('.' + grandTotalClassname).text(formatNumber(parseFloat(grandTotal + value), gridFields[fieldName].scale));
+        // update parent sums
+        calculateParentTotalSum(categoryId, totalClassname, value);
+    }
+    
+    function calculateParentTotalSum(categoryId, totalClassname, diffValue) {
+        var nodeKey = categoryId;
+        var columnName = totalClassname.split(categoryId)[1];
+        var tree = $("#treegrid").fancytree("getTree");
+        var node = tree.getNodeByKey(nodeKey);
+        if (node != null) {
+            do {
+                $tdList = $(node.tr).find(">td");
+                var bcNode = tree.getNodeByKey(node.key + '_bc');
+                var oldValue = node.data.sums[columnName];
+                var newValue = oldValue + diffValue;
+                var column = $tdList.eq(totalColumnsMap.get(columnName));
+                column.text(formatNumber(newValue, gridFields[columnName].scale));
+                oldValue = bcNode != null ? parseInt(bcNode.data.sums[columnName]) : oldValue;
+                if (oldValue != newValue) {
+                    addBeforeCalculationNode(node);
+                }
+                showColumnArrows((newValue - oldValue), column);
+                node.data.sums[columnName] = newValue;
+                node = node.parent;
+            } while(node != null && node.title != 'root');
+        }
+    }
+    
+    function addBeforeCalculationNode(node) {
+        if (node.hasChildren() == false || (node.hasChildren() == true && node.children[0].key != node.key + '_bc')) {
+            var beforeClacNode = jQuery.extend(true, {}, node);
+            beforeClacNode.key += '_bc';
+            beforeClacNode.title += ' ' + '{!JSENCODE($Label.LBL_Previous_Value)}';
+            beforeClacNode.children = null;
+            var firstChild = node.hasChildren() == true ? firstChild = node.children[0] : null;
+            node.addChildren(new Array(beforeClacNode), firstChild);
+        }
+    }
+    
+    function remoteCallout(assortmentDetail) {
+        $(document).find('body').css('cursor', 'wait');
+        Visualforce.remoting.Manager
+        .invokeAction(
+            '{!$RemoteAction.AssortmentBUMatrixController.evaluateAssortmentDetail}',
+            assortmentDetail, fieldsToSum_serialized, function(
+                result, event) {
+                // change cursor
+                remoteCallback(result);
+            }, {
+                escape : false
+            });
+    }
+    
+    function remoteCallback(result) {
+        assortmentDetailMap.set(result.Id, result);
+        mapCalculationToView(result);
+        $(document).find('body').css('cursor', 'default');
+    }
+    
+    function mapCalculationToView(result) {
+        var oldValue, newValue, diffValue, total, grandtotal;
+        /// var htmlElement = $('.' + result.Id + '_Status__c').val(result['Status__c']);
+        for (var index = 0; index < fieldsToSumList.length; index++) {
+            var field = fieldsToSumList[index];
+            // get field old value
+            oldValue = stringToDecimal($('.' + result.Id + 'initial' + field).text());
+            // get field new value
+            newValue = typeof result[field] === 'undefined' ? 0 : result[field];
+            // get difference
+            diffValue = newValue - oldValue;
+            // always update field value with newValue
+            var htmlElement = $('.' + result.Id + '_' + field);
+            var formatedValue = formatNumber(newValue, gridFields[field].scale);
+            if ($(htmlElement).is('input')) {
+                $(htmlElement).val(formatNumber(newValue, gridFields[field].scale, true));
+            } else {
+                $('.' + result.Id + '_' + field).text(formatedValue);
+            }
+            // change totals only if field value changed
+            if (diffValue != 0) {
+                $('.' + result.Id + 'initial' + field).text(formatedValue);
+                var clientStatus = clientStatus_map[result.Id]['clientStatus'];
+                var excludeFromCalculation = !$('[id*=includeAllStatus]')[0].checked && clientStatusToExcludeFromTotals.includes(clientStatus);
+                if (!excludeFromCalculation)
+                    calculateSum(field, result.Id, result.Category__c, diffValue);
+            }
+        }
+    }
+    
+    function checkProductForStop(assortmentDetailId, productId) {
+        var clientStatus = clientStatus_map[assortmentDetailId]['clientStatus'];
+        if (clientStatus != null && clientStatus !== '') {
+            showSingleStopPopup(productId, true, true);
+        } else {
+            alert ('Status is null > Cannot be stopped');
+        }
+        
+        return false;
+    }
+    
+    function promptToSave() {
+        if ({!AND(hasDetails, !readOnly)}) {
+            var confirmation = window.confirm('{!JSENCODE($Label.MSG_Save_Before_Search)}');
+            if (confirmation) {
+                saveAndSearch();
+            } else {
+                $('[id*=includeAllStatus]')[0].checked = !$('[id*=includeAllStatus]')[0].checked;
+            }
+        } else {
+            search();
+        }
+    }
+    
+    function setSticky() {
+        if (numberOfFixedColumnsVar == undefined || numberOfFixedColumnsVar == null || numberOfFixedColumnsVar < 1) {
+            numberOfFixedColumnsVar = 2;
+        }
+        var initialTableRows = $($("[id$=initial-table]").find('tbody')[0]).children('tr');
+        if (initialTableRows.length < 1) {return ;}
+        var categorywidth = $($(initialTableRows[0]).children('td')[0]).outerWidth();
+        var paddingLeft;
+        for (var i = 0; i < initialTableRows.length; i++) {
+            var tds = $(initialTableRows[i]).children('td'); 
+            $(tds[0]).css({position: 'sticky', left: '0px', 'z-index': 2});
+            $($(tds[0]).children('td')).css({position: 'sticky', top: '0px'});
+            var table = $(tds[1]).children('table');
+            paddingLeft = parseInt($(table).css("padding-left").replace('px', ''));
+            var space = categorywidth + paddingLeft;
+            var tableHeadThs = $($(table).find('thead')).find('th');
+            var tableFootThs = $($(table).find('tfoot')).find('th');
+            var tableTbodyRows = $($(table).find('tbody')).find('tr');
+            var spaces = {};
+            for (var k = 0; k < tableHeadThs.length; k++) {
+                spaces[k] = space;
+                $(tableHeadThs[k]).css({position: 'sticky', top: '0px', left: '', 'z-index': 1});
+                $(tableFootThs[k]).css({position: 'sticky', bottom: '0px', left: '', 'z-index': 1});
+                if (k < numberOfFixedColumnsVar) {
+                    $(tableHeadThs[k]).css({left: space, 'z-index': 2});
+                    $(tableFootThs[k]).css({left: space, 'z-index': 2});
+                }
+                space = space + $(tableFootThs[k]).outerWidth();
+            }
+            for (var k = 0; k < tableTbodyRows.length; k++) {
+                var tableRowTds = $(tableTbodyRows[k]).find('td');
+                for (var j = 0; j < tableRowTds.length; j++) {
+                    $(tableRowTds[j]).css({position: 'auto', left: '', 'z-index': 0});
+                    if (j < numberOfFixedColumnsVar) {
+                        $(tableRowTds[j]).css({position: 'sticky', left: spaces[j], 'z-index': 1});
+                    }
+                }
+            }
+        }
+    }
+    function setSelectList() {
+        var initialTableRows = $($("[id$=initial-table]").children('tbody')[0]).children('tr');
+        var tds = $(initialTableRows[0]).children('td');
+        var table = $(tds[1]).children('table');
+        var tableHeadThs = $($(table).find('thead')).find('th');
+        var nbOfFields = tableHeadThs.length;
+        var selectList = $("[id$=numberOfFixedColumns]");
+        if (selectList.length > 0) {
+            selectList.empty();
+            for (var i = 0 ; i <= nbOfFields; i++) {
+                var option = new Option('' + i, '' + i);
+                selectList.append($(option));
+            }
+            if (numberOfFixedColumnsVar != null && numberOfFixedColumnsVar != undefined) {
+                $(selectList.val('' + numberOfFixedColumnsVar)).attr("selected");
+            }
+        }
+    }
+    function setStickyColumns() {
+        if ($("[id$=numberOfFixedColumns]").length > 0) {
+            numberOfFixedColumnsVar = parseInt($("[id$=numberOfFixedColumns]").children("option:selected").val());
+            setSticky();
+        }
+    }
+    function setHideDatePickerListener() {
+        $('.grid-container').on( "scroll", function(){
+            $('#datePicker').hide();
+        });
+    }
+    function confirmValidation() {
+        var confirmStatus = confirm('{!JSENCODE($Label.MSG_Confirm_Change_Status)}');
+        if(confirmStatus) {
+            validateAssortment();
+        }
+    }
+    </script>
+    
+    <style>
+        
+        .sectionHeaderElement {
+        font-size: .75rem;
+        line-height: 1.25;
+        color: rgb(112, 110, 107);
+        }
+        .sectionHeaderTable {margin-bottom: 15px; margin-left: 15px;}
+        .sectionHeaderCol {width: 150px;}
+        
+        table .fancytree-ext-table {font-size:.9em;border-collapse:separate;border: 1px solid #ededed;width:100%}
+        
+        .outerColumnHeader {
+            display: none;
+        }
+        
+        .totalContainer .bPageBlock {
+            background-color: #ffffff !important;
+        }
+        
+        .totalContainer .bPageBlock th {
+            background-color: #ffffff !important;
+        }
+        
+        .totalsGrid {
+            height: 30px;
+            /*font-weight: bold;*/
+            border-color: white !important;
+        }
+        
+        .text-center {
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .green {
+            color: #008000 !important;
+        }
+        
+        .red {
+            color: #CC0000 !important;
+        }
+        
+        .in { /*background-color:#fbfba0;*/
+            
+        }
+        
+        .out { /*background-color:#b1d9ea;*/
+            
+        }
+        
+        .ref-in {
+            background-color: #f8f8f8;
+        }
+        
+        .ref-out {
+            background-color: #e2f3ec;
+        }
+        
+        .ref {
+            background-color: REd
+        }
+        
+        .dateFormat {
+            display: none;
+        }
+        
+        .productName {
+            text-align: left !important;
+            width: 235px;
+            min-width: 235px;
+            max-width: 235px;
+            white-space: nowrap !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-word;
+        }
+        
+        .productEAN {
+            min-width: 105px;
+            width: 105px;
+            max-width: 105px;
+        }
+        
+        .col1 {
+            min-width: 80px;
+        	width: 80px;
+        	max-width: 80px;
+        }
+        
+        .col {
+        	min-width: 80px;
+        	width: 80px;
+        	max-width: 130px;
+        }
+        
+        input[class*="Client_Product_Code__c"] {
+        width: 70px;
+        }
+        
+        .totals-col { /*min-width: 109px;*/
+            
+        }
+        
+        .checkbox {
+            min-width: 20px;
+        }
+        
+        .totals-checkbox { /*min-width: 82px;*/
+            
+        }
+        
+        .corpStatus { /*min-width: 120px !important;*/
+            
+        }
+        
+        .totals-corpStatus { /*min-width: 119px !important;*/
+            
+        }
+        
+        .clientStatus-col { /*min-width: 120px !important;*/
+            
+        }
+        
+        .totals-clientStatus-col { /*min-width: 119px !important;*/
+            
+        }
+        
+        .note { /*min-width:200px !important;*/
+            
+        }
+        
+        .totals-note { /*min-width:199px !important;*/
+            
+        }
+        
+        .rapport {
+            min-width: 100px;
+        }
+        
+        .totals-rapport { /*min-width:99px;*/
+            
+        }
+        
+        .numberInput {
+            width: 70px;
+        }
+        
+        .highlight-Keep {
+            background-color: #89bded !important;
+        }
+        
+        .highlight-Delete {
+            background-color: #f7ad65 !important;
+        }
+        
+        .highlight-New {
+            background-color: #a5ea85 !important;
+        }
+        
+        .highlight-Increase {
+            background-color: #ca87ed !important;
+        }
+        
+        .highlight-Decrease {
+            background-color: #eadf81 !important;
+        }
+        
+        .highlight-Substitute {
+            background-color: #ea9f85 !important;
+        }
+        
+        .highlight-Probablydeleted {
+            background-color: #e8e8e9 !important; 
+        }
+        
+        .highlight-Opportunity {
+            background-color: #c8e4ff !important;
+        }
+        
+        .highlight-null {
+            background-color: white;
+        }
+        .highlight-ref {
+            background-color: #e6f0ff !important;
+        }
+        .lengend-square {
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .selected {
+            border: 2px solid red;
+        }
+        
+        .border-col {
+            border-left: 5px solid #FFFFFF !important;
+        }
+        
+        .btn {
+            color: rgba(27, 82, 151, 1.0) !important;
+            background-image: none !important;
+        }
+        
+        .grid-container a {
+            text-decoration: none;
+            color: rgb(0, 109, 204) !important;
+            -webkit-transition: color 0.1s linear;
+            transition: color 0.1s linear;
+        }
+        
+        .grid-container {
+            width: 95vw;
+            overflow: auto;
+            height: 50vh;
+        }
+        
+        .grid-total-container {
+            width: 95vw;
+            overflow: auto;
+            font-size: 0.75rem;
+            border-color: white !important;
+            border-bottom: 0 !important;
+            border-left: 0 !important;
+        }
+        
+        .grid-total-container th {
+            border-bottom: 0 !important;
+            border-left: 0 !important;
+            border-color: white !important;
+            color: rgb(62, 62, 60) !important;
+        }
+        
+        .grid-total-container td:first-child {
+            border-bottom: 0 !important;
+            border-left: 0 !important;
+            border-color: white !important;
+            color: rgb(62, 62, 60) !important;
+        }
+        
+        .grid-total-container td {
+            border-bottom: 0 !important;
+            border-left: 0 !important;
+            border-color: white !important;
+        }
+        
+        #dataGridDiv { /*overflow-x:auto;*/}
+        
+        body {
+            overflow-x: hidden;
+        }
+        
+        @media ( min-width : 48em) { /*@media all and (min-width: 48em)*/
+            .initial-table {
+                table-layout: auto !important; /*display:inline;*/
+            }
+        }
+        
+        .up {
+            /*transform: rotate(-135deg);
+                /*-webkit-transform: rotate(-135deg);
+                border: solid green;*/
+            border-bottom: 5px solid green;
+        }
+        
+        .down {
+            /*transform: rotate(180deg);
+                -webkit-transform: rotate(180deg);
+                border: solid red;*/
+            border-top: 5px solid red;
+        }
+        
+        .arrow {
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            margin-left: 5px;
+            display: inline-block;
+            vertical-align: middle;
+        
+            /*border-width: 0 2px 2px 0;
+                display: inline-block;
+                padding: 3px;
+                margin-left: 5px;*/
+        }
+        
+        .history {
+            background-color: #fff;
+            opacity: 0.40;
+        }
+        
+        /** popup style **/
+        .popupBackground {
+            background-color: black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+        }
+        
+        .uploadPopup {
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 9999;
+            left: 50%;
+            padding: 10px;
+            position: absolute;
+            width: 700px;
+            margin-left: -350px;
+            top: 10px;
+        }
+        
+        .legend-items {
+            float: left;
+            padding-right: 100px;
+            padding-top: 5px;
+        }
+    
+        .legend-label {
+            font-size: smaller;
+        }
+        
+        .fontBold {
+            font-weight: bold;
+        }
+        
+        .keyNoteAnimate {
+            animation: fadeOutAnimation 2s ;
+        }
+        @keyframes fadeOutAnimation {
+            from {background-color: #FBFBA0;}
+            to {background-color: yellow;}
+        }
+        .switchAllBtn {
+        margin-left: 5px;
+        }
+        thead tr th {
+        border-color: #e0e3e5;
+        }
+        tfoot tr th {
+        background-color: #e3e3d7;
+        }
+        .initial-table tr td {
+        background-color: #ffffff;
+        }
+        .initial-table  table tr td:hover {
+        background-color: #e3f3ff;
+        }
+        .initial-table  .last {
+        border-bottom: 1 !important;
+        }
+        .innoProduct a {
+        color: green !important;
+        }
+        .stopProduct a {
+        color: red !important;
+        }
+    </style>
+</apex:page>

@@ -1,0 +1,65 @@
+<apex:page standardController="Assortment_BU__c" lightningStylesheets="false" sidebar="false">
+    <style>
+        .sectionHeaderElement {
+        font-size: .75rem;
+        line-height: 1.25;
+        color: rgb(112, 110, 107);
+        }
+        .sectionHeaderTable {margin-bottom: 15px; margin-left: 15px;}
+        .sectionHeaderCol {width: 150px;}
+    </style>
+    
+    
+    <apex:sectionHeader title="{!$ObjectType.Assortment_BU__c.Label}"
+                        subtitle="{!IF(Assortment_BU__c.Id!=Null,Assortment_BU__c.Long_Name__c,'')}"
+                        rendered="true" html-style="background: rgb(243, 242, 242); padding-bottom: 15px; border-radius: 4px;"  >
+        <!--table class="sectionHeaderTable">
+            <tr>
+                <td class="sectionHeaderCol">
+                    <apex:outputLabel value="{!$ObjectType.Assortment_BU__c.fields.Budget_WD__c.label}"
+                                      styleClass="sectionHeaderElement" />
+                </td>
+                <td class="sectionHeaderCol">
+                    <apex:outputLabel value="{!$ObjectType.Assortment_BU__c.fields.New_Client_WD_MarketBased__c.label}"
+                                      styleClass="sectionHeaderElement" />
+                </td>
+                <td class="sectionHeaderCol">
+                    <apex:outputLabel value="{!$ObjectType.Assortment_BU__c.fields.Budget_Quantity__c.label}"
+                                      styleClass="sectionHeaderElement" />
+                </td>
+                <td class="sectionHeaderCol">
+                    <apex:outputLabel value="{!$ObjectType.Assortment_BU__c.fields.New_Client_Quantity_YE__c.label}"
+                                      styleClass="sectionHeaderElement" />
+                </td>
+                <td class="sectionHeaderCol">
+                    <apex:outputLabel value="{!$ObjectType.Assortment_BU__c.fields.Budget_SellIn__c.label}"
+                                      styleClass="sectionHeaderElement" />
+                </td>
+                <td class="sectionHeaderCol">
+                    <apex:outputLabel value="{!$ObjectType.Assortment_BU__c.fields.New_Client_SellIn_YE__c.label}"
+                                      styleClass="sectionHeaderElement" />
+                </td>
+            </tr>
+            <tr>
+                <td class="sectionHeaderCol">
+                    <apex:outputField value="{!Assortment_BU__c.Budget_WD__c}"/>
+                </td>
+                <td class="sectionHeaderCol">
+                    <apex:outputField value="{!Assortment_BU__c.New_Client_WD_MarketBased__c}"/>
+                </td>
+                <td class="sectionHeaderCol">
+                    <apex:outputField value="{!Assortment_BU__c.Budget_Quantity__c}"/>
+                </td>
+                <td class="sectionHeaderCol">
+                    <apex:outputField value="{!Assortment_BU__c.New_Client_Quantity_YE__c}"/>
+                </td>
+                <td class="sectionHeaderCol">
+                    <apex:outputField value="{!Assortment_BU__c.Budget_SellIn__c}"/>
+                </td>
+                <td class="sectionHeaderCol">
+                    <apex:outputField value="{!Assortment_BU__c.New_Client_SellIn_YE__c}"/>
+                </td>
+            </tr>
+        </table-->
+    </apex:sectionHeader>
+</apex:page>

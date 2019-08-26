@@ -1,0 +1,706 @@
+<apex:page id="thePage" standardController="Contract__c" extensions="ConditionManagerController" lightningStylesheets="true" >
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"/>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"/>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/i18n/jquery-ui-i18n.min.js"/>
+    <apex:includeScript value="{!URLFOR($Resource.typeahead, 'typeahead.js')}"/>
+    <apex:stylesheet value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css" />
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}" />
+    <script src="{!URLFOR($Resource.Assets, 'assets/js/app.js') }">
+    </script>
+    
+    <apex:pageMessages id="messages" escape="false" />
+    <apex:sectionHeader title="{!$ObjectType.Contract__c.Label}" subtitle="{!$ObjectType.Contract_Discount__c.Label}" />
+    <apex:form id="theForm" >
+        <apex:actionPoller action="{!checkBatchStatus}" enabled="{!BatchInProgress}" id="theActionPoller"
+                           reRender="messages, calculateCmndBtn, generateInvoiceCmndBtn, dispatchCmndBtn, generateGRCRateCmndBtn, changeNegoscopeCmndBtn, conditionTableHeader"
+                           interval="5" oncomplete="afterRerender()" />
+        <apex:actionFunction name="refreshPageSize" action="{!refreshPageSize}" status="fetchStatus" reRender="contractPageBlock" oncomplete="afterRerender()" />
+        <apex:actionRegion id="searchRegion">
+            <apex:pageBlock id="SearchPageBlock">
+                <apex:pageBlockSection title="Search Supplier NegoScope" columns="2">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="{!$Label.LBL_SelectYear}" for="field__year" />
+                        <apex:selectList value="{!selectedNegoYear}" id="field__year"
+                                         multiselect="false" size="1" label="{!$Label.LBL_SelectYear}"
+                                         required="true">
+                            <apex:actionSupport event="onchange" action="{!showPopup}" rendered="{!selectedSupplierId != null}" rerender="theForm" oncomplete="afterRerender()" >
+                                <apex:param name="popupNegoscope" assignTo="{!popupNegoscope}" value="true" />
+                            </apex:actionSupport>
+                            <apex:selectOptions value="{!listYears}" />
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="{!$Label.LBL_Supplier}" for="field__supplier" />
+                        <apex:inputText styleClass="supplier" id="field__supplier" value="{!Contract__c.Supplier__r.Name}"
+                                        html-placeholder="{!$Label.LBL_EnterCodeOrName}"
+                                        label="{!$Label.SelectSupplier}" required="true" />
+                    </apex:pageBlockSectionItem>
+                    <apex:commandButton id="changeNegoscopeCmndBtn" action="{!showPopup}" value="Change Negoscope"
+                                        rendered="{!NOT(ISBLANK(Contract__c.Id))}" disabled="{!batchInProgress}"
+                                        reRender="popupNegoscope" status="globalloading" styleClass="btn" oncomplete="afterRerender()" >
+                        <apex:param name="popupNegoscope" value="true" assignTo="{!popupNegoscope}" />
+                    </apex:commandButton>
+                </apex:pageBlockSection>
+                <apex:actionFunction name="selectSupplier" action="{!showPopup}" rerender="theForm,popupNegoscope" status="globalloading" oncomplete="afterRerender()" >
+                    <apex:param name="supplierId" assignTo="{!selectedSupplierId}" value="" />
+                    <apex:param name="popupId" assignTo="{!popupNegoscope}" value="true" />
+                </apex:actionFunction>
+                <!-- Popup Contracts list -->
+                <apex:outputPanel id="popupNegoscope">
+                    <apex:outputPanel styleClass="overlay" layout="block" rendered="{!popupNegoscope}">
+                        <apex:outputPanel styleClass="popup2" style="width: 70%;" layout="block" rendered="{!popupNegoscope}">
+                            <apex:actionRegion >
+                                <apex:pageBlock id="contractNegoscopepageBlock" title="Contracts List">
+                                    <apex:pageBlockTable value="{!wContractNegoscopeList}" var="item"
+                                                         id="contractNegoscopepageBlockTable" rowClasses="odd,even" border="1"
+                                                         columnsWidth="1%,10%,25%,10%,25%,12%,0%,0%">
+                                        <apex:column >
+                                            <apex:inputCheckbox id="looped" selected="{!item.selected}"
+                                                                required="true" onclick="chooseContract(this)" />
+                                        </apex:column>
+                                        <apex:column headervalue="{!$ObjectType.Sup_sup_NegoScope__c.fields.NS_Code__c.Label}">
+                                            <apex:outputText value="{!item.negoscope.NS_Code__c}" />
+                                        </apex:column>
+                                        <apex:column headervalue="{!$ObjectType.Sup_sup_NegoScope__c.fields.Name.Label}">
+                                            <apex:outputText value="{!item.negoscope.Name}" />
+                                        </apex:column>
+                                        <apex:column headervalue="{!$ObjectType.Contract__c.fields.Contract_Numbder__c.Label}">
+                                            <apex:outputText value="{!item.contract.Contract_Numbder__c}" />
+                                        </apex:column>
+                                        <apex:column headervalue="{!$ObjectType.Contract__c.fields.Name.Label}">
+                                            <apex:outputField value="{!item.contract.name}" />
+                                        </apex:column>
+                                        <apex:column headervalue="{!$ObjectType.Contract__c.fields.Status__c.Label}">
+                                            <apex:outputField value="{!item.contract.Status__c}" />
+                                        </apex:column>
+                                        <apex:column headervalue="{!$ObjectType.Contract__c.fields.Contract_BDate__c.Label}">
+                                            <apex:outputField value="{!item.contract.Contract_BDate__c}" />
+                                        </apex:column>
+                                        <apex:column headervalue="{!$ObjectType.Contract__c.fields.Contract_EDate__c.Label}">
+                                            <apex:outputField value="{!item.contract.Contract_EDate__c}" />
+                                        </apex:column>
+                                    </apex:pageBlockTable>
+                                    <apex:pageBlockButtons >
+                                        <apex:commandButton value="{!$Label.OK}" action="{!hidePopup}"
+                                                            rendered="{!IF(selectedSupplierId == null || wContractNegoscopeList.empty, false, true)}"
+                                                            rerender="theForm,popupNegoscope"
+                                                            status="globalloading" oncomplete="afterRerender()" >
+                                        </apex:commandButton>
+                                        <apex:commandButton value="{!$Label.Cancel}"
+                                                            action="{!cancelPopup}"
+                                                            rerender="popupNegoscope"
+                                                            status="globalloading" oncomplete="resetTypeahead();afterRerender()" >
+                                        </apex:commandButton>
+                                    </apex:pageBlockButtons>
+                                </apex:pageBlock>
+                            </apex:actionRegion>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:actionRegion>
+        <apex:actionStatus id="globalloading">
+            <apex:facet name="start">
+                <div class="loading-overlay">
+                    <div class="loader-img"></div>
+                    <div class="loading-block">{!$Label.Loading}</div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        <apex:pageBlock id="contractPageBlock" mode="edit" rendered="{!NOT(ISBLANK(Contract__c.Id))}">
+            <apex:actionFunction action="{!refreshConditionList}" name="refreshConditionList" reRender="conditionsPageBlockTable" oncomplete="afterRerender()" />
+            <apex:pageBlockButtons id="pageBlockButtons" location="top">
+                
+                <apex:commandButton id="calculateCmndBtn" action="{!calculateYTD}"
+                                    value="{!$Label.Calculate}"
+                                    rerender="messages, calculateCmndBtn, generateInvoiceCmndBtn, dispatchCmndBtn, generateGRCRateCmndBtn, theActionPoller, conditionTableHeader, changeNegoscopeCmndBtn"
+                                    status="globalloading" styleClass="btn"
+                                    disabled="{!batchInProgress}" oncomplete="afterRerender()" />
+                
+                <apex:commandButton id="generateInvoiceCmndBtn" action="{!generateInvoice}"
+                                    value="{!$Label.LBL_GenerateInvoice}"
+                                    reRender="messages, calculateCmndBtn, generateInvoiceCmndBtn, dispatchCmndBtn, generateGRCRateCmndBtn, theActionPoller, conditionTableHeader, changeNegoscopeCmndBtn"
+                                    status="globalloading" styleClass="btn"
+                                    disabled="{!batchInProgress}" oncomplete="afterRerender()" />
+                
+                <apex:commandButton id="dispatchCmndBtn" action="{!dispatch}"
+                                    value="{!$Label.LBL_Dispatch}"
+                                    reRender="messages, calculateCmndBtn, generateInvoiceCmndBtn, dispatchCmndBtn, generateGRCRateCmndBtn, theActionPoller, conditionTableHeader, changeNegoscopeCmndBtn"
+                                    status="globalloading" styleClass="btn"
+                                    disabled="{!batchInProgress}" oncomplete="afterRerender()" />
+                
+                <apex:commandButton id="generateGRCRateCmndBtn" action="{!generateGRCRate}"
+                                    value="{!$Label.LBL_Generate_GRC}"
+                                    reRender="messages, calculateCmndBtn, generateInvoiceCmndBtn, dispatchCmndBtn, generateGRCRateCmndBtn, theActionPoller, conditionTableHeader, changeNegoscopeCmndBtn"
+                                    status="globalloading" styleClass="btn"
+                                    disabled="{!batchInProgress}" oncomplete="afterRerender()" />
+                
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection collapsible="false" columns="2">
+                <apex:outputField value="{!Contract__c.Name}" />
+                <apex:outputField value="{!Contract__c.Contract_BDate__c}" />
+                <apex:outputField value="{!Contract__c.Supplier_Nego_Scope__c}" />
+                <apex:outputField value="{!Contract__c.Contract_EDate__c}" />
+                <apex:outputField value="{!Contract__c.Contract_BU__c}" />
+                <apex:outputField value="{!Contract__c.Status__c}" />
+            </apex:pageBlockSection>
+            <apex:pageBlockSection id="conditionsPageBlockSection" title="Contract Discounts" collapsible="false" columns="1">
+                <apex:outputPanel >
+                    <apex:actionStatus id="fetchStatus" >
+                        <apex:facet name="start" >
+                            <img src="/img/loading.gif" />                    
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputPanel>
+                <apex:pageBlockTable id="conditionsPageBlockTable" value="{!conditionList}" var="item" >
+                    <apex:inlineEditSupport event="ondblclick" />
+                    <apex:facet name="header">
+                        <apex:outputPanel id="conditionTableHeader" layout="table" >
+                            <div align="center" >
+                                <apex:commandButton styleClass="btn" id="addDiscountBtn" status="fetchStatus"
+                                                    reRender="conditionsPageBlockTable, messages" value="Add Discount"
+                                                    action="{!insertDiscountRow}" disabled="{!batchInProgress}"
+                                                    oncomplete="afterRerender()" />
+                                
+                                <apex:commandButton styleClass="btn" id="saveConditionBtn" status="fetchStatus"
+                                                    reRender="contractPageBlock, messages" value="Save"
+                                                    action="{!saveConditions}" disabled="{!batchInProgress}"
+                                                    oncomplete="afterRerender()" />
+                                
+                                <apex:commandButton styleClass="btn" id="deleteConditionBtn" status="fetchStatus"
+                                                    reRender="contractPageBlock, messages" value="Delete"
+                                                    action="{!deleteConditions}" disabled="{!batchInProgress}"
+                                                    oncomplete="afterRerender()" />
+                                
+                            </div>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:column styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                       <!-- <apex:facet name="header">
+                            <apex:inputCheckbox id="selectAllConditions" value="{!selectAllConditions}" >
+                                <apex:actionSupport event="onchange" action="{!selectAllConditions}" rerender="conditionChkbox, deleteConditionBtn" status="fetchStatus" oncomplete="afterRerender()" />
+                            </apex:inputCheckbox>
+                        </apex:facet>-->
+                        <apex:inputCheckbox id="conditionChkbox" value="{!item.selected}" >
+                            <!--<apex:actionSupport event="onchange" action="{!processSelection}" reRender="selectAllConditions"
+                                                oncomplete="afterRerender(); enableDelete();" status="" >
+                                <apex:param name="currentConditionIndex" value="{!item.index}" assignTo="{!currentConditionIndex}" />
+                            </apex:actionSupport> -->
+                        </apex:inputCheckbox>
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.Nego_Discount_Type__c.Label}"
+                                 styleClass="{!IF(item.isNew, 'newCondition lookupTariffType', 'lookupTariffType')}" >
+                        <apex:inputField value="{!item.condition.Nego_Discount_Type__c}" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.Condition_Type__c.Label}"
+                                 styleClass="{!IF(item.isNew, 'newCondition lookupTariff', 'lookupTariff')}" >
+                        <apex:inputField value="{!item.condition.Condition_Type__c}" rendered="true" id="tariffName" >
+                            <apex:actionSupport action="{!adjustConditionMode}" event="onchange"
+                                                rerender="conditionsPageBlockTable" status="fetchStatus">
+                                <apex:param name="currentConditionIndex" value="{!item.index}" assignto="{!currentConditionIndex}" />
+                            </apex:actionSupport>
+                        </apex:inputField>
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.commercial_reference__c.Label}" styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                        <apex:outputField value="{!item.condition.commercial_reference__c}" rendered="true" />
+                    </apex:column>
+                    <apex:column id="col_beginDate" headerValue="{!$ObjectType.Contract_Discount__c.fields.Disc_BDate__c.Label}" styleClass="{!IF(item.isNew, 'newCondition', '')}">
+                        <apex:inputField id="BeginDateInput" styleClass="datepicker" value="{!item.condition.Disc_BDate__c}"
+                                         showDatePicker="false" />
+                    </apex:column>
+                    <apex:column id="col_endDate" headerValue="{!$ObjectType.Contract_Discount__c.fields.Disc_EDate__c.Label}" styleClass="{!IF(item.isNew, 'newCondition', '')}">
+                        <apex:inputField id="EndDateInput" styleClass="datepicker" value="{!item.condition.Disc_EDate__c}"
+                                         showDatePicker="false" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.Minimum_Guarantee__c.Label}" styleClass="{!IF(item.isNew, 'newCondition', '')}">
+                        <apex:outputField value="{!item.condition.Minimum_Guarantee__c}" rendered="true" />
+                    </apex:column>
+                    <apex:column id="col_amt" headerValue="{!$ObjectType.Contract_Discount__c.fields.Value_amt__c.Label}" styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                        <apex:inputField value="{!item.condition.Value_amt__c}" rendered="{!item.enableAmount}" style="text-align: right;width: 75px;" >
+                            <apex:actionSupport event="onchange" reRender="col_distribute" oncomplete="afterRerender()" />
+                        </apex:inputField>
+                        <br/>
+                        <apex:commandLink id="col_distribute" value="{!$Label.LBL_Distribute}" styleClass="{!IF(item.isNew, 'newCondition', '')}"
+                                          style="{!IF(item.condition.Value_amt__c == NULL || item.condition.Value_amt__c == 0 || !item.enableAmount, 'display:none;','display: flex;justify-content: center;')}"
+                                          status="globalloading">
+                        </apex:commandLink>
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.Value_per__c.Label}" styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                        <apex:outputField id="col_percentage" value="{!item.condition.Value_per__c}" rendered="true" />
+                        <br/>
+                        <apex:commandLink id="col_slabs" styleClass="{!IF(item.isNew, 'newCondition', '')}" value="{!$Label.LBL_Slabs}"
+                                          rerender="popupSlabs" status="globalloading" rendered="{!item.isConditional}" action="{!showPopup}" 
+                                          oncomplete="triggerSlabRadio({!wCurrentCondition.condition.slab_target__c}); afterRerender();" >
+                            <apex:param name="popupSlabs" assignTo="{!popupSlabs}" value="true" />
+                            <apex:param name="condIndex" assignTo="{!currentConditionIndex}" value="{!item.index}" />
+                        </apex:commandLink>
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.Product_Scope__c.Label}" styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                        <apex:commandLink id="col_product_scope" value="{!item.productScopeName}" action="{!showPopup}"
+                                          reRender="popupChildNegoscope,formChildNegoScope" rendered="true"
+                                          status="globalloading" oncomplete="afterRerender()">
+                            <apex:param name="popupChildNegoscope" assignTo="{!popupChildNegoscope}" value="true" />
+                            <apex:param name="currentConditionIndex" assignTo="{!currentConditionIndex}" value="{!item.index}"/>
+                        </apex:commandLink>
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.BU_Scope__c.Label}" styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                        <apex:outputField value="{!item.condition.BU_Scope__c}" rendered="true" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.Valid__c.Label}" style="text-align: center;" styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                        <apex:outputField value="{!item.condition.Valid__c}" rendered="true" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.Invoice_period__c.Label}" styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                        <apex:outputField value="{!item.condition.Invoice_period__c}" rendered="true" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.Invoicing_plan_generated__c.Label}"  styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                        <apex:outputField value="{!item.condition.Invoicing_plan_generated__c}" rendered="true" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.Is_Prenego_Envelop__c.Label}" style="text-align: center;" styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                        <apex:outputField value="{!item.condition.Is_Prenego_Envelop__c}" rendered="true" />
+                    </apex:column>
+                    <apex:column headerValue="{!$ObjectType.Contract_Discount__c.fields.Name.Label}" styleClass="{!IF(item.isNew, 'newCondition', '')}" >
+                        <apex:outputLink title="{!item.Name}" value="/{!item.condition.Id}" target="_blank">
+                            <apex:outputText value="{!item.Name}" />
+                        </apex:outputLink>
+                    </apex:column>
+                    <apex:facet name="footer">
+                        <apex:outputPanel layout="table">
+                            <apex:selectList value="{!size}" multiselect="false" size="1" onchange="refreshPageSize();" >
+                                <apex:selectOptions value="{!paginationSizeOptions}"/>
+                            </apex:selectList>
+                            <apex:commandButton styleClass="btn" status="fetchStatus" reRender="conditionsPageBlockTable"
+                                                value="{!$Label.LBL_First}" action="{!first}" disabled="{!!setCtrlr.hasPrevious}"
+                                                title="{!$Label.LBL_First}" oncomplete="afterRerender()" /> 
+                            
+                            <apex:commandButton styleClass="btn" status="fetchStatus" reRender="conditionsPageBlockTable"
+                                                value="{!$Label.LBL_Previous}" action="{!previous}" disabled="{!!setCtrlr.hasPrevious}"
+                                                title="{!$Label.LBL_Previous}" oncomplete="afterRerender()" /> 
+                            
+                            <apex:commandButton styleClass="btn" status="fetchStatus" reRender="conditionsPageBlockTable"
+                                                value="{!$Label.LBL_Next}" action="{!next}" disabled="{!!setCtrlr.hasNext}"
+                                                title="{!$Label.LBL_Next}" oncomplete="afterRerender()" /> 
+                            
+                            <apex:commandButton styleClass="btn" status="fetchStatus" reRender="conditionsPageBlockTable"
+                                                value="{!$Label.LBL_Last}" action="{!last}" disabled="{!!setCtrlr.hasNext}"
+                                                title="{!$Label.LBL_Last}" oncomplete="afterRerender()" /> 
+                            
+                            <apex:outputText rendered="{!noOfRecords > 0}" style="text-align: right" >{!(setCtrlr.pageNumber * size)+1-size}-{!IF((setCtrlr.pageNumber * size)>noOfRecords, noOfRecords,
+                                (setCtrlr.pageNumber * size))} of {!noOfRecords}
+                            </apex:outputText>                      
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+    <!-- Popup Slabs -->
+    <apex:include pageName="ConditionManager_Slabs" />
+    <!-- Popup Child Negoscope -->
+    <apex:include pageName="ConditionManager_ChildNegoScope" />
+    <apex:outputPanel >
+        <script type="text/javascript">
+        // Get the prefix/namespace 
+        var prefix = "{!prefix}";
+        var dateFormat;
+        var locale = "{!locale}";
+        
+        var checkboxCount = 0;
+        var conditionType = '';
+
+        $(document).ready(function() {
+            console.log('checkboxCount' + checkboxCount);
+            initTypeaheadSupplier();
+            afterRerender();
+        });
+        
+        /*   function enableDelete() {
+            checkboxCount--;
+            if (checkboxCount == 0) {
+                $("[id*='deleteConditionBtn']").removeClass("btnDisabled");
+                //$("[id*='conditionChkbox']").removeClass("checkImg");
+            }
+            console.log(checkboxCount);
+        }
+        
+         function disableDelete() {
+            checkboxCount++;
+            $("[id*='deleteConditionBtn']").addClass("btnDisabled");
+             //$("[id*='conditionChkbox']").addClass("checkImg");
+            console.log(checkboxCount);
+         }*/
+        
+        function afterRerender() {
+            var conditionListSize = '{!conditionList.size}';
+            if(conditionListSize != null && conditionListSize != '' && {!secondLoad}) {
+                var rowsCount = conditionListSize,            
+                    beginYear = '{!YEAR(Contract__c.Contract_BDate__c)}', 
+                    beginMonth = '{!MONTH(Contract__c.Contract_BDate__c)}',
+                    beginDay = '{!DAY(Contract__c.Contract_BDate__c)}',
+                    endYear = '{!YEAR(Contract__c.Contract_EDate__c)}',
+                    endMonth = '{!MONTH(Contract__c.Contract_EDate__c)}',
+                    endDay = '{!DAY(Contract__c.Contract_EDate__c)}';
+                //todo: use locale date formating
+                if(locale == 'en_US') {
+                    dateFormat = 'mm/dd/yy';
+                } else {
+                    dateFormat = 'dd/mm/yy';
+                }
+                setDateRange(rowsCount, beginYear, beginMonth, beginDay, endYear, endMonth, endDay);
+            }
+            /* $("[id*='conditionChkbox']").off('change', disableDelete);
+            $("[id*='conditionChkbox']").on('change', disableDelete);*/
+            $(".lookupTariff .lookupInput a").click(function() {
+                var CurrentElement = $(this).parent().parent().parent().find('td.lookupTariffType');
+                conditionType = CurrentElement.find('select').val();
+            });
+        }
+        
+        function setDateRange(rowsCount, beginYear, beginMonth, beginDay, endYear, endMonth, endDay) {
+            var beginDate = new Date(Date.UTC(beginYear, beginMonth - 1, beginDay, 0, 0, 0));
+            var endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay, 0, 0, 0));
+            var str = "{!$Component.thePage:theForm:contractPageBlock:conditionsPageBlockSection:conditionsPageBlockTable}";
+            var arrayBeginDate = new Array(), arrayEndDate = new Array(), fromDate = new Array(rowsCount), toDate = new Array(rowsCount);
+            for(var i = 0; i < rowsCount; i++) {
+                arrayBeginDate.push(document.getElementById(str + ':' + i + ':col_beginDate'));
+                arrayEndDate.push(document.getElementById(str + ':' + i + ':col_endDate'));
+            }
+            for(var i = 0; i < rowsCount; i++) {
+                fromDate[i] = $(arrayBeginDate[i]).find('.datepicker')
+                .datepicker({
+                    dateFormat: dateFormat,
+                    minDate: beginDate,
+                    maxDate: endDate
+                }).on( "change", function(e) {
+                    var eltId = $(e.target).prop('id');
+                    var parts = eltId.split(':');
+                    var ndx = parts[5];
+                    toDate[ndx].datepicker("option", "minDate", getDate(this));
+                });
+                toDate[i] = $(arrayEndDate[i]).find('.datepicker')
+                .datepicker({
+                    dateFormat: dateFormat,
+                    minDate: beginDate,
+                    maxDate: endDate
+                }).on( "change", function(e) {
+                    var eltId = $(e.target).prop('id');
+                    var parts = eltId.split(':');
+                    var ndx = parts[5];
+                    fromDate[ndx].datepicker("option", "maxDate", getDate(this));
+                });
+                $(arrayBeginDate[i]).find('.datepicker').trigger('change');
+                $(arrayEndDate[i]).find('.datepicker').trigger('change');
+            }
+            var localeI18N = getLocale(locale).split('-')[0];
+            $.datepicker.setDefaults($.datepicker.regional[localeI18N]);
+        }
+        
+        function getDate(element) {
+            var date;
+            try {
+                date = $.datepicker.parseDate( dateFormat, element.value );
+            } catch( error ) {
+                console.log(error);
+                date = null;
+            }
+            return date;
+        }
+        
+        function getLocale(str) {
+            var res = str.replace("_", "-");
+            if(res.indexOf('_') != -1) {
+                res = res.split('_')[0];
+            }
+            return res;
+        }
+        
+        function chooseContract(cb) {
+            enableDisable(cb);
+            contract = true;
+        }
+        function enableDisable(cb) {
+            $("input:checkbox[id*=looped]").prop("checked", false); 
+            $(cb).prop("checked", true);
+        }
+        function resetTypeahead() {
+            $('.supplier').typeahead.empty();
+            initTypeaheadSupplier();
+        }
+        function initTypeaheadSupplier() {    	
+            $('.supplier')
+            .typeahead({
+                hint: true,
+                highlight: true,
+                minLength: 2
+            },
+                       {
+                           name: 'suppliers',
+                           displayKey: 'Name',
+                           source: getSuppliers,
+                           templates: {
+                               empty: [
+                                   '<div class="search-result" syle="position: fixed;z-index: 1000;">',
+                                   '<p>{!JSENCODE($Label.NoSupplierFound)}</p>',
+                                   '</div>'
+                               ].join('\n'),
+                               suggestion: function(supplier) {
+                                   return [
+                                       '<div class="search-result" style="position: fixed;cursor:pointer;z-index: 1000;">',
+                                       '<p>', supplier[prefix + 'Code__c'] + ' - ' + supplier.Name + '</p>',
+                                       '</div>'
+                                   ].join('\n');
+                               }
+                           }
+                       }).on('typeahead:selected',
+                             function(obj, datum, name) {
+                                 selectSupplier(datum.Id);
+                             });
+        }
+        
+        var getSuppliers = debounce(function(query, process) {
+            var q = query;
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.ConditionManagerController.findSupplier}', q,
+                function(result, event) {
+                    var res = JSON.parse(result);
+                    process(res);
+                }, {
+                    escape: false
+                });
+        }, 1);
+        
+        function debounce(func, wait, immediate) {
+            var timeout;
+            return function() {
+                var context = this,
+                    args = arguments;
+                var later = function() {
+                    timeout = null;
+                    if (!immediate)
+                        func.apply(context, args);
+                };
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow)
+                    func.apply(context, args);
+            };
+        };
+        function setTargetSlab(n) {
+            $("[id*='slabTargetHidden']").first().val(n);
+        }
+        function triggerSlabRadio(value) {
+            $('input:radio[name="slabTargetRadio"]').filter('[value="'+value+'"]').trigger('click')
+        }
+        function selectProductScope(cb) {
+            $("input:checkbox[id*=looped]").prop("checked", false); 
+            $(cb).prop("checked", true);
+        }
+        // override lookup for tarrif conidtion 
+    // http://blog.jeffdouglas.com/2011/08/12/roll-your-own-salesforce-lookup-popup-window/
+    function openLookup(baseURL, width, modified, searchParam) {
+        var originalbaseURL = baseURL;
+        var originalwidth = width;
+        var originalmodified = modified;
+        var originalsearchParam = searchParam;
+        
+        var lookupType = baseURL.substr(baseURL.length - 3, 3);
+        if (modified == '1') baseURL = baseURL + searchParam;
+        
+        var isCustomLookup = false;
+        var urlArr = baseURL.split("&");
+        var txtId = '';
+        
+        if (urlArr.length > 2) {
+            urlArr = urlArr[1].split('=');
+            txtId = urlArr[1];
+        }
+        // Following the lookup type to be not empty for Contract_Discount__c object so change this as per your standard or custom object
+        // and check lookup field based on id value 
+        // Following is the ID of inputField that is the lookup to be customized as custom lookup
+        
+        if (lookupType != '' && txtId.indexOf('tariffName') > -1) {
+            // Following is the url of Custom Lookup page. You need to change that accordingly
+            baseURL = "/apex/CustomTariffConditionLookup?txt=" + txtId + "&case=tarifflookup";
+            // Following is the id of apex:form control "myForm". You need to change that accordingly
+            baseURL = baseURL + "&frm=" + escapeUTF("{!$Component.myForm}");
+            if (modified == '1') {
+                baseURL = baseURL + "&lksearch=" + searchParam + "&buId={!contract.Contract_BU__c}&conditionType=" + conditionType;
+            }
+            
+            isCustomLookup = true;
+        }
+        
+        if (isCustomLookup == true) {
+            openPopup(baseURL, "lookup", 350, 480, "width=" + width + ",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+        } else {
+            if (modified == '1') originalbaseURL = originalbaseURL + originalsearchParam;
+            openPopup(originalbaseURL, "lookup", 350, 480, "width=" + originalwidth + ",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+        }
+    }
+        </script>
+    </apex:outputPanel>
+    <!-- STYLE -->
+    <style type="text/css">
+        
+        .uploadBox {
+        border: none !important;
+        padding: 0px;
+        }
+        
+        .uploadBox .uploadButton {
+        padding: 5px 5px !important;
+        }
+        
+        .search-result {
+        background-color: white;
+        border: 1px solid #cccccc;
+        width: 350px;
+        padding: 3px;
+        }
+        
+        .span-bold {
+        font-weight: bold;
+        }
+        
+        .txtbox {
+        display: block;
+        float: left;
+        height: 32px;
+        width: 100px;
+        }
+        
+        .btncls {
+        display: block;
+        float: left;
+        height: 40px;
+        margin: -1px -2px -2px;
+        width: 41px;
+        }
+        
+        .custPopup {
+        background-color: white;
+        border-width: 2px;
+        border-style: solid;
+        z-index: 9999;
+        left: 50%;
+        padding: 10px;
+        position: absolute;
+        /* These are the 3 css properties you will need to change so the popup
+        displays in the center of the screen. First set the width. Then set
+        margin-left to negative half of what the width is. You can add
+        the height property for a fixed size pop up if you want.*/
+        width: 700px;
+        margin-left: -350px;
+        top: 100px;
+        }
+        
+        .popupBackground {
+        background-color: black;
+        opacity: 0.20;
+        filter: alpha(opacity = 20);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 9998;
+        }
+        
+        .custPopup2 {
+        background-color: white;
+        border-width: 2px;
+        border-style: solid;
+        z-index: 10001;
+        left: 75%;
+        padding: 10px;
+        position: absolute;
+        /* These are the 3 css properties you will need to change so the popup
+        displays in the center of the screen. First set the width. Then set
+        margin-left to negative half of what the width is. You can add
+        the height property for a fixed size pop up if you want.*/
+        width: 400px;
+        margin-left: -350px;
+        top: 50px;
+        }
+        
+        .popupBackground2 {
+        background-color: black;
+        opacity: 0.20;
+        filter: alpha(opacity = 20);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 10000;
+        }
+        
+        span.dateFormat {
+        display: none;
+        }
+        
+        .overlay {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.5);
+        transition: opacity 500ms;
+        z-index: 1000;
+        visibility: visible;
+        opacity: 1;
+        overflow: auto;
+        }
+        
+        .popup2 {
+        margin: 15% auto;
+        padding: 5px;
+        background: #fff;
+        border: 2px solid black;
+        position: relative;
+        transition: all 5s ease-in-out;
+        }
+        
+        .popup2 h2 {
+        margin-top: 0;
+        color: #333;
+        font-family: Tahoma, Arial, sans-serif;
+        }
+        
+        .popup2 .close {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        transition: all 200ms;
+        font-size: 30px;
+        font-weight: bold;
+        text-decoration: none;
+        color: #333;
+        }
+        
+        .popup2 .close:hover {
+        color: #06D85F;
+        }
+        
+        .popup2 .content {
+        max-height: 30%;
+        overflow: auto;
+        }
+        
+        @media screen and (max-width: 700px) {
+        .box {
+        width: 70%;
+        }
+        .popup2 {
+        width: 70%;
+        }
+        }
+        
+        .newCondition {
+        background-color: #FBFBA0;/*F85959*/
+        }
+        
+    </style>
+</apex:page>

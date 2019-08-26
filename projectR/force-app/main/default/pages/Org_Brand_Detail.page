@@ -1,0 +1,7 @@
+<apex:page standardController="Sup_Brand__c" lightningStylesheets="true" showHeader="true" sidebar="true">
+
+    <div style="margin:0 0 0 20px">
+        <apex:detail inlineEdit="true" title="true" showChatter="true"/>
+    </div>
+
+</apex:page>

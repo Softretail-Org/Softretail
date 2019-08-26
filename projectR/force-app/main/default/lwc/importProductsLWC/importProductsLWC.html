@@ -1,0 +1,104 @@
+<template >
+
+        <template  if:true={LoadPage}>
+          
+            <lightning-spinner if:true={SpinnerRun}></lightning-spinner>
+          <div onmousewheel={handleme}>
+            <div data-id="Headtest" class="">
+              <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                  <div class="slds-media">
+                    <div class="slds-media__figure" if:false={isAuraWrapped}>
+                      <span class="slds-icon_container slds-icon-standard-opportunity">
+                        <img src="https://negoptim-qa-dev-ed--c.eu17.content.force.com/servlet/servlet.ImageServer?id=0151v000002wqBk&oid=00D0Y000000ZAyy&lastMod=1553007972000" style="width:50px;height:50px" /></span>
+                    </div>
+                    <div class="slds-media__body">
+                      <div class="slds-page-header__name">
+                        <div class="slds-page-header__name-title">
+                          <h1>
+                            <div class="slds-page-header__col-meta">
+                               
+                            </div>
+                            <span class="slds-page-header__title slds-truncate" data-id="HeaderTitle"
+                              title={HeaderTitle}>Load Products For {HeaderTitle} {SelectedProduct}</span>
+                          </h1> 
+                        </div>
+                        <div class="slds-page-header__name-switcher">
+                          <div class="slds-dropdown-trigger slds-dropdown-trigger_click">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="slds-page-header__col-actions">
+                  <div class="slds-page-header__controls">
+                    <div
+                      class="slds-page-header slds-page-header_record-home s1FixedTop forceHighlightsStencilDesktop forceRecordLayout" if:false={isAuraWrapped}>
+                      <ul class="slds-button-group-list">
+                        <li>
+                          <lightning-button label="Save" variant="brand" onclick={SaveAction} class="slds-m-left_xx-small">
+                          </lightning-button>
+                        </li>
+                        <li>
+                          <lightning-button  label="Import All Filtered" variant="brand" onclick={importAllFiltered} class="slds-m-left_xx-small">
+                              </lightning-button>
+                            
+                          </li>
+                          <li>
+                              <lightning-button label="Cancel" variant="brand" onclick={Cancel} class="slds-m-left_xx-small">
+                            </lightning-button>
+                            </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+             
+            <center> <c-lookup-holder oncriteriachange={handleCriteriaChange} path={AssPath} onreset={handleReset} onselectionchange={handleSelectedProduct} onsubmit={handleSubmit}></c-lookup-holder></center> 
+                
+           <!--<c-lookup-search  path={AssPath}  selectedsobject="product2"   
+                  recordlimit="10"    
+                  onlookupselect={handlelookupselectaccount}></c-lookup-search>  
+                <tempate if:true={selectedAccountRecord}>  
+                  <p>SELECTED RECORD VALUE : {selectedAccountRecord.Name}</p>  
+                </tempate>  -->
+
+          <!--  <div data-id="Search">
+              <lightning-input placeholder="Search by product Name,Categoryor EAN" aria-autocomplete="list"
+                onchange={HandleProductSearch} type="search" onkeyup={HandleProductSearch}></lightning-input>
+      
+            </div> -->
+            
+            
+      
+            <div data-id="Datatable" class="slds-scrollable_y slds-size_1-of-1 slds-m-top_x-small" style="height:22rem;width:100% ;background-color:#212121;">
+               <c-my-datatable key-field="Id"
+             enable-infinite-loading={InfiniteLoading}
+             is-loading={Loading}
+             onrowselection={SelectedRowsCounter}
+             onloadmore={loadMoreData}
+             onsort={Sorting}
+             data-id="ProductTable" 
+             data={data} 
+             sorted-by={sortedBy} 
+             sorted-direction={sortDirection}
+             columns={columns}
+             selected-rows={selectedRows}
+             class="slds-size_1-of-1">
+            </c-my-datatable>
+            </div>
+            
+          </div>
+          <lightning-card >
+                <lightning-badge class="slds-m-top_xx-small slds-float_left" label={Loaded}> </lightning-badge>
+                <lightning-badge class="slds-m-top_xx-small slds-float_right" label={SelectedProducts}>  </lightning-badge>
+              </lightning-card>
+        </template>
+        <template onload={onloadfunc}  if:false={LoadPage}>
+          <lightning-spinner></lightning-spinner>
+        </template>
+        <!--</div>-->
+      
+      </template>

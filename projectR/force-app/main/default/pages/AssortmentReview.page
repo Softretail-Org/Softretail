@@ -1,0 +1,339 @@
+<apex:page standardController="Assortment_BU__c" extensions="AssortmentReviewController" lightningStylesheets="true" sidebar="false" docType="html-5.0">
+    <apex:stylesheet value="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"></apex:stylesheet>
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <apex:outputPanel id="JS">
+	    <script type="text/javascript">
+    	$(document).ready(function() {
+	        drawTitles();
+	        // Calling the createSlider Method to create the slider.
+	        createSlider();
+	        picklistColorChange();
+	        var colorArr = {
+	            'Keep':'#0b6fce',
+	            'Delete':'#e27001',
+	            'New':'#78c953',
+	            'Increase':'#a845dc',
+	            'Decrease':'#f3d904',
+	            'Substitute':'#a53711',
+	        };
+	        j$('table tr').each(function() {
+	            picklistValue = j$(this).find('.clientStatus').val();
+	            if(typeof picklistValue != 'undefined'){
+	                var picklistColor = colorArr[picklistValue];
+	                j$(this).find('.clientStatus').parent().css('background-color',picklistColor);
+	                j$(this).find('.clientStatus').parent().next().css('background-color',picklistColor);
+	                j$(this).find('.clientStatus').parent().next().next().css('background-color',picklistColor);
+	                j$(this).find('.clientStatus').parent().next().next().next().css('background-color',picklistColor);
+	                j$(this).find('.clientStatus').parent().next().next().next().next().css('background-color',picklistColor);
+	            }
+	        });
+	    });
+	    
+	    function init() {
+	    	drawTitles();
+	    	picklistColorChange();
+	    	var colorArr = {
+	            'Keep':'#0b6fce',
+	            'Delete':'#e27001',
+	            'New':'#78c953',
+	            'Increase':'#a845dc',
+	            'Decrease':'#f3d904',
+	            'Substitute':'#a53711',
+	        };
+	        j$('table tr').each(function() {
+	            picklistValue = j$(this).find('.clientStatus').val();
+	            if(typeof picklistValue != 'undefined'){
+	                var picklistColor = colorArr[picklistValue];
+	                j$(this).find('.clientStatus').parent().css('background-color',picklistColor);
+	                j$(this).find('.clientStatus').parent().next().css('background-color',picklistColor);
+	                j$(this).find('.clientStatus').parent().next().next().css('background-color',picklistColor);
+	                j$(this).find('.clientStatus').parent().next().next().next().css('background-color',picklistColor);
+	                j$(this).find('.clientStatus').parent().next().next().next().next().css('background-color',picklistColor);
+	            }
+	        });
+	    }
+	    
+	    function createSlider() {
+	        j$ = jQuery.noConflict();
+	        j$( "#slider-range" ).slider({
+	            range: true,
+	            min: 1,
+	            max: 12,
+	            values: [ 0, 12],
+	            slide: function( event, ui ) {
+	            
+	            	j$("[id$=idInputHidden]").val(ui.values[ 0 ] + " - " + ui.values[ 1 ]);
+	            
+	                j$( "#interval" ).val( ui.values[ 0 ] + "-" + ui.values[ 1 ] );
+	                console.log('>>> ' + parseInt(ui.values[ 0 ], 10) + " - " + parseInt(ui.values[ 1 ], 10));
+	                //passIntervalValueToController(parseInt(ui.values[ 0 ], 10) , parseInt(ui.values[ 1 ], 10));
+	            }
+	        });
+	        j$( "#interval" ).val( j$( "#slider-range" ).slider( "values", 0 ) + " - " + j$( "#slider-range" ).slider( "values", 1 ) );    
+	    }
+	    
+	    function picklistColorChange() {
+	        j$ = jQuery.noConflict();
+	        var colorArr = {
+	            'Keep':'#0b6fce',
+	            'Delete':'#e27001',
+	            'New':'#78c953',
+	            'Increase':'#a845dc',
+	            'Decrease':'#f3d904',
+	            'Substitute':'#a53711',
+	        };
+	        j$( ".clientStatus" ).change(function() {
+	            var picklistColor = colorArr[j$(this).val()];
+	            j$(this).parent().css('background-color',picklistColor);
+	            j$(this).parent().next().css('background-color',picklistColor);
+	            j$(this).parent().next().next().css('background-color',picklistColor);
+	            j$(this).parent().next().next().next().css('background-color',picklistColor);
+	            j$(this).parent().next().next().next().next().css('background-color',picklistColor);
+	        });
+	    }
+	    
+	    function drawTitles() {
+	        j$ = jQuery.noConflict();
+	        var stringVal = '<tr>';
+	        var colspanVal = '';
+	        colspanVal = 'colspan = \"6\"';  
+	        stringVal += '<td ' + colspanVal + '></td>'; 
+	        count = 0 ;
+	        counter = 7 ;
+	        for(var i= 7 ; i<=18 ; i++){
+	            var colspanStr = '';
+	            var backgroundcolor = '';
+	            if(i == counter){
+	                colspanStr  = 'colspan = \"5\"';
+	                count++;
+	                counter++;
+	                if(count%2 !== 0){
+	               		 backgroundcolor = ';background-color: #e2f3ec;';
+	                }
+	            }
+	            stringVal += '<td style="text-align:center;font-weight:bold;font-size:16px'+backgroundcolor+'" '+colspanStr+'>Month '+ count +'</td>'; 
+	        }
+	        stringVal += '</tr>';
+	        j$('table.assClusterTable').each(function() {
+	            console.log(j$(this).find('tr').attr('class'));
+	            j$(this).find('tr:first').after(stringVal);
+	        });
+	    }
+	    </script>
+    </apex:outputPanel>
+    
+    <style Id="style">
+        .bg-row {
+	        background-color:#e2f3ec;
+	        white-space:nowrap;
+        }
+        .bg-row-2 {
+        	white-space:nowrap;
+        }
+        body .pbBody table.list tr.headerRow th {
+        	text-align:center;
+        }
+        table.table tr td:first-child {
+        	display:block;
+        }
+        table.table tr th:first-child {
+        	display:block;
+        }
+        table.table {
+        	border-collapse:separate;
+        	/*border-top: 3px solid grey; */
+        }
+        table.table td, table.assClusterTable th {
+            margin:0;
+            /*border:3px solid grey; 
+            border-top-width:0px; */
+            white-space:nowrap;
+        }            
+        div.assTableWrapper { 
+            width:58%;
+            overflow-x:scroll;  
+            margin-left:9.15em; 
+            overflow-y:visible;
+            padding-bottom:1px;
+        }
+        div.assTableWrapperLightning { 
+            width:100%;
+            overflow-x:scroll;  
+            margin-left:7em;
+            overflow-y:visible;
+            padding-bottom:1px;
+        }
+        table.table td.category-col, table.table tr th:first-child {
+            position:absolute; 
+            width:113px; 
+            left:13px;
+            top:auto;
+            border-right:0px none black; 
+            /*border-top-width:3px;*/ /*only relevant for first row*/
+        }
+        .bPageBlock.brandSecondaryBrd.bEditBlock.secondaryPalette {
+        	padding-right:0px;
+        	padding-left:0px;
+        }
+        
+        .subHeader {
+        	text-align:center;
+        	padding:0px!important;
+        	border-top:0px!important;
+        	border-right:1px!important;
+        }
+        .subHeader-content {
+        	text-align:center;
+        	height:22px;
+        	
+        }
+        .subHeader-content-light {
+        	text-align:center;
+        	height:50px;
+        	padding-left:4px; 
+        }
+        div .pbBody {
+        	margin-left:0px!important;
+        }
+        .headerRow .hidden-table-header {
+        	width:100px!important;
+        }
+        .bPageBlock.brandSecondaryBrd.apexDefaultPageBlock.secondaryPalette {
+        	padding-left: 0px!important;
+        }
+    </style>
+    <apex:sectionHeader title="Assortment Cluster" subtitle="Assortment Review {!IF(recordId != Null, 'for', '')} {!IF(recordId != Null, currentAssortmentBU.Name, '')}"/>
+    <apex:form Id="myForm">
+    	<apex:pageMessages id="message"/>
+       	<apex:pageBlock Id="filterBlock" title="{!$Label.LBL_Filter}">
+       	<apex:pageBlockButtons >
+       		<apex:commandButton value="Filter" action="{!setInterval}" onComplete="init();" reRender="tableBlock,interval,slider-range" status="globalloading"/>
+      			<!--  <apex:commandButton value="{!$Label.LBL_Reset}" status="globalloading" reRender="tableBlock,interval,slider-range"/> -->
+       		</apex:pageBlockButtons>
+            <apex:pageBlockSection collapsible="False" columns="2">
+            	<apex:pageBlockSection collapsible="False" columns="1">
+            		<apex:inputField value="{!currentAssortmentBU.BU_source__c}"/>
+            		<apex:inputField value="{!currentAssortmentBU.BU_Target__c}"/>
+            		<apex:pageBlockSectionItem >
+	       				<apex:outputLabel value="{!$ObjectType.Assortment_BU__c.fields.Year__c.Label}"/>
+	                	<apex:inputtext value="{!lastUdpdateYear}"/>
+       				</apex:pageBlockSectionItem>
+            	</apex:pageBlockSection>
+    			<apex:pageBlockSectionItem >
+                    <apex:outputLabel style="font-weight: bold;" value="{!$Label.LBL_Interval_of_months}"/>
+       				<apex:outputPanel >
+       					<apex:inputHidden value="{!sSliderField}" id="idInputHidden"/>
+	       				<input type="text" id="interval" style="background-color:#f8f8f8;border:0; color:#f6931f; font-weight:bold; text-align: center;"/>
+	                    <!--  
+	                    <apex:actionFunction name="passIntervalValueToController" action="{!setInterval}"  rerender="interval,slider-range"
+	                    		status="globalloading">
+	                    	<apex:param value="" name="min" assignTo="{!min}"/>
+	                    	<apex:param value="" name="max" assignTo="{!max}"/>
+				        </apex:actionFunction> -->
+	                    <span style="{!IF($User.UIThemeDisplayed == 'Theme3','width:36%; display:grid;','width:70%; display:grid;')}">
+	                    	<div id="slider-range"></div>
+	                    </span>
+                    </apex:outputPanel>
+       			</apex:pageBlockSectionItem>
+    			<!-- <apex:selectcheckboxes layout="PageDirection" styleClass="filterelements" value="{!checkBoxValues}">
+	                <apex:selectoptions value="{!checkBoxOptions}"/>
+	            </apex:selectcheckboxes> -->
+       		</apex:pageBlockSection>
+       	</apex:pageBlock>
+        
+        <apex:pageBlock Id="tableBlock">
+	        <apex:actionStatus id="globalloading">
+	           	<apex:facet name="start" >
+	            	<img src="/img/loading.gif"/>
+	      		</apex:facet>
+	       	</apex:actionStatus>
+        	<apex:pageBlockButtons >
+           		<apex:commandButton value="{!$Label.Save}" action="{!save}" status="globalloading" reRender="message"/>
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" rendered="{!IF(recordId != Null,true,false)}"/>
+            </apex:pageBlockButtons>
+        	<apex:outputPanel layout="block" style="{!IF($User.UIThemeDisplayed == 'Theme3','overflow:auto; width:95vw;','')}">   
+	       		<!-- TABLE SECTION --------------------------------------------------------------- -->
+	       		<apex:repeat value="{!listClientWrapper}" var="client">
+	                <span style="background:#b9b9b9; width:100%; height:18px; display:inline-block; color:#fff;"><apex:outputText style="vertical-al" value="{!client.clientName}"/></Span>
+	                <div class="{!IF($User.UIThemeDisplayed == 'Theme4d','assTableWrapperLightning','assTableWrapper')}" style="width:91.8%;">
+	                    <apex:pageBlockTable Id="table" headerClass="hidden-table-header" styleClass="table" value="{!client.wAssortmentDetails}" var="res"
+	                    			style="">
+	                        <apex:column style="width:100px; word-wrap:break-word; text-align:center; {!IF($User.UIThemeDisplayed == 'Theme3','padding: 24px 0;','padding: 30px 0;')}" 
+	                        	styleClass="category-col">
+		                        <apex:facet name="header">
+		                            <apex:outputText value="{!$ObjectType.Assortment_Detail__c.fields.Category__c.Label}"/>
+		                        </apex:facet>              
+		                        <apex:outputLink style="" target="_blank" value="/{!res.buDetail.Category__r.Id}">
+		                       		 <apex:outputText value="{!res.buDetail.Category__r.Name}"/>
+		                       </apex:outputLink>
+		                    </apex:column> 
+		                    <apex:column style=" height: 55px;">
+		                        <apex:facet name="header">
+		                            <apex:outputText value="{!$ObjectType.Assortment_Detail__c.fields.Brand__c.Label}"/>
+		                        </apex:facet>
+		                        <apex:outputText value="{!res.buDetail.Brand__c}"/>
+		                    </apex:column>
+		                    <apex:column >
+		                        <apex:facet name="header">
+		                            <apex:outputText value="{!$ObjectType.Product2.fields.Name.Label}"/>
+		                        </apex:facet>
+		                           <apex:outputLink target="_blank" value="/{!res.buDetail.Product__r.Id}">
+		                        <apex:outputText value="{!res.buDetail.Product__r.Name}"/>
+		                        </apex:outputLink>
+		                    </apex:column>
+		                    <apex:column style="width:150px;white-space: nowrap;">
+		                        <apex:facet name="header">
+		                            <apex:outputText value="{!$ObjectType.Product2.fields.ProductCode.Label}"/>
+		                        </apex:facet>
+		                        <apex:outputText value="{!res.buDetail.Product__r.ProductCode}"/>
+		                    </apex:column>
+		                    <apex:column style="width:150px;white-space: nowrap;">
+		                        <apex:facet name="header">
+		                            <apex:outputText value="{!$ObjectType.Assortment_Detail__c.fields.Client_Product_Code__c.Label}"/>
+		                        </apex:facet>
+		                        <apex:outputText value="{!res.buDetail.Client_Product_Code__c}"/>
+		                    </apex:column>
+		                    <apex:column style="width:150px;white-space: nowrap;">
+		                        <apex:facet name="header">
+		                            <apex:outputText value="{!$ObjectType.Assortment_BU__c.fields.BU_source__c.Label}"/>
+		                        </apex:facet>
+		                        <!--  <apex:outputText value="{!e.buSourceName}"/>-->
+		                    </apex:column>
+		                    <!-- 1 to 12 months --------------------------------------------------------->
+		                    <apex:repeat value="{!counter}" var="index" >
+		                    	<apex:column rendered="{!AND(index<=max,index>=min)}" Id="c0"  styleClass="{!IF(mod(index,2) != 0,'bg-row','bg-row-2')} month-area-{!HTMLENCODE(TEXT(index))}">
+		                    		<apex:facet name="header">
+	                                	<apex:outputPanel >
+									    	<apex:outputText value="Month {!index}"></apex:outputText><br/>
+						          		</apex:outputPanel>
+	                                </apex:facet>
+		                    		<table border="0" style="display: {!IF(res.lastMonthUpdate == index, "","none")}">
+									    <tbody>
+									      <tr>
+									      	<td class="subHeader"><apex:outputText value="{!$ObjectType.Assortment_Detail__c.fields.Client_Status__c.Label}"/></td>
+									      	<td class="subHeader"><apex:outputText value="{!$ObjectType.Assortment_Detail__c.fields.Ass_BU_Cluster__c.Label}"/></td>
+									      	<td class="subHeader"><apex:outputText value="{!$Label.LBL_PDV}"/></td>
+									      	<td class="subHeader"><apex:outputText value="{!$Label.LBL_DN}"/></td>
+									      	<td class="subHeader"><apex:outputText value="{!$Label.LBL_DV}"/></td>
+									      </tr>
+									      <tr>
+									        <td class="{!IF($User.UIThemeDisplayed == 'Theme3',"subHeader-content","subHeader-content-light")}" style="{!IF($User.UIThemeDisplayed == 'Theme4d', "padding-top: 8px","")}"><apex:inputField styleClass="clientStatus" value="{!res.buDetail.Client_Status__c}"/></td>
+									        <td class="{!IF($User.UIThemeDisplayed == 'Theme3',"subHeader-content","subHeader-content-light")}"><apex:inputField value="{!res.buDetail.Ass_BU_Cluster__c}"/></td>
+									        <td class="{!IF($User.UIThemeDisplayed == 'Theme3',"subHeader-content","subHeader-content-light")}"><apex:outputText value="{!res.buDetail.Ass_BU_Cluster__r.Store_nb__c}"/></td>
+									        <td class="{!IF($User.UIThemeDisplayed == 'Theme3',"subHeader-content","subHeader-content-light")}"><apex:outputText value="{!res.dn}"/></td>
+									        <td class="{!IF($User.UIThemeDisplayed == 'Theme3',"subHeader-content","subHeader-content-light")}"><apex:outputText value="0"/></td>
+									      </tr>
+									    </tbody>
+									</table>
+		                    	</apex:column>
+		                    </apex:repeat>
+		                </apex:pageBlockTable>
+	            	</div>
+                    <br/>
+	            </apex:repeat>
+       		</apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

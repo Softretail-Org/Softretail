@@ -1,0 +1,36 @@
+<apex:page standardController="Accounting_Closing__c" extensions="AccountingClosingUpdateStatusController" >
+    <apex:outputPanel rendered="{!Accounting_Closing__c.Closing_Date__c != endMonthDate}">
+        <div style="color: red; font-size: 16px; font-weight: bold;">
+            {!$Label.MSG_Closing_Date_Not_Equal_End_Month}
+        </div>
+        <apex:form >
+            <apex:actionFunction action="{!save}" name="save" />
+            <apex:commandButton value="{!$Label.LBL_Validate_Date_Sent_To_Accounting}" onclick="checkClosingDate();return false;" />
+        </apex:form>
+    </apex:outputPanel>
+    
+    <script>
+    function checkClosingDate() {
+        var closingDateYear = {!YEAR(Accounting_Closing__c.Closing_Date__c)};
+        var closingDateMonth = {!MONTH(Accounting_Closing__c.Closing_Date__c)};
+        var closingDateDay = {!DAY(Accounting_Closing__c.Closing_Date__c)};
+        
+        var endMonthDateYear = {!YEAR(endMonthDate)};
+        var endMonthDateMonth = {!MONTH(endMonthDate)};
+        var endMonthDateDay = {!DAY(endMonthDate)};
+        
+        if (closingDateYear === endMonthDateYear && closingDateMonth === endMonthDateMonth && closingDateDay === endMonthDateDay) {
+            save();
+        } else {
+            var result = confirm("{!$Label.MSG_Confirm_Accounting_Closing_To_Proceed}"); 
+            if (result == true) {
+                setTimeout(function() {
+                    ////window.location.reload(1);
+                    window.parent.location.href = window.parent.location.href;
+                }, 3000);
+                save();
+            }
+        }
+    }
+    </script>
+</apex:page>

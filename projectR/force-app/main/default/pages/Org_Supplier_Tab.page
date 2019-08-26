@@ -1,0 +1,5 @@
+<apex:page standardController="Sup_Supplier__c" recordSetVar="Suppliers" sidebar="true" lightningStylesheets="true">
+  <h2 style="font-size:22px;">{!$ObjectType.Sup_Supplier__c.labelPlural}</h2>
+  <apex:enhancedList type="Sup_Supplier__c" height="600" rowsPerPage="50"/>
+
+</apex:page>

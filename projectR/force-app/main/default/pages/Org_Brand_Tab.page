@@ -1,0 +1,6 @@
+<apex:page sidebar="true" standardController="Sup_Brand__c" recordsetVar="Brands" lightningStylesheets="true">
+
+     <h2 style="font-size:22px;">{!$ObjectType.Sup_Brand__c.labelPlural}</h2> 
+     <apex:enhancedList type="Sup_Brand__c" height="600" rowsPerPage="50" customizable="true"/> 
+     
+</apex:page>

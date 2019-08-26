@@ -1,0 +1,4 @@
+<apex:page standardController="Pol_Sale_Condition__c" recordSetVar="Elements" sidebar="true" lightningStylesheets="true">
+  <h2 style="font-size:22px;">{!$ObjectType.Pol_Sale_Condition__c.labelPlural}</h2>          
+  <apex:enhancedList type="Pol_Sale_Condition__c" height="600" rowsPerPage="50"/>
+</apex:page>

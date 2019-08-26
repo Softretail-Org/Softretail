@@ -1,0 +1,53 @@
+{
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "baseUrl": ".",
+        "paths": {
+            "c/typeahead": [
+                "../staticresources/typeahead/typeahead.js"
+            ],
+            "c/unitNeedMergeLWCApp": [
+                "unitNeedMergeLWCApp/unitNeedMergeLWCApp.js"
+            ],
+            "c/myDatatable": [
+                "myDatatable/myDatatable.js"
+            ],
+            "c/mass_Batch_Form": [
+                "mass_Batch_Form/mass_Batch_Form.js"
+            ],
+            "c/lookupComponent": [
+                "lookupComponent/lookupComponent.js"
+            ],
+            "c/lookup": [
+                "lookup/lookup.js"
+            ],
+            "c/datatableCell": [
+                "datatableCell/datatableCell.js"
+            ],
+            "c/auraPubsub": [
+                "auraPubsub/auraPubsub.js"
+            ],
+            "c/lookupItem": [
+                "lookupItem/lookupItem.js"
+            ],
+            "c/lookupHolder": [
+                "lookupHolder/lookupHolder.js"
+            ],
+            "c/importProductsLWC": [
+                "importProductsLWC/importProductsLWC.js"
+            ],
+            "c/pubsub": [
+                "pubsub/pubsub.js"
+            ]
+        }
+    },
+    "include": [
+        "**/*",
+        "../../../../.sfdx/typings/lwc/**/*.d.ts"
+    ],
+    "typeAcquisition": {
+        "include": [
+            "jest"
+        ]
+    }
+}

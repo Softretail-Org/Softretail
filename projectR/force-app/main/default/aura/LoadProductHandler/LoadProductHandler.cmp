@@ -1,0 +1,46 @@
+<aura:component implements="force:LightningQuickActionWithOutHeader,force:hasRecordId">
+
+
+    <aura:attribute name="isAuraWrapped" type="boolean" default="true" />
+    <aura:attribute name="Text" type="boolean" default="0" />
+
+    <c:auraPubsub aura:id="pubsub" />
+    <!--Style-->
+    <aura:html tag="style">
+        .slds-modal__container{
+        height : auto;
+        width: 70%;
+        max-width: 70rem;
+        }
+        .modal-body{
+        height : 650px !important;
+        max-height: 550px !important;
+        }
+
+        .customFooter{
+        display: inline !important;
+        }
+    </aura:html>
+    <!--Content-->
+    <div class="slds-modal__content slds-p-around_x-small" style="max-height : 700px;">
+
+
+
+        <center>
+            <div style="font-size: 1.17em;"> </div>
+            <c:importProductsLWC onDoneSaving="{!c.EnableButtons}" onSetText="{!c.SetText}" recordId="{!v.recordId}" isAuraWrapped="{!v.isAuraWrapped}" />
+            <ltng:require styles="{!$Resource.Popups}" />
+
+        </center>
+        
+    </div>
+    <div>
+
+        <lightning:button aura:id="SaveBtn" class="slds-float_right" variant="Brand" label="Save" title="Save" onclick="{! c.SaveBtn}" />
+        <lightning:button aura:id="ImportFilteredBtn" class="slds-float_right slds-m-right_xx-small" label="Import Filtered" title="Import Filtered"
+            onclick="{! c.ImportFiltered}" />
+        <lightning:button aura:id="CancelBtn" class="slds-float_right slds-m-right_xx-small" label="Cancel" title="Cancel"
+            onclick="{! c.cancelBtn}" />
+        <lightning:formattedText class="slds-m-top_xx-small slds-float_right" value="{!v.Text}" />
+    </div>
+</aura:component>

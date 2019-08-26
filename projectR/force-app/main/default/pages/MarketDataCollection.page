@@ -1,0 +1,137 @@
+<apex:page standardController="Market_Data_Collection_Head__c" extensions="MarketDataCollectionController" tabStyle="Market_Data_Collection_Head__c"
+           recordSetVar="allMarketColectionHeads" lightningStylesheets="true" showHeader="true" sidebar="false">
+    <apex:stylesheet value="{!URLFOR($Resource.Assets, 'assets/css/app.css')}"/>
+    <apex:slds />
+    <apex:pageMessages id="messages"/>
+    <apex:sectionHeader title="{!$ObjectType.Market_Data_Collection_Head__c.Label}" subtitle="{!$Label.LBL_Scan_Synchro_Market_Data_Collections}" />
+    <apex:form Id="theForm">
+        <!-- global loading action status -->
+        <apex:actionStatus id="globalloading">
+            <apex:facet name="start">
+                <div class="loading-overlay">
+                    <div class="loader-img"></div>
+                    <div class="loading-block">{!$Label.Loading}</div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        <apex:pageBlock id="marketDataCollectionScanSynchro">
+            <apex:pageBlockButtons style="float:right">
+                <apex:commandButton styleClass="slds-button slds-button_neutral" value="{!$Label.Cancel}" action="{!cancel}"
+                                    disabled="{!OR(scanInProcess, synchroInProcess)}" status="globalloading" reRender="marketDataCollectionScanSynchro,messages" immediate="true" />
+            </apex:pageBlockButtons>
+            <apex:actionPoller action="{!refresh}" rerender="marketDataCollectionScanSynchro,messages" interval="10" enabled="{!isPollerActive}" />
+            <apex:pageBlockSection columns="1" title="Scan Market Data Collection" collapsible="true">
+                <apex:commandButton styleClass="slds-button slds-button_neutral" value="Scan" action="{!scanMarketDataCollection}"
+                                    status="globalloading" reRender="marketDataCollectionScanSynchro,messages"
+                                    disabled="{!scanInProcess}" rendered="{!scanMarketHeadList.size>0}" />
+                <!-- Scan Market Data Collection Grid -->
+                <apex:outputPanel id="scanMarketDataCollectionGrid">
+                    <div class="table-container slds-p-around_medium" style="padding:0rem;">
+                        <table class="slds-table slds-table_bordered slds-no-cell-focus slds-no-row-hover" >
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Name.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Master_BU__c.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Ext_Client_Name__c.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Ext_BU_Name__c.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Ext_Category_Name__c.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Client__c.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Orga_BU__c.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Orga_HE__c.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Year__c.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.SEQ__c.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Status__c.Label}</th>
+                                    <th class="slds-text-title--caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Action_Todo__c.Label}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <apex:repeat value="{!scanMarketHeadList}" var="item">
+                                    <tr class="slds-hint-parent">
+                                        <td role="gridcell">
+                                            <apex:outputLink title="{!item.Name}" value="/{!item.Id}" target="_blank">
+                                                {!item.Name}
+                                            </apex:outputLink>
+                                        </td>
+                                        <td scope="row" role="gridcell"><div class="slds-truncate"><apex:outputField value="{!item.Master_BU__c}" /></div></td>
+                                        <td scope="row" role="gridcell"><div class="slds-truncate"><apex:outputField value="{!item.Ext_Client_Name__c}" /></div></td>
+                                        <td scope="row" role="gridcell"><div class="slds-truncate"><apex:outputField value="{!item.Ext_BU_Name__c}" /></div></td>
+                                        <td scope="row" role="gridcell"><div class="slds-truncate"><apex:outputField value="{!item.Ext_Category_Name__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Client__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Orga_BU__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Orga_HE__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Year__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.SEQ__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Status__c}" /></div></td>
+                                        <td scope="row"><p class="slds-truncate" style="width:300px;">{!item.Action_Todo__c}</p></td>
+                                    </tr>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="slds-p-around_medium slds-grid">
+                        <apex:outputPanel layout="table">
+                            <apex:outputText rendered="{!scanMarketHeadList.size==0}" value="{!$Label.LBL_No_Record_To_Display}"/>
+                        </apex:outputPanel>
+                    </div>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection columns="1" title="Synchro Market Data Collection" collapsible="true" >
+                <div class="slds-align_absolute-center">
+                    <apex:commandButton styleClass="slds-button slds-button_neutral" value="Synchro" action="{!synchroMarketDataCollection}"
+                                        status="globalloading" reRender="marketDataCollectionScanSynchro,messages"
+                                        disabled="{!synchroInProcess}" rendered="{!synchroMarketHeadList.size>0}" />
+                </div>
+                <!-- Synchro Market Data Collection Grid -->
+                <apex:outputPanel id="synchroMarketDataCollectionGrid">
+                    <div class="table-container slds-p-around_medium" style="padding:0rem;" >
+                        <table class="slds-table slds-table_bordered slds-no-cell-focus slds-no-row-hover" >
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Name.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Master_BU__c.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Ext_Client_Name__c.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Ext_BU_Name__c.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Ext_Category_Name__c.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Client__c.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Orga_BU__c.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Orga_HE__c.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Year__c.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.SEQ__c.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Status__c.Label}</th>
+                                    <th class="slds-text-title_caps text-center" scope="col">{!$ObjectType.Market_Data_Collection_Head__c.fields.Action_Todo__c.Label}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <apex:repeat value="{!synchroMarketHeadList}" var="item">
+                                    <tr class="slds-hint-parent">
+                                        <td>
+                                            <apex:outputLink title="{!item.Name}" value="/{!item.Id}" target="_blank">
+                                                {!item.Name}
+                                            </apex:outputLink>
+                                        </td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Master_BU__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Ext_Client_Name__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Ext_BU_Name__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Ext_Category_Name__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Client__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Orga_BU__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Orga_HE__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Year__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.SEQ__c}" /></div></td>
+                                        <td scope="row"><div class="slds-truncate"><apex:outputField value="{!item.Status__c}" /></div></td>
+                                        <td scope="row"><p class="slds-truncate" style="width:300px;">{!item.Action_Todo__c}</p></td>                                        
+                                    </tr>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="slds-p-around_medium slds-grid">
+                        <apex:outputPanel layout="table">
+                            <apex:outputText rendered="{!synchroMarketHeadList.size==0}" value="{!$Label.LBL_No_Record_To_Display}"/>
+                        </apex:outputPanel>
+                    </div>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
