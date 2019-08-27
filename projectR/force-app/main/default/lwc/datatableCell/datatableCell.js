@@ -17,5 +17,7 @@ export default class DatatableDeleteRowBtn extends LightningElement {
     render() {
         return template;
     }
+
+    //this is an edit on datatableCell to test datatableCellBranch
     
 }
