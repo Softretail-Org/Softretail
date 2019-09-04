@@ -20,5 +20,5 @@ export default class DatatableDeleteRowBtn extends LightningElement {
     render() {
         return template;
     }
-    
+    // rami
 }
