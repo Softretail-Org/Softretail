@@ -20,7 +20,11 @@ export default class DatatableDeleteRowBtn extends LightningElement {
     render() {
         return template;
     }
+<<<<<<< HEAD
     // rami
+=======
 
     //this is an edit on datatableCell to test datatableCellBranch
+    
+>>>>>>> origin/datatableCellBranch
 }

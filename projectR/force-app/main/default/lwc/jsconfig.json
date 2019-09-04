@@ -3,41 +3,41 @@
         "experimentalDecorators": true,
         "baseUrl": ".",
         "paths": {
-            "c/typeahead": [
-                "../staticresources/typeahead/typeahead.js"
-            ],
-            "c/unitNeedMergeLWCApp": [
-                "unitNeedMergeLWCApp/unitNeedMergeLWCApp.js"
-            ],
-            "c/myDatatable": [
-                "myDatatable/myDatatable.js"
-            ],
-            "c/mass_Batch_Form": [
-                "mass_Batch_Form/mass_Batch_Form.js"
-            ],
-            "c/lookupComponent": [
-                "lookupComponent/lookupComponent.js"
-            ],
-            "c/lookup": [
-                "lookup/lookup.js"
+            "c/auraPubsub": [
+                "auraPubsub/auraPubsub.js"
             ],
             "c/datatableCell": [
                 "datatableCell/datatableCell.js"
             ],
-            "c/auraPubsub": [
-                "auraPubsub/auraPubsub.js"
+            "c/importProductsLWC": [
+                "importProductsLWC/importProductsLWC.js"
             ],
-            "c/lookupItem": [
-                "lookupItem/lookupItem.js"
+            "c/lookup": [
+                "lookup/lookup.js"
+            ],
+            "c/lookupComponent": [
+                "lookupComponent/lookupComponent.js"
             ],
             "c/lookupHolder": [
                 "lookupHolder/lookupHolder.js"
             ],
-            "c/importProductsLWC": [
-                "importProductsLWC/importProductsLWC.js"
+            "c/lookupItem": [
+                "lookupItem/lookupItem.js"
+            ],
+            "c/mass_Batch_Form": [
+                "mass_Batch_Form/mass_Batch_Form.js"
+            ],
+            "c/myDatatable": [
+                "myDatatable/myDatatable.js"
             ],
             "c/pubsub": [
                 "pubsub/pubsub.js"
+            ],
+            "c/unitNeedMergeLWCApp": [
+                "unitNeedMergeLWCApp/unitNeedMergeLWCApp.js"
+            ],
+            "c/typeahead": [
+                "../staticresources/typeahead/typeahead.js"
             ]
         }
     },
