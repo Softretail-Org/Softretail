@@ -1,0 +1,7 @@
+This is a file to test branches
+1. this is an edit on br branch 
+<<<<<<< HEAD
+2. this is an edit on master branch
+=======
+3. this is an edit on branch
+>>>>>>> branch
